@@ -1,0 +1,42 @@
+name: Task
+description: A unit of work with a brief in docs/tasks/
+title: "[Wxx-yy] "
+labels: ["type:task"]
+body:
+  - type: input
+    id: brief
+    attributes:
+      label: Task brief
+      description: Path to the brief file, e.g. docs/tasks/W01-01-scope-and-data-survey.md
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - data
+        - retrieval
+        - agent
+        - backend
+        - frontend
+        - evaluation
+        - docs
+        - infra
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences. Details belong in the brief file, not here.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Verifiable conditions for "done".
+      placeholder: "- [ ] ..."
+    validations:
+      required: true

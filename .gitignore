@@ -1,0 +1,39 @@
+# Secrets (the example file is tracked on purpose)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Data and artifacts: never commit raw or processed data, only scripts that produce it
+data/*
+!data/README.md
+!data/.gitkeep
+*.parquet
+*.jsonl
+*.sqlite
+qdrant_storage/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Node / frontend
+node_modules/
+dist/
+.next/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local agent state (keep shared instructions, ignore personal settings)
+.claude/settings.local.json

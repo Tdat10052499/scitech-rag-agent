@@ -1,0 +1,73 @@
+name: Bootstrap project (labels and milestones)
+
+# Run once from the Actions tab. Safe to re-run: existing labels are updated, existing milestones are kept.
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Week 1 start date (YYYY-MM-DD). Leave empty to create milestones without due dates."
+        required: false
+        default: ""
+
+permissions:
+  issues: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          START_DATE: ${{ inputs.start_date }}
+        with:
+          script: |
+            const labels = [
+              { name: 'area:data', color: '1d76db', description: 'Pipelines: ingestion, cleaning, chunking, embedding' },
+              { name: 'area:retrieval', color: '5319e7', description: 'Vector and keyword search, reranking' },
+              { name: 'area:agent', color: '0e8a16', description: 'Agent loop, prompts, follow-up suggestions' },
+              { name: 'area:backend', color: 'fbca04', description: 'FastAPI service and orchestration' },
+              { name: 'area:frontend', color: 'f9d0c4', description: 'User interface' },
+              { name: 'area:evaluation', color: 'b60205', description: 'Golden set, metrics, experiment reports' },
+              { name: 'area:docs', color: '0075ca', description: 'Documentation, contracts, decisions' },
+              { name: 'area:infra', color: '6f42c1', description: 'CI, Docker, environment' },
+              { name: 'type:task', color: 'c5def5', description: 'Planned unit of work' },
+              { name: 'type:bug', color: 'd73a4a', description: 'Defect' },
+              { name: 'type:feature', color: 'a2eeef', description: 'New capability' },
+              { name: 'priority:P0', color: 'b60205', description: 'Blocks other work' },
+              { name: 'priority:P1', color: 'ff9f1c', description: 'Needed this week' },
+              { name: 'priority:P2', color: 'cfd3d7', description: 'Nice to have' },
+              { name: 'status:blocked', color: '000000', description: 'Waiting on a dependency or decision' },
+            ];
+            for (const l of labels) {
+              try {
+                await github.rest.issues.createLabel({ ...context.repo, ...l });
+              } catch (e) {
+                if (e.status !== 422) throw e;
+                await github.rest.issues.updateLabel({ ...context.repo, ...l });
+              }
+            }
+
+            const weeks = {
+              1: 'Scope, data sources, contracts, environment',
+              2: 'Batch data pipeline: download, clean, store',
+              3: 'Chunking, embeddings, vector store, hybrid search',
+              4: 'RAG MVP with LLM backend and citations',
+              5: 'Agent: query rewriting, decomposition, evidence check',
+              6: 'Follow-up suggestions, full UI, optional streaming ingestion',
+              7: 'Experimental evaluation',
+              8: 'Polish, report, demo',
+            };
+            const existing = await github.paginate(github.rest.issues.listMilestones, {
+              ...context.repo, state: 'all', per_page: 100,
+            });
+            const start = process.env.START_DATE ? new Date(process.env.START_DATE + 'T00:00:00Z') : null;
+            const DAY = 24 * 60 * 60 * 1000;
+            for (const [n, description] of Object.entries(weeks)) {
+              const title = `Week ${n}`;
+              if (existing.some((m) => m.title === title)) continue;
+              const params = { ...context.repo, title, description };
+              if (start && !Number.isNaN(start.getTime())) {
+                params.due_on = new Date(start.getTime() + (7 * Number(n) - 1) * DAY + DAY - 1000).toISOString();
+              }
+              await github.rest.issues.createMilestone(params);
+            }

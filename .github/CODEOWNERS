@@ -1,0 +1,13 @@
+# Default owner for everything. Replace/add GitHub usernames per module once members are added.
+# Invalid usernames make this file error out, so only add accounts that have repo access.
+*                     @Tdat10052499
+
+# /pipelines/         @member-data
+# /agent/             @member-agent
+# /backend/           @member-backend
+# /frontend/          @member-frontend
+# /evaluation/        @member-eval
+# Shared contracts: changes affect several modules, keep the maintainer as owner.
+/docs/contracts/      @Tdat10052499
+/docker-compose.yml   @Tdat10052499
+/.github/             @Tdat10052499
