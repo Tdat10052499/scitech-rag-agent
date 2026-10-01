@@ -1,12 +1,12 @@
 # Contributing
 
 ## Workflow (GitHub Flow)
-1. Pick an issue assigned to you. Each issue links to a brief in `docs/tasks/`.
-2. `git pull`, create a branch from `main`: `feat/<issue>-<slug>`, `fix/<issue>-<slug>` or `docs/<slug>`.
+1. Pick today's task from `docs/plan/` (see `docs/plan/README.md`) or an issue assigned to you.
+2. `git pull`, create a branch from `main`: `feat/<task-id>-<slug>` (e.g. `feat/w2-d1-fao-1-downloader`), `fix/...` or `docs/...`.
 3. Implement within the scope declared in the brief. Run `make lint test`.
 4. Open a Pull Request using the template; link the issue with `Closes #<n>`.
 5. Another member reviews (CODEOWNERS requests the reviewer). CI must pass. Squash-merge into `main`.
-6. Append to your journal: `docs/journal/<your-name>/Wxx.md`.
+6. Append to your journal: `docs/journal/<CODE>/Wn.md` (CODE = DAT, FAO or LDN).
 
 ## Rules
 - `main` is protected: no direct pushes, at least one approving review, CI green.
