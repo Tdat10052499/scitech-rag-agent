@@ -1,0 +1,12 @@
+# Glossary
+- **Corpus**: the full set of documents the system can retrieve from.
+- **Document (`doc_id`)**: one source item, e.g. a paper abstract.
+- **Chunk (`chunk_id`)**: a piece of a document stored and retrieved as one unit.
+- **Embedding**: numeric vector representing the meaning of a text; used for semantic search.
+- **RAG**: retrieval-augmented generation; answer generated from retrieved evidence.
+- **Evidence**: retrieved chunks the answer is based on.
+- **Citation / Source**: reference from an answer to the chunk(s) supporting it.
+- **Hybrid search**: combination of vector search and keyword (BM25) search.
+- **Golden set**: hand-checked questions with known relevant documents, used for evaluation.
+- **Faithfulness**: whether the answer is supported by the retrieved evidence.
+- **Follow-up suggestion**: a proposed next question shown to the user.

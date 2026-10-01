@@ -1,0 +1,21 @@
+[project]
+name = "scitech-rag-agent"
+version = "0.1.0"
+description = "Interactive science and technology Q&A with an AI agent and retrieval over a large corpus."
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["notebooks", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "scitech_agent", "scitech_pipelines", "scitech_eval"]
+
+[tool.pytest.ini_options]
+pythonpath = ["backend/src", "agent/src", "pipelines/src", "evaluation/src"]
+testpaths = ["backend/tests", "agent/tests", "pipelines/tests", "evaluation/tests"]
+addopts = "-q"

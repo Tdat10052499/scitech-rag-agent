@@ -1,0 +1,79 @@
+openapi: 3.0.3
+info:
+  title: SciTech RAG Agent API
+  version: 0.1.0
+  description: >
+    Contract between frontend and backend. DRAFT: freeze in Week 1, then change only via an issue.
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /chat:
+    post:
+      summary: Ask a question; the answer is streamed as server-sent events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: >
+            Stream of events (text/event-stream). Event names, in typical order:
+            `sources` (JSON array of Source), `token` (answer text fragment),
+            `followups` (JSON array of up to 4 strings), `done` (empty), `error` (JSON Error).
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "422":
+          description: Invalid request
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required: [session_id, message]
+      properties:
+        session_id:
+          type: string
+          description: Client-generated id that groups turns of one conversation.
+        message:
+          type: string
+          minLength: 1
+    Source:
+      type: object
+      required: [chunk_id, doc_id, title, score]
+      properties:
+        chunk_id:
+          type: string
+        doc_id:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+        score:
+          type: number
+        snippet:
+          type: string
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

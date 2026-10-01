@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "chunk.schema.json",
+  "title": "Chunk",
+  "description": "Unit of text produced by pipelines/ and consumed by agent/ (retrieval). One record per chunk.",
+  "type": "object",
+  "required": ["chunk_id", "doc_id", "source", "title", "text", "chunk_index"],
+  "properties": {
+    "chunk_id": { "type": "string", "description": "Globally unique, stable: '<doc_id>#<chunk_index>'." },
+    "doc_id": { "type": "string", "description": "Stable identifier within the source, e.g. an arXiv id." },
+    "source": { "type": "string", "enum": ["arxiv", "openalex", "wikipedia"] },
+    "title": { "type": "string" },
+    "text": { "type": "string", "minLength": 1 },
+    "chunk_index": { "type": "integer", "minimum": 0 },
+    "authors": { "type": "array", "items": { "type": "string" } },
+    "categories": { "type": "array", "items": { "type": "string" } },
+    "published_at": { "type": "string", "format": "date" },
+    "url": { "type": "string", "format": "uri" },
+    "license": { "type": "string", "description": "License or terms under which the text may be used." },
+    "embedding_model": { "type": "string", "description": "Name of the model that produced the stored vector." }
+  },
+  "additionalProperties": false
+}

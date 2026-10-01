@@ -1,0 +1,11 @@
+# Local infrastructure. The backend and frontend are added as services once they exist.
+services:
+  qdrant:
+    image: qdrant/qdrant:latest   # TODO: pin a specific version once the team agrees on one
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  qdrant_data:

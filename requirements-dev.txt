@@ -1,0 +1,5 @@
+# Shared developer tooling. Module runtime dependencies live in <module>/requirements.txt.
+ruff>=0.6
+pytest>=8.0
+pre-commit>=3.7
+nbstripout>=0.7
