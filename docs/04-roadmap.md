@@ -1,5 +1,7 @@
 # Roadmap (8 weeks)
 
+Detailed day-by-day tasks per member: [docs/plan/](plan/README.md). Week 1 starts Monday 2026-10-05; final delivery Friday 2026-11-27.
+
 Milestones `Week 1` to `Week 8` are created by the "Bootstrap project" GitHub Action.
 
 | Week | Goal | Deliverable |
