@@ -1,13 +1,13 @@
-# Default owner for everything. Replace/add GitHub usernames per module once members are added.
-# Invalid usernames make this file error out, so only add accounts that have repo access.
-*                     @Tdat10052499
+# Last matching pattern wins. Everything defaults to the maintainer.
+*                      @Tdat10052499
 
-# /pipelines/         @member-data
-# /agent/             @member-agent
-# /backend/           @member-backend
-# /frontend/          @member-frontend
-# /evaluation/        @member-eval
-# Shared contracts: changes affect several modules, keep the maintainer as owner.
-/docs/contracts/      @Tdat10052499
-/docker-compose.yml   @Tdat10052499
-/.github/             @Tdat10052499
+/pipelines/            @F4ol4n @Tdat10052499
+/agent/                @Tdat10052499 @F4ol4n
+/backend/              @Tdat10052499 @Yui-Mika
+/frontend/             @Yui-Mika @Tdat10052499
+/evaluation/           @Yui-Mika @F4ol4n
+
+# Shared files affect several modules: all members are notified.
+/docs/contracts/       @Tdat10052499 @F4ol4n @Yui-Mika
+/docker-compose.yml    @Tdat10052499
+/.github/              @Tdat10052499
