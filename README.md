@@ -39,13 +39,27 @@ Details: [docs/01-architecture.md](docs/01-architecture.md).
 | `.github/` | Issue/PR templates, CI, CODEOWNERS |
 
 ## Quick start
-```bash
-cp .env.example .env        # fill in real values; never commit .env
-make setup                  # dev tooling + backend dependencies
-make up                     # start Qdrant via Docker
-make run                    # backend at http://localhost:8000 (GET /health)
-make lint test
+### Windows (PowerShell, without `make`)
+
+`make` is not installed on Windows by default. Run the Makefile commands directly
+(Python 3.10+; CI uses 3.11; a virtual environment is recommended). Tested on Windows with Python 3.11.9.
+
+```powershell
+git clone https://github.com/Tdat10052499/scitech-rag-agent.git
+cd scitech-rag-agent
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1          # if blocked: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+Copy-Item .env.example .env           # fill in real values; never commit .env
+python -m pip install -r requirements-dev.txt -r backend/requirements.txt   # make setup
+pre-commit install                    # make setup (git hooks)
+ruff check .                          # make lint
+python -m pytest                      # make test
+python -m uvicorn app.main:app --app-dir backend/src --reload --port 8000   # make run
 ```
+
+In a second terminal, check the backend: `Invoke-RestMethod http://localhost:8000/health` returns `status : ok`
+(or open http://localhost:8000/health in a browser: `{"status":"ok"}`). Stop the server with `Ctrl+C`.
+`make up` (Qdrant) needs Docker Desktop: `docker compose up -d`; it is not needed for `/health`.
 
 ## Working on this repo
 Start with [AGENTS.md](AGENTS.md) (also the entry point for AI coding agents) and [CONTRIBUTING.md](CONTRIBUTING.md). Design decisions are recorded as ADRs in [docs/decisions/](docs/decisions/).
