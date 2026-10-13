@@ -4,7 +4,7 @@
 Build an interactive website where users explore a science and technology topic by asking questions. An AI agent reasons over evidence retrieved from a large corpus, answers with citations, and proposes relevant follow-up questions.
 
 ## Context
-Final project of a course on Big Data / AI. Duration: 8 weeks. Team members work in parallel, each with their own AI coding tools.
+Final project of a course on Big Data / AI. Duration: 2026-10-13 to 2026-11-06 (22 working days in 8 phases, see `docs/decisions/0010-compressed-schedule.md`). Team members work in parallel, each with their own AI coding tools.
 
 ## In scope
 - Domain: science and technology. The exact sub-domain is to be narrowed in Week 1 (see `docs/tasks/W01-01-scope-and-data-survey.md`).

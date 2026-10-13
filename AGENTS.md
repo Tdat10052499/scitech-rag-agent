@@ -3,7 +3,7 @@
 Instructions for AI coding agents and humans working in this repository. Keep this file short; details live in `docs/`.
 
 ## Project
-Interactive web app: an AI agent answers science and technology questions with retrieval over a large corpus, cites its sources, and suggests follow-up questions. Course project, 8 weeks, team work in parallel by module. Read first: `docs/00-project-brief.md`, `docs/01-architecture.md`, `docs/contracts/`.
+Interactive web app: an AI agent answers science and technology questions with retrieval over a large corpus, cites its sources, and suggests follow-up questions. Course project, 2026-10-13 to 2026-11-06 (8 phases, see `docs/plan/`), team work in parallel by module. Read first: `docs/00-project-brief.md`, `docs/01-architecture.md`, `docs/contracts/`.
 
 ## Daily plan ("What do I need to do today?")
 The day-by-day plan for every member is in `docs/plan/`. When a member asks what to do today, follow the procedure in `docs/plan/README.md`: identify the member (DAT, FAO, LDN), map today's date with `docs/plan/calendar.md`, read that day's section in `docs/plan/week-NN.md`, check unfinished earlier tasks and dependencies, present the plan, then execute. Use the task ID (e.g. `W2-D1-FAO-1`) in branch names, PR titles and journal entries.

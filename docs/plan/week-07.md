@@ -1,63 +1,54 @@
-# Week 7: Experimental evaluation (2026-11-16 to 2026-11-20)
+# Week 7 (phase 7 of 8): Experimental evaluation (2026-10-31 to 2026-11-03)
+
+> Replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md). This phase has 3 working days (D17, D18, D19); Sunday 2026-11-01 is a buffer day (long LLM runs may continue unattended).
+> Task IDs are unchanged. Lines starting with **Replan:** say what changed.
 
 Goal: all experiments are run on the frozen system (`v0.6-rc` + `evaluation/SNAPSHOT.md`) and written up with sample sizes and limitations.
 
-Gate (Friday): every experiment in `evaluation/RUNS.md` has a stored run file; user study completed; `evaluation/reports/final.md` draft merged with all tables, error analysis and threats to validity.
+Gate (D19, Tue 2026-11-03; checked at the latest D20 10:00): every experiment in `evaluation/RUNS.md` has a stored run file; user study completed (n >= 5); `evaluation/reports/final.md` draft merged with all tables, error analysis and threats to validity.
 
-Rule this week: no feature work. Only P0 bug fixes, and every fix after a run means the affected runs are repeated and the commit hash is recorded.
+Rule this phase: no feature work. Only P0 bug fixes, and every fix after a run means the affected runs are repeated and the commit hash is recorded.
 
-## W7-D1
-Monday 2026-11-16 · D31
+## D17
+Saturday 2026-10-31
 
 ### DAT (@Tdat10052499)
 
 #### W7-D1-DAT-1 Confirm frozen configuration and run support
-- Do: verify that the stack matches `evaluation/SNAPSHOT.md` (model id, prompts commit, flags); make sure the remote LLM session is stable for long runs (or switch runs to the fallback and record it).
+- Do (by 09:30): verify that the stack matches `evaluation/SNAPSHOT.md` (model id, prompts commit, flags); make sure the remote LLM session is stable for long runs (or switch runs to the fallback and record it).
 - Done when: confirmation comment in the Week 7 tracking issue.
 - Depends on: W6-D5-DAT-1
 
-### FAO (@F4ol4n)
-
-#### W7-D1-FAO-1 Golden-set and snapshot integrity check
-- Do: run the coverage script against the frozen index; confirm the golden set has >= 60 items and none point to missing documents.
-- Done when: result posted in the tracking issue.
-- Depends on: W6-D4-FAO-1, W5-D1-LDN-1
-
-### LDN (@Yui-Mika)
-
-#### W7-D1-LDN-1 Final retrieval experiments
-- Module: `evaluation/runs/`
-- Do: run dense, BM25, hybrid, hybrid+rerank (if kept) with k = 1, 5, 10 on the full golden set; per-type breakdown (factual, multi-hop, ...).
-- Done when: run files committed; table drafted in `final.md`.
-- Depends on: W7-D1-FAO-1
-
-## W7-D2
-Tuesday 2026-11-17 · D32
-
-### DAT (@Tdat10052499)
-
 #### W7-D2-DAT-1 Agent ablations
 - Module: `evaluation/runs/`
-- Do: with LDN's runner, run: MVP (all flags off), +rewrite, +decompose, +evidence check, full agent; collect faithfulness, cited-document recall, refusal rate, LLM calls and latency.
-- Done when: run files committed and listed in `RUNS.md`.
+- Do: with LDN's runner, run: MVP (all flags off), +rewrite, +evidence check, full agent; collect faithfulness, cited-document recall, refusal rate, LLM calls and latency.
+- **Replan:** the "+decompose" condition is removed (decomposition cut). Start the runs right after W7-D1-DAT-1; GPU sessions can end, so run one condition at a time and commit each run file as it finishes.
+- Done when: run files committed and listed in `RUNS.md` (the last condition may finish during the Sunday buffer).
 - Depends on: W7-D1-DAT-1
 
 ### FAO (@F4ol4n)
 
+#### W7-D1-FAO-1 Golden-set and snapshot integrity check
+- Do (by 09:30): run the coverage script against the frozen index; confirm the golden set has >= 60 items and none point to missing documents.
+- Done when: result posted in the tracking issue.
+- Depends on: W6-D4-FAO-1, W5-D1-LDN-1
+
 #### W7-D2-FAO-1 Efficiency results
-- Do: final ingestion throughput, index build time, query latency (from W6 scaling work, repeated on the frozen snapshot if it changed); produce charts for the report.
+- Do: final ingestion throughput, index build time, query latency (from the W6 scaling work, repeated on the frozen snapshot if it changed); produce charts for the report.
 - Done when: numbers and charts in `pipelines/reports/scaling.md` and referenced in `final.md`.
 - Depends on: W6-D2-FAO-1
 
 ### LDN (@Yui-Mika)
 
-#### W7-D2-LDN-1 Faithfulness evaluation with manual check
-- Do: LLM-judge faithfulness on all ablation outputs; manually judge a random 20% sample; report agreement between judge and human, and use human labels where they disagree for the headline numbers (state this choice).
-- Done when: results and agreement in `final.md`.
-- Depends on: W7-D2-DAT-1
+#### W7-D1-LDN-1 Final retrieval experiments
+- Module: `evaluation/runs/`
+- Do: run dense, BM25 and hybrid with k = 1, 5, 10 on the full golden set; per-type breakdown (factual, multi-hop, ...).
+- **Replan:** "hybrid+rerank" removed (reranker cut). Per-type cells can have fewer than 10 items; report n per cell and avoid comparing cells that small.
+- Done when: run files committed; table drafted in `final.md`.
+- Depends on: W7-D1-FAO-1
 
-## W7-D3
-Wednesday 2026-11-18 · D33
+## D18
+Monday 2026-11-02
 
 ### DAT (@Tdat10052499)
 
@@ -66,22 +57,36 @@ Wednesday 2026-11-18 · D33
 - Done when: incident notes in the journal.
 - Depends on: W6-D4-LDN-1
 
+#### W6-D2-DAT-1 Latency measurement on the frozen system
+- Module: `docs/runbooks/performance.md`
+- **Replan:** moved from Week 6 and reduced: measurement only, no caching (cut) and no code changes (freeze). Run outside the user-study session times so the two do not interfere.
+- Do: measure p50/p95 latency for 30 golden questions (time to first token and total) with the frozen configuration; state hardware, LLM endpoint and network conditions.
+- Done when: numbers in `docs/runbooks/performance.md` and referenced in `final.md`.
+- Depends on: W5-D4-DAT-1
+
 ### FAO (@F4ol4n)
 
 #### W7-D3-FAO-1 Retrieval error analysis
 - Do: categorise retrieval misses from W7-D1 (vocabulary mismatch, chunking split, missing document, ambiguous question, ...) with counts and 2 examples each.
-- Done when: section added to `final.md`.
+- **Replan:** FAO also labels half of the manual faithfulness sample for W7-D2-LDN-1 today, using LDN's written procedure.
+- Done when: section added to `final.md`; manual labels handed to LDN.
 - Depends on: W7-D1-LDN-1
 
 ### LDN (@Yui-Mika)
+
+#### W7-D2-LDN-1 Faithfulness evaluation with manual check
+- Do: LLM-judge faithfulness on all ablation outputs (start on D17 as run files arrive); manually judge a random 20% sample; report agreement between judge and human, and use human labels where they disagree for the headline numbers (state this choice).
+- **Replan:** the manual sample is split between LDN and FAO (two annotators, same written procedure from W4-D4-LDN-1); DAT does not annotate because he built the agent. State the split and the absence of double annotation as a limitation.
+- Done when: results and agreement in `final.md`.
+- Depends on: W7-D2-DAT-1
 
 #### W7-D3-LDN-1 User study sessions part 1
 - Do: run sessions with the first half of participants following `PROTOCOL.md`; store questionnaire answers anonymised in `evaluation/user_study/responses/`.
 - Done when: sessions done; responses stored.
 - Depends on: W6-D4-LDN-1
 
-## W7-D4
-Thursday 2026-11-19 · D34
+## D19
+Tuesday 2026-11-03 · Gate day
 
 ### DAT (@Tdat10052499)
 
@@ -90,26 +95,6 @@ Thursday 2026-11-19 · D34
 - Done when: section added to `final.md`.
 - Depends on: W7-D2-LDN-1
 
-### FAO (@F4ol4n)
-
-#### W7-D4-FAO-1 Report data chapter with final numbers
-- Module: `docs/report/02-data.md`
-- Do: update the chapter with final efficiency and dataset numbers; add the pipeline diagram.
-- Done when: LDN reviewed.
-- Depends on: W7-D2-FAO-1, W6-D5-FAO-1
-
-### LDN (@Yui-Mika)
-
-#### W7-D4-LDN-1 User study sessions part 2 and analysis
-- Do: remaining sessions; analyse ratings (mean, median, distribution, n), follow-up click rate from `feedback.jsonl`, and recurring comments; state limitations (small, non-random sample).
-- Done when: user study section in `final.md`.
-- Depends on: W7-D3-LDN-1
-
-## W7-D5
-Friday 2026-11-20 · D35 · Gate day
-
-### DAT (@Tdat10052499)
-
 #### W7-D5-DAT-1 Evaluation gate and report outline
 - Do: check every run in `RUNS.md` has results; review `final.md`; create `docs/report/00-outline.md` with chapters, owners and page budget according to the instructor's format.
 - Done when: gate status recorded; outline merged.
@@ -117,15 +102,30 @@ Friday 2026-11-20 · D35 · Gate day
 
 ### FAO (@F4ol4n)
 
+#### W7-D4-FAO-1 Report data chapter with final numbers
+- Module: `docs/report/02-data.md`
+- **Replan:** includes the merged W6-D5-FAO-1: write the chapter in one pass: sources and licences, volume, pipeline design, engine choice (ADR 0005), incremental ingestion (or the cut decision), scaling results, pipeline diagram.
+- Done when: LDN reviewed.
+- Depends on: W7-D2-FAO-1
+
 #### W7-D5-FAO-1 Review evaluation report
-- Do: review `final.md` for correctness of numbers against run files (spot-check 5 numbers).
+- Do (as soon as LDN opens the PR; at the latest D20 10:00): review `final.md` for correctness of numbers against run files (spot-check 5 numbers).
 - Done when: review approved or issues listed.
 - Depends on: W7-D4-LDN-1
 
 ### LDN (@Yui-Mika)
 
+#### W7-D4-LDN-1 User study sessions part 2 and analysis
+- Do (sessions in the morning): remaining sessions; analyse ratings (mean, median, distribution, n), follow-up click rate from `feedback.jsonl`, and recurring comments; state limitations (small, non-random sample).
+- Done when: user study section in `final.md`.
+- Depends on: W7-D3-LDN-1
+
 #### W7-D5-LDN-1 `final.md` draft complete
 - Module: `evaluation/reports/final.md`
 - Do: assemble all sections: setup (snapshot, models, sample sizes), retrieval, answers and ablations, efficiency, user study, error analysis, threats to validity, summary of answers to the research questions; mark measured results vs interpretations.
+- **Replan:** start assembling on D18 evening with the retrieval and ablation sections; merge at the latest D20 10:00.
 - Done when: merged.
 - Depends on: W7-D3-FAO-1, W7-D4-DAT-1, W7-D4-LDN-1
+
+## Cut or merged in the replan
+None in Week 7 (W6-D2-DAT-1 moved here; W6-D5-FAO-1 merged into W7-D4-FAO-1).

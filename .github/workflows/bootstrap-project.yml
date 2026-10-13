@@ -1,13 +1,11 @@
 name: Bootstrap project (labels and milestones)
 
-# Run once from the Actions tab. Safe to re-run: existing labels are updated, existing milestones are kept.
+# Run once from the Actions tab. Safe to re-run: existing labels are updated, and existing
+# milestones get the due dates and descriptions below.
+# Due dates follow docs/plan/calendar.md (replanned 2026-10-13, ADR 0010): each milestone is due at
+# the end of its phase's gate day, 23:59:59 Asia/Saigon (16:59:59 UTC).
 on:
   workflow_dispatch:
-    inputs:
-      start_date:
-        description: "Week 1 start date (YYYY-MM-DD). Leave empty to create milestones without due dates."
-        required: false
-        default: ""
 
 permissions:
   issues: write
@@ -17,8 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v7
-        env:
-          START_DATE: ${{ inputs.start_date }}
         with:
           script: |
             const labels = [
@@ -34,7 +30,7 @@ jobs:
               { name: 'type:bug', color: 'd73a4a', description: 'Defect' },
               { name: 'type:feature', color: 'a2eeef', description: 'New capability' },
               { name: 'priority:P0', color: 'b60205', description: 'Blocks other work' },
-              { name: 'priority:P1', color: 'ff9f1c', description: 'Needed this week' },
+              { name: 'priority:P1', color: 'ff9f1c', description: 'Needed this phase' },
               { name: 'priority:P2', color: 'cfd3d7', description: 'Nice to have' },
               { name: 'status:blocked', color: '000000', description: 'Waiting on a dependency or decision' },
             ];
@@ -47,27 +43,27 @@ jobs:
               }
             }
 
+            // Phase n = milestone "Week n". Dates are the gate days in docs/plan/calendar.md.
             const weeks = {
-              1: 'Scope, data sources, contracts, environment',
-              2: 'Batch data pipeline: download, clean, store',
-              3: 'Chunking, embeddings, vector store, hybrid search',
-              4: 'RAG MVP with LLM backend and citations',
-              5: 'Agent: query rewriting, decomposition, evidence check',
-              6: 'Follow-up suggestions, full UI, optional streaming ingestion',
-              7: 'Experimental evaluation',
-              8: 'Polish, report, demo',
+              1: { gate: '2026-10-15', description: 'D01-D03: Scope, data sources, contracts, environment' },
+              2: { gate: '2026-10-19', description: 'D04-D06: Batch data pipeline: download, clean, store' },
+              3: { gate: '2026-10-22', description: 'D07-D09: Chunking, embeddings, vector store, hybrid search' },
+              4: { gate: '2026-10-26', description: 'D10-D12: RAG MVP with LLM backend and citations (v0.4-mvp)' },
+              5: { gate: '2026-10-28', description: 'D13-D14: Agent: query rewriting, evidence check, traces' },
+              6: { gate: '2026-10-30', description: 'D15-D16: Complete UI, one-command stack, feature freeze (v0.6-rc)' },
+              7: { gate: '2026-11-03', description: 'D17-D19: Experimental evaluation' },
+              8: { gate: '2026-11-06', description: 'D20-D22: Report, demo, submission (v1.0)' },
             };
             const existing = await github.paginate(github.rest.issues.listMilestones, {
               ...context.repo, state: 'all', per_page: 100,
             });
-            const start = process.env.START_DATE ? new Date(process.env.START_DATE + 'T00:00:00Z') : null;
-            const DAY = 24 * 60 * 60 * 1000;
-            for (const [n, description] of Object.entries(weeks)) {
+            for (const [n, w] of Object.entries(weeks)) {
               const title = `Week ${n}`;
-              if (existing.some((m) => m.title === title)) continue;
-              const params = { ...context.repo, title, description };
-              if (start && !Number.isNaN(start.getTime())) {
-                params.due_on = new Date(start.getTime() + (7 * Number(n) - 1) * DAY + DAY - 1000).toISOString();
+              const params = { ...context.repo, title, description: w.description, due_on: `${w.gate}T16:59:59Z` };
+              const found = existing.find((m) => m.title === title);
+              if (found) {
+                await github.rest.issues.updateMilestone({ ...params, milestone_number: found.number });
+              } else {
+                await github.rest.issues.createMilestone(params);
               }
-              await github.rest.issues.createMilestone(params);
             }

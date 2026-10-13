@@ -1,7 +1,7 @@
 # scitech-rag-agent
 An interactive web app where an AI agent answers science and technology questions using retrieval over a large-scale corpus, and suggests relevant follow-up questions.
 
-> Status: course project (8 weeks). See [docs/04-roadmap.md](docs/04-roadmap.md) for the plan and [docs/00-project-brief.md](docs/00-project-brief.md) for scope.
+> Status: course project, 2026-10-13 to 2026-11-06. See [docs/04-roadmap.md](docs/04-roadmap.md) for the plan and [docs/00-project-brief.md](docs/00-project-brief.md) for scope.
 
 ## What it does
 1. The user asks a question about a science or technology topic.
