@@ -1,13 +1,15 @@
 # Daily plan: how to use it
 
-This folder is the single source of truth for **who does what, on which day**, from 2026-10-05 to 2026-11-27.
+This folder is the single source of truth for **who does what, on which day**, from 2026-10-13 to 2026-11-06 (replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md)).
 It is written so that an AI coding agent can answer "What do I need to do today?" without extra context.
 
 | File | Content |
 |---|---|
-| [00-overview.md](00-overview.md) | Roles, phases, weekly gates, final deliverables, cut list |
-| [calendar.md](calendar.md) | Date to Day ID (D01-D40) and week file |
-| `week-01.md` ... `week-08.md` | Every working day, every member: tasks with acceptance criteria |
+| [00-overview.md](00-overview.md) | Roles, phases, gates, final deliverables, cut list (as applied) |
+| [calendar.md](calendar.md) | Date to Day ID (D01-D22), phase ("Week N") and week file anchor |
+| `week-01.md` ... `week-08.md` | One file per phase: every working day (`## Dnn`), every member: tasks with acceptance criteria |
+
+"Week N" is the name of phase N (2-3 working days). Task IDs (`Wn-Dd-CODE-k`) are the original ones; the `Dd` part no longer means the day of the week.
 
 ## Team
 
@@ -20,11 +22,11 @@ It is written so that an AI coding agent can answer "What do I need to do today?
 ## Procedure for an AI agent asked "What do I need to do today?"
 
 1. **Identify the member.** Use `git config user.name`, `git config user.email` or `gh api user --jq .login`, and map it to the Team table. If it is ambiguous, ask the user which code (DAT, FAO, LDN) they are.
-2. **Identify today.** Use the system date (do not guess). Look it up in [calendar.md](calendar.md) to get the Day ID and the heading `Wn-Dd` in the week file.
-   - Weekend or date outside the table: say there are no scheduled tasks, then go to step 4 (catch-up).
-3. **Read today's section** for that member in the week file. Each task has: ID, module, what to do, outputs, "Done when", "Depends on".
-4. **Check for unfinished work.** Look at the member's previous tasks in the current and previous week: a task is done when its outputs exist on `main` (merged PR) or its issue is closed. Also read the member's last journal entry `docs/journal/<code>/Wn.md`. List unfinished tasks first; they take priority over today's tasks, except tasks marked **[blocking]** for others.
-5. **Check dependencies.** For each "Depends on" ID, check it is done. If not, say which member owns it and propose either a stub/fake to proceed or a different task from the same week.
+2. **Identify today.** Use the system date (do not guess). Look it up in [calendar.md](calendar.md) to get the Day ID (`Dnn`) and the week file; today's section is the heading `## Dnn` in that file.
+   - Sunday or date outside the table: say there are no scheduled tasks, then go to step 4 (catch-up).
+3. **Read today's section** for that member in the week file. Each task has: ID, module, what to do, outputs, "Done when", "Depends on". Lines starting with **Replan:** override the original task text.
+4. **Check for unfinished work.** Look at the member's previous tasks in the current and previous phase: a task is done when its outputs exist on `main` (merged PR) or its issue is closed. Also read the member's last journal entry `docs/journal/<code>/Wn.md`. List unfinished tasks first; they take priority over today's tasks, except tasks marked **[blocking]** for others. Tasks listed under "Cut or merged in the replan" are not to be done.
+5. **Check dependencies.** For each "Depends on" ID, check it is done. A dependency scheduled on the same day must be finished first (respect any time noted in the task, e.g. "merge by 12:00"). If it is not done, say which member owns it and propose either a stub/fake to proceed or a different task from the same phase.
 6. **Present the plan to the user** (tasks in order, files to touch, commands to run) and wait for confirmation before changing code.
 7. **Execute** following [AGENTS.md](../../AGENTS.md): branch `feat/<task-id-lowercase>-<slug>` (e.g. `feat/w2-d1-fao-1-downloader`), only the files in scope, `make lint test` before committing, commit messages reference the task ID.
 8. **Finish the day:** open or update the PR (title starts with the task ID), and append to `docs/journal/<code>/Wn.md`: done, results (numbers, commands, commit hash), problems, next.
@@ -35,5 +37,6 @@ It is written so that an AI coding agent can answer "What do I need to do today?
 - Tasks marked **[blocking]** unblock another member: finish and merge them first, even if a stub is all that is possible today.
 - Never mark a task done without running its "Done when" checks.
 - A change to `docs/contracts/` needs an issue and DAT's approval (see AGENTS.md).
-- If you are more than one day behind, tell DAT in the week's tracking issue the same day; the cut list in [00-overview.md](00-overview.md#cut-list) decides what to drop.
-- Friday is gate day: merge open PRs, run the gate checklist of the week, close the milestone.
+- Phases are only 2-3 days long: if a [blocking] task is more than half a day late, or any task more than one day late, tell DAT in the phase's tracking issue the same day; the cut list in [00-overview.md](00-overview.md#cut-list) decides what to drop.
+- The last day of each phase is gate day (see [calendar.md](calendar.md)): merge open PRs, run the gate checklist of the phase, close the milestone.
+- Sundays are buffer days: no new tasks; use them to catch up or let long jobs run.

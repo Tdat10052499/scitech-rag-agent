@@ -1,33 +1,38 @@
-# Week 1: Foundations (2026-10-05 to 2026-10-09)
+# Week 1 (phase 1 of 8): Foundations (2026-10-13 to 2026-10-15)
+
+> Replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md). This phase has 3 working days (D01-D03).
+> Task IDs are unchanged; each task now sits under its new day heading (`## Dnn`). Lines starting with **Replan:** say what changed.
 
 Goal: everyone can build and test; scope, data sources and contracts are fixed so the three modules can be built in parallel from Week 2.
 
-Gate (Friday): ADR 0003 merged (sub-domain and sources with measured numbers); contracts frozen and validated in CI; all three members ran the quick start; `evaluation/PLAN.md` merged; ADR 0004 (frontend) and ADR 0005 (engine) merged.
+Gate (D03, Thu 2026-10-15, end of day): ADR 0003 merged (sub-domain and sources with measured numbers); contracts frozen and validated in CI; all three members ran the quick start; `evaluation/PLAN.md` merged; ADR 0004 (frontend) and ADR 0005 (engine) merged.
 
 Related briefs: `docs/tasks/W01-01` ... `W01-04`.
 
-## W1-D1
-Monday 2026-10-05 · D01
+## D01
+Tuesday 2026-10-13 · afternoon only (the plan starts today)
 
 ### DAT (@Tdat10052499)
 
 #### W1-D1-DAT-1 [blocking] Finish GitHub setup
 - Module: repo settings, `.github/`
-- Do: run `setup-github.ps1` (DryRun first), merge the CODEOWNERS PR, assign the four W01 issues (W01-01 FAO, W01-02 DAT, W01-03 LDN, W01-04 LDN), create one tracking issue "Week 1 tracking" for blockers.
-- Outputs: ruleset "Protect main" active, 15+ labels, 8 milestones, W01 issues assigned.
+- Do: run `setup-github.ps1` (DryRun first), merge the CODEOWNERS PR, run the "Bootstrap project" workflow (the updated file sets the new milestone due dates; no `start_date` needed), assign the four W01 issues (W01-01 FAO, W01-02 DAT, W01-03 LDN, W01-04 LDN), create one tracking issue "Week 1 tracking" for blockers.
+- Outputs: ruleset "Protect main" active, 15+ labels, 8 milestones with the D03/D06/D09/D12/D14/D16/D19/D22 due dates, W01 issues assigned.
 - Done when: the script's verification summary shows the expected values and a test PR cannot be merged without CI.
 - Depends on: none
 
 #### W1-D1-DAT-2 Send open questions to the instructor
 - Module: `docs/00-project-brief.md`
-- Do: email/message the instructor the open questions listed in the brief (mandatory tools, local-only LLM, report format, presentation length, licence, repo visibility, deadline).
+- Do: email/message the instructor the open questions listed in the brief (mandatory tools, local-only LLM, report format, presentation length, licence, repo visibility).
+- **Replan:** also ask for written confirmation of the submission deadline (Fri 2026-11-06, exact hour), the presentation date, and whether Kafka/Spark are mandatory (Kafka is cut in ADR 0010).
 - Outputs: questions sent; a "Pending answers" note in the brief.
 - Done when: message sent and noted in your journal with the date.
 - Depends on: none
 
 #### W1-D1-DAT-3 Kickoff meeting (30 min)
-- Do: walk through `docs/plan/`, AGENTS.md, the PR workflow; agree on the journal habit; create `docs/journal/DAT/`, `docs/journal/FAO/`, `docs/journal/LDN/` with an empty `W1.md` each.
-- Done when: journal folders merged; every member confirmed in the tracking issue that they read the plan.
+- Do: walk through `docs/plan/` (new calendar and ADR 0010), AGENTS.md, the PR workflow; agree on the journal habit; create `docs/journal/DAT/`, `docs/journal/FAO/`, `docs/journal/LDN/` with an empty `W1.md` each.
+- **Replan:** merge the replan PR (ADR 0010 + `docs/plan/` + roadmap) in this meeting; confirm everyone accepts Monday-Saturday working days with Sunday as buffer.
+- Done when: journal folders and replan merged; every member confirmed in the tracking issue that they read the plan.
 - Depends on: none
 
 ### FAO (@F4ol4n)
@@ -35,6 +40,7 @@ Monday 2026-10-05 · D01
 #### W1-D1-FAO-1 [blocking] Data source survey: access and terms
 - Module: `docs/03-data-sources.md` (brief `docs/tasks/W01-01-scope-and-data-survey.md`)
 - Do: for arXiv (metadata snapshot and API/OAI-PMH), OpenAlex and Wikipedia, record: how to download, format, fields available, terms of use/licence, rate limits, update frequency. Link the official documentation for every claim.
+- **Replan:** start with arXiv (main source); the table must be usable by D02 09:00 because W1-D2-DAT-1 and W1-D2-DAT-2 depend on it.
 - Outputs: updated table in `docs/03-data-sources.md` (draft PR).
 - Done when: every cell of the table is filled with a value and a source link, or marked "unknown" with the reason.
 - Depends on: none
@@ -48,14 +54,14 @@ Monday 2026-10-05 · D01
 - Done when: `/health` returns `{"status": "ok"}` on your machine and the steps are written so a teammate can repeat them.
 - Depends on: none
 
-## W1-D2
-Tuesday 2026-10-06 · D02
+## D02
+Wednesday 2026-10-14
 
 ### DAT (@Tdat10052499)
 
 #### W1-D2-DAT-1 Sub-domain shortlist with FAO
 - Module: `docs/00-project-brief.md`
-- Do: with FAO, shortlist 2-3 candidate sub-domains (for example a group of arXiv categories such as AI/ML/NLP) by: data volume available, relevance to users, team knowledge. Decide in a 20-minute call.
+- Do: with FAO, shortlist 2-3 candidate sub-domains (for example a group of arXiv categories such as AI/ML/NLP) by: data volume available, relevance to users, team knowledge. Decide in a 20-minute call in the morning.
 - Outputs: decision and reasons written in the brief (In scope section).
 - Done when: brief updated in a PR approved by FAO.
 - Depends on: W1-D1-FAO-1
@@ -67,6 +73,14 @@ Tuesday 2026-10-06 · D02
 - Done when: FAO and LDN commented on the review issue.
 - Depends on: W1-D1-FAO-1
 
+#### W1-D3-DAT-1 LLM serving spike
+- Module: `docs/runbooks/llm-serving.md` (new)
+- **Replan:** moved from day 3 to D02 (no dependency); start the Colab/Kaggle session first, do the reviews while it boots.
+- Do: run an OpenAI-compatible server (Ollama or vLLM) with one small open-source instruct model on Colab or Kaggle GPU; expose it to your laptop through a tunnel; call it with the `openai` Python client using `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`. Measure time to first token and tokens/second for a 200-token answer. Also try a small model locally via Ollama on CPU for comparison.
+- Outputs: runbook with exact steps and the measured numbers; note session time limits observed.
+- Done when: a teammate could reproduce the call by following the runbook.
+- Depends on: none
+
 ### FAO (@F4ol4n)
 
 #### W1-D2-FAO-1 [blocking] Sample download and size measurement
@@ -76,61 +90,9 @@ Tuesday 2026-10-06 · D02
 - Done when: estimate written with the method used; fixture or synthetic fixture committed.
 - Depends on: W1-D1-FAO-1
 
-### LDN (@Yui-Mika)
-
-#### W1-D2-LDN-1 ADR 0004: frontend framework
-- Module: `docs/decisions/0004-frontend-framework.md`
-- Do: compare Streamlit and one JavaScript option (e.g. React + Vite) on: SSE streaming support, time to build, team skills, deployment with Docker. Build a 20-line spike in the default choice that calls `/health`.
-- Outputs: ADR 0004 (status accepted after DAT review); spike code in `frontend/`.
-- Done when: ADR merged; `frontend/AGENTS.md` updated with run commands for the chosen framework.
-- Depends on: W1-D1-LDN-1
-
-## W1-D3
-Wednesday 2026-10-07 · D03
-
-### DAT (@Tdat10052499)
-
-#### W1-D3-DAT-1 LLM serving spike
-- Module: `docs/runbooks/llm-serving.md` (new)
-- Do: run an OpenAI-compatible server (Ollama or vLLM) with one small open-source instruct model on Colab or Kaggle GPU; expose it to your laptop through a tunnel; call it with the `openai` Python client using `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`. Measure time to first token and tokens/second for a 200-token answer. Also try a small model locally via Ollama on CPU for comparison.
-- Outputs: runbook with exact steps and the measured numbers; note session time limits observed.
-- Done when: a teammate could reproduce the call by following the runbook.
-- Depends on: none
-
-### FAO (@F4ol4n)
-
-#### W1-D3-FAO-1 [blocking] ADR 0003: sub-domain and data sources
-- Module: `docs/decisions/0003-data-sources.md`, `docs/03-data-sources.md`
-- Do: write the recommendation: which sources, which subset (categories, years), expected volume (records, GB), licence constraints, how "big data" scale is met (numbers), what is out of scope (e.g. full-text PDFs).
-- Outputs: ADR 0003; `docs/03-data-sources.md` status changed from "candidate" to "verified".
-- Done when: DAT approved the PR.
-- Depends on: W1-D2-FAO-1, W1-D2-DAT-1
-
-### LDN (@Yui-Mika)
-
-#### W1-D3-LDN-1 Evaluation plan draft
-- Module: `evaluation/PLAN.md` (brief `docs/tasks/W01-04-evaluation-plan.md`)
-- Do: write research questions (e.g. RQ1 does hybrid retrieval beat dense-only; RQ2 do agent steps improve faithfulness; RQ3 are follow-up suggestions useful), metric definitions with formulas (recall@k, MRR, faithfulness rate, answer relevance, suggestion usefulness rating), baselines, threats to validity.
-- Outputs: draft PR.
-- Done when: every metric has a formula or procedure and an owner.
-- Depends on: none
-
-## W1-D4
-Thursday 2026-10-08 · D04
-
-### DAT (@Tdat10052499)
-
-#### W1-D4-DAT-1 [blocking] Freeze contracts with CI checks
-- Module: `docs/contracts/`, `backend/tests/`, `backend/requirements.txt` or `requirements-dev.txt`
-- Do: apply the agreed contract changes; add a test that validates `pipelines/tests/fixtures/sample.jsonl` (converted to chunks or a hand-written example chunk) against `chunk.schema.json` using `jsonschema`; add a test that loads `api.openapi.yaml` and checks it parses and contains `/health` and `/chat`. Add "Frozen on 2026-10-08" to each contract file.
-- Outputs: contract files frozen; tests in CI.
-- Done when: CI green on the PR; FAO and LDN approved.
-- Depends on: W1-D2-DAT-2, W1-D2-FAO-1
-
-### FAO (@F4ol4n)
-
 #### W1-D4-FAO-1 Pipelines module skeleton
 - Module: `pipelines/`
+- **Replan:** moved from day 4 to D02 (no dependency) so DAT can add it to CI on D03.
 - Do: create `pipelines/requirements.txt`; a CLI entry `python -m scitech_pipelines --help` with sub-commands `download`, `clean`, `chunk`, `embed`, `load` (stubs that print "not implemented"); config from environment/arguments; a smoke test. Ask DAT to add `pipelines/requirements.txt` to CI install (shared file).
 - Outputs: skeleton merged.
 - Done when: `make test` passes including the new smoke test; CI installs the module requirements.
@@ -138,22 +100,33 @@ Thursday 2026-10-08 · D04
 
 ### LDN (@Yui-Mika)
 
-#### W1-D4-LDN-1 Golden set format and first 10 items
-- Module: `evaluation/golden_set/`
-- Do: define the item format (JSONL: `id`, `question`, `type` in {factual, explanatory, comparison, multi_hop, follow_up}, `relevant_doc_ids`, `reference_answer`, `notes`, `author`). Write 10 items in the chosen sub-domain using the sample data from FAO (questions must be answerable from the corpus).
-- Outputs: `evaluation/golden_set/FORMAT.md`, `evaluation/golden_set/golden.jsonl` (10 items).
-- Done when: each item's `relevant_doc_ids` exist in the sample; FAO checked 3 random items.
-- Depends on: W1-D2-FAO-1
+#### W1-D2-LDN-1 ADR 0004: frontend framework
+- Module: `docs/decisions/0004-frontend-framework.md`
+- Do: compare Streamlit and one JavaScript option (e.g. React + Vite) on: SSE streaming support, time to build, team skills, deployment with Docker. Build a 20-line spike in the default choice that calls `/health`.
+- **Replan:** with 22 working days in total, "time to build" weighs more than before; state that weighting in the ADR.
+- Outputs: ADR 0004 (status accepted after DAT review); spike code in `frontend/`.
+- Done when: ADR merged; `frontend/AGENTS.md` updated with run commands for the chosen framework.
+- Depends on: W1-D1-LDN-1
 
-## W1-D5
-Friday 2026-10-09 · D05 · Gate day
+#### W1-D3-LDN-1 Evaluation plan draft
+- Module: `evaluation/PLAN.md` (brief `docs/tasks/W01-04-evaluation-plan.md`)
+- Do: write research questions (e.g. RQ1 does hybrid retrieval beat dense-only; RQ2 do agent steps improve faithfulness; RQ3 are follow-up suggestions useful), metric definitions with formulas (recall@k, MRR, faithfulness rate, answer relevance, suggestion usefulness rating), baselines, threats to validity.
+- **Replan:** RQ2 is now tested with the steps that remain after ADR 0010 (query rewriting, evidence check; decomposition is cut). RQ3 relies on a user study with n >= 5 (cut-list item 5): plan descriptive statistics only.
+- Outputs: draft PR.
+- Done when: every metric has a formula or procedure and an owner.
+- Depends on: none
+
+## D03
+Thursday 2026-10-15 · Gate day
 
 ### DAT (@Tdat10052499)
 
-#### W1-D5-DAT-1 Week 1 gate and brief update
-- Do: run the gate checklist at the top of this file; merge or close every W1 PR; update `docs/00-project-brief.md` with instructor answers received so far; close milestone Week 1 if the gate is met, otherwise list what moves to Monday.
-- Done when: gate status written in the "Week 1 tracking" issue and closed.
-- Depends on: all W1 tasks
+#### W1-D4-DAT-1 [blocking] Freeze contracts with CI checks
+- Module: `docs/contracts/`, `backend/tests/`, `backend/requirements.txt` or `requirements-dev.txt`
+- Do: apply the agreed contract changes; add a test that validates `pipelines/tests/fixtures/sample.jsonl` (converted to chunks or a hand-written example chunk) against `chunk.schema.json` using `jsonschema`; add a test that loads `api.openapi.yaml` and checks it parses and contains `/health` and `/chat`. Add "Frozen on 2026-10-15" to each contract file.
+- Outputs: contract files frozen; tests in CI.
+- Done when: CI green on the PR; FAO and LDN approved.
+- Depends on: W1-D2-DAT-2, W1-D2-FAO-1
 
 #### W1-D5-DAT-2 Add CI install for module requirements
 - Module: `.github/workflows/ci.yml`, `Makefile`
@@ -161,19 +134,44 @@ Friday 2026-10-09 · D05 · Gate day
 - Done when: CI green on `main`.
 - Depends on: W1-D4-FAO-1
 
+#### W1-D5-DAT-1 Week 1 gate and brief update
+- Do (end of day): run the gate checklist at the top of this file; merge or close every W1 PR; update `docs/00-project-brief.md` with instructor answers received so far; close milestone Week 1 if the gate is met, otherwise list what moves to D04.
+- Done when: gate status written in the "Week 1 tracking" issue and closed.
+- Depends on: all W1 tasks
+
 ### FAO (@F4ol4n)
+
+#### W1-D3-FAO-1 [blocking] ADR 0003: sub-domain and data sources
+- Module: `docs/decisions/0003-data-sources.md`, `docs/03-data-sources.md`
+- Do (morning): write the recommendation: which sources, which subset (categories, years), expected volume (records, GB), licence constraints, how "big data" scale is met (numbers), what is out of scope (e.g. full-text PDFs).
+- **Replan:** choose a subset whose full embedding run fits in one night on the available GPU (W3 has 3 days); state the estimated embedding time in the ADR.
+- Outputs: ADR 0003; `docs/03-data-sources.md` status changed from "candidate" to "verified".
+- Done when: DAT approved the PR (same day).
+- Depends on: W1-D2-FAO-1, W1-D2-DAT-1
 
 #### W1-D5-FAO-1 ADR 0005: big-data processing engine
 - Module: `docs/decisions/0005-processing-engine.md`
-- Do: run the same small job (load sample, filter by category, count by year, write Parquet) with PySpark and with DuckDB or Polars on your machine; record runtime, memory, setup effort; extrapolate to the full sub-domain size; check instructor requirement on Spark.
+- Do (afternoon): run the same small job (load sample, filter by category, count by year, write Parquet) with PySpark and with DuckDB or Polars on your machine; record runtime, memory, setup effort; extrapolate to the full sub-domain size; check instructor requirement on Spark.
+- **Replan:** measure on the D02 sample only; label the extrapolation as an estimate, not a measurement.
 - Outputs: ADR 0005 with a measured comparison table.
 - Done when: DAT approved.
 - Depends on: W1-D3-FAO-1
 
 ### LDN (@Yui-Mika)
 
+#### W1-D4-LDN-1 Golden set format and first 10 items
+- Module: `evaluation/golden_set/`
+- Do: define the item format (JSONL: `id`, `question`, `type` in {factual, explanatory, comparison, multi_hop, follow_up}, `relevant_doc_ids`, `reference_answer`, `notes`, `author`). Write 10 items in the chosen sub-domain using the sample data from FAO (questions must be answerable from the corpus).
+- **Replan:** these 10 items are also the test set for ADR 0006 (W2-D4-DAT-1) on D06.
+- Outputs: `evaluation/golden_set/FORMAT.md`, `evaluation/golden_set/golden.jsonl` (10 items).
+- Done when: each item's `relevant_doc_ids` exist in the sample; FAO checked 3 random items.
+- Depends on: W1-D2-FAO-1
+
 #### W1-D5-LDN-1 Evaluation plan final + frontend skeleton
 - Module: `evaluation/PLAN.md`, `frontend/`
 - Do: finalise PLAN.md after DAT/FAO comments; create the frontend app skeleton in the chosen framework with a page that shows backend health status; add lint/run commands to `frontend/AGENTS.md`.
 - Done when: both PRs merged and CI green.
 - Depends on: W1-D3-LDN-1, W1-D2-LDN-1
+
+## Cut or merged in the replan
+None in Week 1.

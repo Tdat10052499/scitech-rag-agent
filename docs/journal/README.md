@@ -1,11 +1,11 @@
 # Journal
 
-Each member writes in their own folder to avoid merge conflicts: `docs/journal/<CODE>/Wn.md`, where CODE is DAT, FAO or LDN (see `docs/plan/README.md`).
+Each member writes in their own folder to avoid merge conflicts: `docs/journal/<CODE>/Wn.md`, where CODE is DAT, FAO or LDN (see `docs/plan/README.md`) and `Wn` is the phase ("Week N", see `docs/plan/calendar.md`).
 
-One entry per working day, newest at the bottom:
+One entry per working day, newest at the bottom; put the Day ID next to the date:
 
 ```
-## 2026-10-12 (W2-D1)
+## 2026-10-16 (D04, Week 2)
 - Tasks: W2-D1-FAO-1
 - Done: ...
 - Results: numbers, commands run, commit hash / PR link

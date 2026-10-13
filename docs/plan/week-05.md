@@ -1,13 +1,16 @@
-# Week 5: Agent v2 and incremental ingestion (2026-11-02 to 2026-11-06)
+# Week 5 (phase 5 of 8): Agent v2 (reduced) and incremental ingestion (2026-10-27 to 2026-10-28)
 
-Goal: the agent reasons in steps (rewrite, decompose, check evidence) within limits, every request is traceable, and new data flows in incrementally.
+> Replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md). This phase has 2 working days (D13, D14) and carries most of the scope cuts.
+> Task IDs are unchanged. Lines starting with **Replan:** say what changed.
 
-Gate (Friday): query rewriting, decomposition and evidence check merged behind config flags; per-request traces written; incremental ingestion adds new items without duplicates; golden set >= 60; pilot comparison agent v2 vs MVP in `evaluation/reports/agent-v2-pilot.md`.
+Goal: the agent rewrites queries and checks evidence within limits, every request is traceable, and the evaluation runner works end to end. Incremental ingestion is either working or formally cut.
 
-Contract change planned this week: optional `status` event (agent step messages) in `/chat`. Requires an issue approved by DAT before implementation.
+Gate (D14, Wed 2026-10-28, end of day): query rewriting and evidence check merged behind config flags; step and time limits enforced; per-request traces written; `Agent.run_batch` available; golden set >= 60; answer runner works on 10 questions with the real stack; incremental ingestion either adds new items without duplicates or cut-list item 6 is applied and recorded in the tracking issue.
 
-## W5-D1
-Monday 2026-11-02 · D21
+Contract change planned this week: none (the optional `status` event is cut together with the step display, cut-list item 3).
+
+## D13
+Tuesday 2026-10-27
 
 ### DAT (@Tdat10052499)
 
@@ -17,13 +20,27 @@ Monday 2026-11-02 · D21
 - Done when: unit tests with FakeLLM; manual check on the 5 follow-up golden items.
 - Depends on: W4-D2-DAT-1
 
+#### W5-D3-DAT-1 Evidence check and limits
+- Module: `agent/src/scitech_agent/`
+- Do: evidence sufficiency = score threshold plus optional LLM self-check ("is the question answerable from these chunks?"); refuse path with a helpful message and suggestions; hard limits on LLM calls per request and total time.
+- **Replan:** no `status` events (cut); the dependencies on decomposition (W5-D2-DAT-1) and the status contract (W5-D2-DAT-2) are removed.
+- Done when: tests for refuse path and limits; flags `AGENT_SELF_CHECK`, `AGENT_MAX_LLM_CALLS`, `AGENT_TIMEOUT_S` documented in `.env.example`.
+- Depends on: W4-D2-DAT-1
+
 ### FAO (@F4ol4n)
 
-#### W5-D1-FAO-1 Reranker spike (cut-list item 2)
-- Module: `agent/src/scitech_agent/retrieval/rerank.py` (DAT reviews)
-- Do: optional cross-encoder reranking of the top 20 hybrid results; measure recall@5/MRR change with LDN's harness and added latency; flag `RERANK=on|off`.
-- Done when: numbers in the PR; keep it only if gain is clear and latency acceptable (state the threshold you used).
-- Depends on: W3-D4-DAT-1
+#### W3-D4-FAO-1 ADR 0008: incremental ingestion design
+- Module: `docs/decisions/0008-incremental-ingestion.md`, `pipelines/src/scitech_pipelines/incremental.py`
+- **Replan:** moved from Week 3. Scope is scheduled batch with a watermark only; Kafka is cut (cut-list item 1) unless the instructor makes it mandatory, which would reopen ADR 0010.
+- Do (morning): design ingestion of new items since a stored watermark (date or token) through the same clean -> chunk -> embed -> load steps; decide scheduling (manual command, cron/Task Scheduler, or GitHub Actions without data). Prototype fetching the latest day of new items.
+- Done when: ADR merged; prototype fetches and cleans one day of new items.
+- Depends on: W2-D2-FAO-1
+
+#### W5-D2-FAO-1 Incremental ingestion implementation
+- Module: `pipelines/src/scitech_pipelines/incremental.py`
+- Do (afternoon, finish D14 morning): implement ADR 0008: read watermark, fetch new items, run clean -> chunk -> embed -> load for them only, update watermark only after a successful load; idempotent if re-run.
+- Done when: tests with fixture data for "new", "already present" and "failed load" cases.
+- Depends on: W3-D4-FAO-1
 
 ### LDN (@Yui-Mika)
 
@@ -33,112 +50,48 @@ Monday 2026-11-02 · D21
 - Done when: FAO's coverage script reports zero missing documents.
 - Depends on: W4-D3-FAO-1
 
-## W5-D2
-Tuesday 2026-11-03 · D22
-
-### DAT (@Tdat10052499)
-
-#### W5-D2-DAT-1 Question decomposition
-- Module: `agent/prompts/decompose.md`, `agent/src/scitech_agent/decompose.py`
-- Do: detect multi-part questions; split into at most `AGENT_MAX_SUBQUESTIONS` (default 3); retrieve per sub-question; merge and deduplicate evidence before answering; flag `AGENT_DECOMPOSE=on|off`.
-- Done when: tests; manual check on the multi-hop golden items.
-- Depends on: W5-D1-DAT-1
-
-#### W5-D2-DAT-2 Approve the `status` event contract change
-- Module: `docs/contracts/api.openapi.yaml`
-- Do: review LDN's issue; if accepted, update the contract (event `status` with JSON `{step, message}`, optional for clients) and the backend test.
-- Done when: contract PR merged.
-- Depends on: W5-D2-LDN-1
-
-### FAO (@F4ol4n)
-
-#### W5-D2-FAO-1 Incremental ingestion implementation
-- Module: `pipelines/src/scitech_pipelines/incremental.py`
-- Do: implement ADR 0008: read watermark, fetch new items, run clean -> chunk -> embed -> load for them only, update watermark only after a successful load; idempotent if re-run.
-- Done when: tests with fixture data for "new", "already present" and "failed load" cases.
-- Depends on: W3-D4-FAO-1
-
-### LDN (@Yui-Mika)
-
-#### W5-D2-LDN-1 Propose the `status` event
-- Module: GitHub issue (contract change)
-- Do: write an issue describing the optional `status` event the UI needs to show agent steps ("Rewriting question", "Searching 3 sub-questions", "Checking evidence"), with JSON example and how old clients ignore it.
-- Done when: issue opened and linked to W5-D2-DAT-2.
-- Depends on: none
-
-## W5-D3
-Wednesday 2026-11-04 · D23
-
-### DAT (@Tdat10052499)
-
-#### W5-D3-DAT-1 Evidence check and limits
-- Module: `agent/src/scitech_agent/`
-- Do: evidence sufficiency = score threshold plus optional LLM self-check ("is the question answerable from these chunks?"); refuse path with a helpful message and suggestions; hard limits on LLM calls per request and total time; emit `status` events for each step.
-- Done when: tests for refuse path and limits; flags `AGENT_SELF_CHECK`, `AGENT_MAX_LLM_CALLS`, `AGENT_TIMEOUT_S` documented in `.env.example`.
-- Depends on: W5-D2-DAT-1, W5-D2-DAT-2
-
-### FAO (@F4ol4n)
-
-#### W5-D3-FAO-1 Kafka decision follow-up (cut-list item 1)
-- Do: if the instructor requires streaming with Kafka, add a minimal producer (new items) and consumer (runs the incremental steps) with Kafka in `docker-compose.yml` via a PR reviewed by DAT; otherwise schedule the incremental command (Task Scheduler/cron) and document it.
-- Done when: the chosen mechanism runs once end to end; ADR 0008 updated with what was built.
-- Depends on: W5-D2-FAO-1
-
-### LDN (@Yui-Mika)
-
-#### W5-D3-LDN-1 Show agent steps in the UI
-- Module: `frontend/`
-- Do: display `status` events as a small progress line above the streaming answer; hide it when `done` arrives.
-- Done when: works with the backend once W5-D3-DAT-1 is merged (use a stub before that).
-- Depends on: W5-D2-DAT-2
-
-## W5-D4
-Thursday 2026-11-05 · D24
+## D14
+Wednesday 2026-10-28 · Gate day
 
 ### DAT (@Tdat10052499)
 
 #### W5-D4-DAT-1 [blocking] Per-request traces
 - Module: `agent/src/scitech_agent/trace.py`
-- Do: write one JSON line per request to `data/logs/traces.jsonl` (git-ignored): timestamp, session, original and rewritten queries, sub-questions, retrieved chunk ids with scores, evidence decision, LLM calls count, latency per step, model and config. Provide `Agent.run_batch(questions)` for evaluation without the API.
+- Do (merge by 12:00): write one JSON line per request to `data/logs/traces.jsonl` (git-ignored): timestamp, session, original and rewritten queries, retrieved chunk ids with scores, evidence decision, LLM calls count, latency per step, model and config. Provide `Agent.run_batch(questions)` for evaluation without the API.
+- **Replan:** the "sub-questions" field is dropped (decomposition is cut).
 - Done when: tests; LDN confirmed the format fits the harness.
 - Depends on: W5-D3-DAT-1
 
-### FAO (@F4ol4n)
-
-#### W5-D4-FAO-1 Incremental ingestion live test
-- Do: run incremental ingestion on the latest real new items (several days if available); verify counts increase by exactly the new items and no duplicates exist; record numbers.
-- Done when: results in `pipelines/reports/incremental_test.md`.
-- Depends on: W5-D3-FAO-1
-
-### LDN (@Yui-Mika)
-
-#### W5-D4-LDN-1 End-to-end answer evaluation runner
-- Module: `evaluation/src/scitech_eval/`
-- Do: `python -m scitech_eval answers --config <yaml>` runs `Agent.run_batch` over the golden set, stores answers, citations and traces, then applies the faithfulness procedure (LLM judge) and recall metrics on the cited documents.
-- Done when: works on 10 questions with the real stack.
-- Depends on: W5-D4-DAT-1, W4-D4-LDN-1
-
-## W5-D5
-Friday 2026-11-06 · D25 · Gate day
-
-### DAT (@Tdat10052499)
-
 #### W5-D5-DAT-1 Week 5 gate and feature list for W6
-- Do: gate checklist; decide which W6 features stay (apply the cut list); merge; close milestone.
+- Do (end of day): gate checklist; confirm the Week 6 scope from ADR 0010; decide keep/cut for incremental ingestion from FAO's live test; merge; close milestone.
 - Done when: decisions recorded in the tracking issue and in `docs/plan/00-overview.md` if scope changed.
 - Depends on: all W5 tasks
 
 ### FAO (@F4ol4n)
 
-#### W5-D5-FAO-1 Review agent retrieval changes
-- Do: review open agent PRs touching retrieval; run hybrid vs hybrid+rerank once more on 60 items if the reranker is kept.
-- Done when: reviews done; numbers in the journal.
-- Depends on: W5-D1-FAO-1, W5-D1-LDN-1
+#### W5-D4-FAO-1 Incremental ingestion live test
+- Do: run incremental ingestion on the latest real new items (one or more days if available); verify counts increase by exactly the new items and no duplicates exist; record numbers.
+- **Replan:** includes the non-Kafka branch of the merged W5-D3-FAO-1: schedule the incremental command (Task Scheduler/cron) and document it in ADR 0008. If the test does not pass by 17:00, stop and apply cut-list item 6 (keep the batch pipeline; describe the design in the report).
+- Done when: results in `pipelines/reports/incremental_test.md`, or the cut recorded with the reason.
+- Depends on: W5-D2-FAO-1
 
 ### LDN (@Yui-Mika)
 
-#### W5-D5-LDN-1 Pilot comparison: MVP vs agent v2
-- Module: `evaluation/reports/agent-v2-pilot.md`
-- Do: run the answers runner on 20 golden items with all agent flags off (MVP behaviour) and on; compare faithfulness, cited-document recall, refusal rate, latency; state that this is a pilot.
-- Done when: report merged.
-- Depends on: W5-D4-LDN-1
+#### W5-D4-LDN-1 End-to-end answer evaluation runner
+- Module: `evaluation/src/scitech_eval/`
+- Do (afternoon, after traces are merged): `python -m scitech_eval answers --config <yaml>` runs `Agent.run_batch` over the golden set, stores answers, citations and traces, then applies the faithfulness procedure (LLM judge) and recall metrics on the cited documents.
+- Done when: works on 10 questions with the real stack.
+- Depends on: W5-D4-DAT-1, W4-D4-LDN-1
+
+## Cut or merged in the replan
+
+| Task | Decision | Where it went / reason |
+|---|---|---|
+| W5-D1-FAO-1 Reranker spike | Cut | Cut-list item 2. |
+| W5-D2-DAT-1 Question decomposition | Cut | Cut-list item 4. RQ2 ablations run without the "+decompose" condition. |
+| W5-D2-DAT-2 Approve the `status` event contract change | Cut | Only needed for the step display (cut-list item 3). |
+| W5-D2-LDN-1 Propose the `status` event | Cut | Same reason. |
+| W5-D3-LDN-1 Show agent steps in the UI | Cut | Cut-list item 3 (UI extras: step/status display). |
+| W5-D3-FAO-1 Kafka decision follow-up | Merged | Kafka branch cut (item 1); the scheduling branch is part of W5-D4-FAO-1. |
+| W5-D5-FAO-1 Review agent retrieval changes / rerank re-run | Cut | No reranker to re-run; PR reviews continue through CODEOWNERS as usual. |
+| W5-D5-LDN-1 Pilot comparison: MVP vs agent v2 | Cut | The full comparison is part of the Week 7 ablations (W7-D2-DAT-1) on all 60 items; the runner is validated by W5-D4-LDN-1 on 10 questions. |

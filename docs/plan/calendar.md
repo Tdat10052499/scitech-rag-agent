@@ -1,51 +1,39 @@
 # Calendar
 
-Working days are Monday to Friday. Weekends are buffer time (catch up, no new tasks).
-Week 1 Day 1 = Monday 2026-10-05. Final day = Friday 2026-11-27.
+Replanned on 2026-10-13 ([ADR 0010](../decisions/0010-compressed-schedule.md)).
+Working days are Monday to Saturday. Sundays are buffer days (catch up, unattended long runs, no new tasks).
+Day 1 = Tuesday 2026-10-13 (afternoon only). Final day = Friday 2026-11-06 (submission). 22 working days in total.
 
-To change the start date, regenerate this table and keep the Day IDs; task IDs never change.
+"Week N" now means phase N of the plan (2-3 working days). The name is kept so task IDs (`Wn-Dd-CODE-k`), milestones, tracking issues and journal files (`docs/journal/<CODE>/Wn.md`) stay stable. The `Dd` part of a task ID is historical: it no longer equals the day of the week. Use the Day ID below to find a task's date.
 
-| Date | Weekday | Day ID | Week | Day of week | Plan file |
+To change dates again, regenerate this table, the "Gate" lines of the week files and the due dates in `.github/workflows/bootstrap-project.yml`; task IDs never change.
+
+| Date | Weekday | Day ID | Week (phase) | Milestone event | Plan file |
 |---|---|---|---|---|---|
-| 2026-10-05 | Mon | D01 | W1 | 1 | [week-01.md](week-01.md#w1-d1) |
-| 2026-10-06 | Tue | D02 | W1 | 2 | [week-01.md](week-01.md#w1-d2) |
-| 2026-10-07 | Wed | D03 | W1 | 3 | [week-01.md](week-01.md#w1-d3) |
-| 2026-10-08 | Thu | D04 | W1 | 4 | [week-01.md](week-01.md#w1-d4) |
-| 2026-10-09 | Fri | D05 | W1 | 5 | [week-01.md](week-01.md#w1-d5) |
-| 2026-10-12 | Mon | D06 | W2 | 1 | [week-02.md](week-02.md#w2-d1) |
-| 2026-10-13 | Tue | D07 | W2 | 2 | [week-02.md](week-02.md#w2-d2) |
-| 2026-10-14 | Wed | D08 | W2 | 3 | [week-02.md](week-02.md#w2-d3) |
-| 2026-10-15 | Thu | D09 | W2 | 4 | [week-02.md](week-02.md#w2-d4) |
-| 2026-10-16 | Fri | D10 | W2 | 5 | [week-02.md](week-02.md#w2-d5) |
-| 2026-10-19 | Mon | D11 | W3 | 1 | [week-03.md](week-03.md#w3-d1) |
-| 2026-10-20 | Tue | D12 | W3 | 2 | [week-03.md](week-03.md#w3-d2) |
-| 2026-10-21 | Wed | D13 | W3 | 3 | [week-03.md](week-03.md#w3-d3) |
-| 2026-10-22 | Thu | D14 | W3 | 4 | [week-03.md](week-03.md#w3-d4) |
-| 2026-10-23 | Fri | D15 | W3 | 5 | [week-03.md](week-03.md#w3-d5) |
-| 2026-10-26 | Mon | D16 | W4 | 1 | [week-04.md](week-04.md#w4-d1) |
-| 2026-10-27 | Tue | D17 | W4 | 2 | [week-04.md](week-04.md#w4-d2) |
-| 2026-10-28 | Wed | D18 | W4 | 3 | [week-04.md](week-04.md#w4-d3) |
-| 2026-10-29 | Thu | D19 | W4 | 4 | [week-04.md](week-04.md#w4-d4) |
-| 2026-10-30 | Fri | D20 | W4 | 5 | [week-04.md](week-04.md#w4-d5) |
-| 2026-11-02 | Mon | D21 | W5 | 1 | [week-05.md](week-05.md#w5-d1) |
-| 2026-11-03 | Tue | D22 | W5 | 2 | [week-05.md](week-05.md#w5-d2) |
-| 2026-11-04 | Wed | D23 | W5 | 3 | [week-05.md](week-05.md#w5-d3) |
-| 2026-11-05 | Thu | D24 | W5 | 4 | [week-05.md](week-05.md#w5-d4) |
-| 2026-11-06 | Fri | D25 | W5 | 5 | [week-05.md](week-05.md#w5-d5) |
-| 2026-11-09 | Mon | D26 | W6 | 1 | [week-06.md](week-06.md#w6-d1) |
-| 2026-11-10 | Tue | D27 | W6 | 2 | [week-06.md](week-06.md#w6-d2) |
-| 2026-11-11 | Wed | D28 | W6 | 3 | [week-06.md](week-06.md#w6-d3) |
-| 2026-11-12 | Thu | D29 | W6 | 4 | [week-06.md](week-06.md#w6-d4) |
-| 2026-11-13 | Fri | D30 | W6 | 5 | [week-06.md](week-06.md#w6-d5) |
-| 2026-11-16 | Mon | D31 | W7 | 1 | [week-07.md](week-07.md#w7-d1) |
-| 2026-11-17 | Tue | D32 | W7 | 2 | [week-07.md](week-07.md#w7-d2) |
-| 2026-11-18 | Wed | D33 | W7 | 3 | [week-07.md](week-07.md#w7-d3) |
-| 2026-11-19 | Thu | D34 | W7 | 4 | [week-07.md](week-07.md#w7-d4) |
-| 2026-11-20 | Fri | D35 | W7 | 5 | [week-07.md](week-07.md#w7-d5) |
-| 2026-11-23 | Mon | D36 | W8 | 1 | [week-08.md](week-08.md#w8-d1) |
-| 2026-11-24 | Tue | D37 | W8 | 2 | [week-08.md](week-08.md#w8-d2) |
-| 2026-11-25 | Wed | D38 | W8 | 3 | [week-08.md](week-08.md#w8-d3) |
-| 2026-11-26 | Thu | D39 | W8 | 4 | [week-08.md](week-08.md#w8-d4) |
-| 2026-11-27 | Fri | D40 | W8 | 5 | [week-08.md](week-08.md#w8-d5) |
+| 2026-10-13 | Tue | D01 | W1 | Plan starts (afternoon) | [week-01.md](week-01.md#d01) |
+| 2026-10-14 | Wed | D02 | W1 | | [week-01.md](week-01.md#d02) |
+| 2026-10-15 | Thu | D03 | W1 | Gate W1, contracts frozen | [week-01.md](week-01.md#d03) |
+| 2026-10-16 | Fri | D04 | W2 | | [week-02.md](week-02.md#d04) |
+| 2026-10-17 | Sat | D05 | W2 | | [week-02.md](week-02.md#d05) |
+| 2026-10-18 | Sun | buffer | - | | - |
+| 2026-10-19 | Mon | D06 | W2 | Gate W2 | [week-02.md](week-02.md#d06) |
+| 2026-10-20 | Tue | D07 | W3 | | [week-03.md](week-03.md#d07) |
+| 2026-10-21 | Wed | D08 | W3 | Full embedding run overnight | [week-03.md](week-03.md#d08) |
+| 2026-10-22 | Thu | D09 | W3 | Gate W3 | [week-03.md](week-03.md#d09) |
+| 2026-10-23 | Fri | D10 | W4 | | [week-04.md](week-04.md#d10) |
+| 2026-10-24 | Sat | D11 | W4 | | [week-04.md](week-04.md#d11) |
+| 2026-10-25 | Sun | buffer | - | | - |
+| 2026-10-26 | Mon | D12 | W4 | Gate W4, tag `v0.4-mvp` | [week-04.md](week-04.md#d12) |
+| 2026-10-27 | Tue | D13 | W5 | | [week-05.md](week-05.md#d13) |
+| 2026-10-28 | Wed | D14 | W5 | Gate W5 | [week-05.md](week-05.md#d14) |
+| 2026-10-29 | Thu | D15 | W6 | | [week-06.md](week-06.md#d15) |
+| 2026-10-30 | Fri | D16 | W6 | Gate W6, feature freeze, tag `v0.6-rc` | [week-06.md](week-06.md#d16) |
+| 2026-10-31 | Sat | D17 | W7 | | [week-07.md](week-07.md#d17) |
+| 2026-11-01 | Sun | buffer | - | | - |
+| 2026-11-02 | Mon | D18 | W7 | User study part 1 | [week-07.md](week-07.md#d18) |
+| 2026-11-03 | Tue | D19 | W7 | User study part 2, Gate W7 | [week-07.md](week-07.md#d19) |
+| 2026-11-04 | Wed | D20 | W8 | | [week-08.md](week-08.md#d20) |
+| 2026-11-05 | Thu | D21 | W8 | | [week-08.md](week-08.md#d21) |
+| 2026-11-06 | Fri | D22 | W8 | Final gate, tag `v1.0`, submission | [week-08.md](week-08.md#d22) |
 
-Dates not in this table (weekends, before 2026-10-05, after 2026-11-27) have no scheduled tasks.
+Dates not in this table with a Day ID (Sundays, before 2026-10-13, after 2026-11-06) have no scheduled tasks.
