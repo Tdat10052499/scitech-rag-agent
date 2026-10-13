@@ -1,8 +1,8 @@
 # 0010. Compressed schedule: 2026-10-13 to 2026-11-06
 
-- Status: proposed (accept in the kickoff meeting, W1-D1-DAT-3)
+- Status: accepted (kickoff, W1-D1-DAT-3, 2026-10-13)
 - Date: 2026-10-13
-- Deciders: DAT (maintainer), FAO, LDN
+- Deciders: DAT (maintainer), FAO, LDN (confirmations in issue #10)
 
 ## Context
 The plan in `docs/plan/` was written for 2026-10-05 to 2026-11-27: 8 weeks of 5 working days (40 days, 126 tasks, about 1.05 tasks per member-day).
