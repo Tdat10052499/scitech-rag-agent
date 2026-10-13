@@ -18,7 +18,8 @@ Tuesday 2026-10-13 · afternoon only (the plan starts today)
 - Module: repo settings, `.github/`
 - Do: run `setup-github.ps1` (DryRun first), merge the CODEOWNERS PR, run the "Bootstrap project" workflow (the updated file sets the new milestone due dates; no `start_date` needed), assign the four W01 issues (W01-01 FAO, W01-02 DAT, W01-03 LDN, W01-04 LDN), create one tracking issue "Week 1 tracking" for blockers.
 - Outputs: ruleset "Protect main" active, 15+ labels, 8 milestones with the D03/D06/D09/D12/D14/D16/D19/D22 due dates, W01 issues assigned.
-- Done when: the script's verification summary shows the expected values and a test PR cannot be merged without CI.
+- **Replan (2026-10-13):** `setup-github.ps1` is not in the repository, so the setup was done by hand. By team decision the ruleset requires a PR but neither approvals nor passing CI; merging on a green check is a team convention (`CONTRIBUTING.md`). Squash is the only merge method.
+- Done when: labels, milestones, ruleset and issues exist as listed in Outputs, and a change to `main` is only possible through a PR.
 - Depends on: none
 
 #### W1-D1-DAT-2 Record project decisions (formerly: send open questions to the instructor)
