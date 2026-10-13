@@ -21,12 +21,12 @@ Tuesday 2026-10-13 · afternoon only (the plan starts today)
 - Done when: the script's verification summary shows the expected values and a test PR cannot be merged without CI.
 - Depends on: none
 
-#### W1-D1-DAT-2 Send open questions to the instructor
-- Module: `docs/00-project-brief.md`
-- Do: email/message the instructor the open questions listed in the brief (mandatory tools, local-only LLM, report format, presentation length, licence, repo visibility).
-- **Replan:** also ask for written confirmation of the submission deadline (Fri 2026-11-06, exact hour), the presentation date, and whether Kafka/Spark are mandatory (Kafka is cut in ADR 0010).
-- Outputs: questions sent; a "Pending answers" note in the brief.
-- Done when: message sent and noted in your journal with the date.
+#### W1-D1-DAT-2 Record project decisions (formerly: send open questions to the instructor)
+- Module: `docs/00-project-brief.md`, `LICENSE`, `README.md`, `docs/plan/`
+- **Replan:** the instructor does not answer design questions; the team decides and presents the final product on 2026-11-10. So instead of sending questions, record the team's decisions.
+- Do: write the decisions on the former open questions in the brief (big-data tool, Kafka, local LLM, GPU, repository visibility and licence, report format, presentation, deadlines); add `LICENSE`; add the presentation days (D23-D25) to the plan.
+- Outputs: "Decisions on former open questions" table in the brief; `LICENSE` (MIT); calendar and Week 8 updated.
+- Done when: PR merged and noted in your journal with the date.
 - Depends on: none
 
 #### W1-D1-DAT-3 Kickoff meeting (30 min)
@@ -138,7 +138,7 @@ Thursday 2026-10-15 · Gate day
 - Depends on: W1-D4-FAO-1
 
 #### W1-D5-DAT-1 Week 1 gate and brief update
-- Do (end of day): run the gate checklist at the top of this file; merge or close every W1 PR; update `docs/00-project-brief.md` with instructor answers received so far; close milestone Week 1 if the gate is met, otherwise list what moves to D04.
+- Do (end of day): run the gate checklist at the top of this file; merge or close every W1 PR; check the brief's decisions table is still accurate; close milestone Week 1 if the gate is met, otherwise list what moves to D04.
 - Done when: gate status written in the "Week 1 tracking" issue and closed.
 - Depends on: all W1 tasks
 
@@ -154,8 +154,8 @@ Thursday 2026-10-15 · Gate day
 
 #### W1-D5-FAO-1 ADR 0005: big-data processing engine
 - Module: `docs/decisions/0005-processing-engine.md`
-- Do (afternoon): run the same small job (load sample, filter by category, count by year, write Parquet) with PySpark and with DuckDB or Polars on your machine; record runtime, memory, setup effort; extrapolate to the full sub-domain size; check instructor requirement on Spark.
-- **Replan:** measure on the D02 sample only; label the extrapolation as an estimate, not a measurement.
+- Do (afternoon): run the same small job (load sample, filter by category, count by year, write Parquet) with PySpark and with DuckDB or Polars on your machine; record runtime, memory, setup effort; extrapolate to the full sub-domain size and to the whole Kaggle snapshot (~5.6 GB).
+- **Replan:** measure on the D02 sample only; label the extrapolation as an estimate, not a measurement. There is no instructor requirement: the brief prefers PySpark in local mode for the processing tier if this measurement shows it is workable (on Windows, use WSL2 or Colab); state whether it does.
 - Outputs: ADR 0005 with a measured comparison table.
 - Done when: DAT approved.
 - Depends on: W1-D3-FAO-1

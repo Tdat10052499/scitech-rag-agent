@@ -96,7 +96,7 @@ Tuesday 2026-11-03 · Gate day
 - Depends on: W7-D2-LDN-1
 
 #### W7-D5-DAT-1 Evaluation gate and report outline
-- Do: check every run in `RUNS.md` has results; review `final.md`; create `docs/report/00-outline.md` with chapters, owners and page budget according to the instructor's format.
+- Do: check every run in `RUNS.md` has results; review `final.md`; create `docs/report/00-outline.md` with chapters, owners and page budget (Markdown chapters exported to PDF, see the brief).
 - Done when: gate status recorded; outline merged.
 - Depends on: W7-D4-LDN-1, W7-D4-DAT-1
 

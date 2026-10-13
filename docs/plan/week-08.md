@@ -1,13 +1,15 @@
-# Week 8 (phase 8 of 8): Delivery (2026-11-04 to 2026-11-06)
+# Week 8 (phase 8 of 8): Delivery and presentation (2026-11-04 to 2026-11-10)
 
-> Replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md). This phase has 3 working days (D20-D22). D22 is the submission day.
+> Replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md). D20-D22 finish the product (D22 is the internal deadline); D23-D25 prepare and give the presentation on Tuesday 2026-11-10. Sunday 2026-11-08 is a buffer day.
 > Task IDs are unchanged. Lines starting with **Replan:** say what changed.
 
-Goal: the final report, presentation and a reproducible `v1.0` are delivered.
+Goal: the final report, presentation and a reproducible `v1.0` are delivered, and the product is presented on 2026-11-10.
 
-Gate (D22, Fri 2026-11-06, final): report complete in `docs/report/` (and exported in the instructor's format); slides and demo video ready; a clean clone reproduces the app from the README; tag `v1.0`; submission done at least 3 hours before the instructor's deadline hour.
+Gate (D22, Fri 2026-11-06, internal deadline): report complete in `docs/report/` and exported to PDF; demo video ready; a clean clone reproduces the app from the README; tag `v1.0`.
 
-Rule this phase: code changes only for P0 bugs found in the reproduction check, through PRs as usual.
+Presentation (D25, Tue 2026-11-10): slides final, dry run done on D24, live demo with the recorded video as fallback.
+
+Rule this phase: code changes only for P0 bugs found in the reproduction check, through PRs as usual. After `v1.0` (D22) the code is frozen: the presentation shows `v1.0`.
 
 ## D20
 Wednesday 2026-11-04
@@ -85,36 +87,58 @@ Thursday 2026-11-05
 - Depends on: W8-D1-LDN-1, W7-D2-FAO-1
 
 #### W8-D4-LDN-1 Report assembly and export
-- Do (afternoon): assemble chapters in order, add references and appendix (golden-set description, prompts, configs), export to the instructor's required format.
+- Do (afternoon): assemble chapters in order, add references and appendix (golden-set description, prompts, configs), export to PDF (decided in the brief).
 - Done when: exported file reviewed by DAT (D22 morning at the latest).
 - Depends on: W8-D2-FAO-1, W8-D2-LDN-1, W8-D1-DAT-1
 
 ## D22
-Friday 2026-11-06 · Final gate and submission
+Friday 2026-11-06 · Final gate (internal deadline)
+
+### DAT (@Tdat10052499)
+
+#### W8-D5-DAT-1 Release v1.0
+- **Replan:** the presentation is on 2026-11-10 and the instructor only asks for the final product there, so this task releases `v1.0` and freezes the report; the dry run (W8-D4-DAT-1) moves to D24. The final report review moves here from W8-D4-DAT-1.
+- Do (morning): final review pass of the exported report for consistency (terms from `docs/02-glossary.md`, numbers matching `final.md`); assign and merge fixes.
+- Do (afternoon): merge last PRs; tag `v1.0` with release notes (features, how to run, known limitations, features cut by ADR 0010); put report PDF, video link and repo link in the release.
+- Done when: release published with the report PDF attached.
+- Depends on: W8-D3-DAT-1, W8-D4-LDN-1
+
+## D23
+Saturday 2026-11-07 · Presentation preparation
+
+### All members
+
+- (no new task ID) Finish your slides in the shared deck (sections assigned in W8-D3-LDN-1); rehearsal 1 together (timing per section, target about 15 minutes); list fixes. Check the live demo on the `v1.0` stack and the fallback LLM endpoint.
+
+## D24
+Monday 2026-11-09 · Dry run
 
 ### DAT (@Tdat10052499)
 
 #### W8-D4-DAT-1 Dry run and final review
-- Do (morning): full presentation dry run with timing; collect fixes; final review pass of the whole report for consistency (terms from `docs/02-glossary.md`, numbers matching `final.md`).
-- Done when: fix list assigned and done before the release.
+- **Replan:** moved from D22 to the day before the presentation; the report review is now part of W8-D5-DAT-1 (D22).
+- Do: full presentation dry run with timing; collect fixes; check slides against the report (terms from `docs/02-glossary.md`, numbers matching `final.md`); start the LLM session and run the demo questions once.
+- Done when: fix list assigned and done by the end of the day.
 - Depends on: W8-D3-DAT-1, W8-D3-FAO-1, W8-D3-LDN-1
 
-#### W8-D5-DAT-1 Release v1.0 and submission
-- Do (afternoon): merge last PRs; tag `v1.0` with release notes (features, how to run, known limitations, features cut by ADR 0010); submit report, slides, video and repo link as the instructor requires, at least 3 hours before the deadline hour.
-- Done when: submission confirmed; release published.
-- Depends on: W8-D4-DAT-1, W8-D4-LDN-1
+## D25
+Tuesday 2026-11-10 · Product presentation
+
+### All members
+
+- (no new task ID) Before the session: start the stack (`make up`), the LLM endpoint and the fallback; open the recorded demo video. Present the product and answer questions.
 
 ### FAO (@F4ol4n)
 
 #### W8-D5-FAO-1 Final journal and retrospective input
-- Do (after submission): complete your journal; write 5 lines of retrospective (what worked, what to change), including how the compressed schedule worked.
+- Do (after the presentation): complete your journal; write 5 lines of retrospective (what worked, what to change), including how the compressed schedule worked.
 - Done when: merged.
 - Depends on: none
 
 ### LDN (@Yui-Mika)
 
 #### W8-D5-LDN-1 Final journal and retrospective input
-- Do (after submission): complete your journal; write 5 lines of retrospective; archive user-study raw data according to the consent you gave participants.
+- Do (after the presentation): complete your journal; write 5 lines of retrospective; archive user-study raw data according to the consent you gave participants.
 - Done when: merged.
 - Depends on: none
 

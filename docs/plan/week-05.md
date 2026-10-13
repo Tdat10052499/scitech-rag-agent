@@ -31,7 +31,7 @@ Tuesday 2026-10-27
 
 #### W3-D4-FAO-1 ADR 0008: incremental ingestion design
 - Module: `docs/decisions/0008-incremental-ingestion.md`, `pipelines/src/scitech_pipelines/incremental.py`
-- **Replan:** moved from Week 3. Scope is scheduled batch with a watermark only; Kafka is cut (cut-list item 1) unless the instructor makes it mandatory, which would reopen ADR 0010.
+- **Replan:** moved from Week 3. Scope is scheduled batch with a watermark only; Kafka is cut (cut-list item 1; there is no instructor requirement, see the brief).
 - Do (morning): design ingestion of new items since a stored watermark (date or token) through the same clean -> chunk -> embed -> load steps; decide scheduling (manual command, cron/Task Scheduler, or GitHub Actions without data). Prototype fetching the latest day of new items.
 - Done when: ADR merged; prototype fetches and cleans one day of new items.
 - Depends on: W2-D2-FAO-1

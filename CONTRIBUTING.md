@@ -5,11 +5,12 @@
 2. `git pull`, create a branch from `main`: `feat/<task-id>-<slug>` (e.g. `feat/w2-d1-fao-1-downloader`), `fix/...` or `docs/...`.
 3. Implement within the scope declared in the brief. Run `make lint test`.
 4. Open a Pull Request using the template; link the issue with `Closes #<n>`.
-5. Another member reviews (CODEOWNERS requests the reviewer). CI must pass. Squash-merge into `main`.
+5. CI must pass. Ask another member to review (CODEOWNERS requests the reviewer); see the review rule below. Squash-merge into `main`.
 6. Append to your journal: `docs/journal/<CODE>/Wn.md` (CODE = DAT, FAO or LDN).
 
 ## Rules
-- `main` is protected: no direct pushes, at least one approving review, CI green.
+- `main` is protected by the ruleset "Protect main": no direct pushes or force pushes, every change through a PR, CI (`lint-test`) green, squash merge only.
+- Review rule: approvals are not enforced by GitHub, so the author may merge once CI is green. A review by another member is still expected before merging PRs of **[blocking]** tasks, contract changes (`docs/contracts/`) and changes to evaluation runs or results; for other PRs it is optional.
 - Keep PRs small (one task, ideally under ~400 changed lines) and merge often to avoid conflicts.
 - Commit messages use Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
 - Changes to `docs/contracts/` need an issue and approval from the maintainer, because several modules depend on them.

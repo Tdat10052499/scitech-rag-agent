@@ -1,8 +1,8 @@
 # Plan overview
 
-> Replanned on 2026-10-13: the project runs from Tuesday 2026-10-13 to Friday 2026-11-06 (22 working days, Monday to Saturday, Sundays as buffer). Reasons and scope cuts: [ADR 0010](../decisions/0010-compressed-schedule.md).
+> Replanned on 2026-10-13: the project runs from Tuesday 2026-10-13 to Friday 2026-11-06 (22 working days, Monday to Saturday, Sundays as buffer; internal deadline, `v1.0`), followed by presentation preparation (D23-D24) and the product presentation on **Tuesday 2026-11-10 (D25)**. Reasons and scope cuts: [ADR 0010](../decisions/0010-compressed-schedule.md).
 
-## Final deliverables (due Friday 2026-11-06, D22)
+## Final deliverables (frozen Friday 2026-11-06, D22; presented Tuesday 2026-11-10, D25)
 
 1. **Working web app**: user asks a science/technology question, gets a streamed answer with numbered citations to retrieved sources, an explicit "insufficient evidence" answer when retrieval is weak, up to 4 clickable follow-up questions, and rating buttons.
 2. **Reproducible big-data pipeline**: open dataset to cleaned Parquet to chunks to embeddings to vector + keyword index; incremental ingestion of new items if kept at the Week 5 gate (otherwise its design is described in the report).
@@ -18,7 +18,7 @@
 | FAO | @F4ol4n | Data pipeline end to end, big-data processing, index, incremental ingestion, retrieval quality | agent, evaluation |
 | LDN | @Yui-Mika | Frontend, evaluation harness, golden set, user study | backend, evaluation |
 
-Review rule: every PR gets one approval from a member other than its author (CODEOWNERS requests reviewers). With gates every 2-3 days, review open PRs within half a working day.
+Review rule: approvals are not enforced by GitHub; the author may merge once CI is green. PRs of [blocking] tasks, contract changes and evaluation runs are reviewed by another member before merging (see `CONTRIBUTING.md`). With gates every 2-3 days, review requested PRs within half a working day.
 
 ## Phases and gates
 
@@ -33,11 +33,11 @@ Review rule: every PR gets one approval from a member other than its author (COD
 | W5 | 10-27 to 10-28 | D13-D14 | Agent v2 (reduced) | Query rewriting, evidence check, step limits, per-request traces, `Agent.run_batch`; golden set >= 60; answer runner works; incremental ingestion kept or cut (decision recorded) |
 | W6 | 10-29 to 10-30 | D15-D16 | Complete product | Rating buttons + `POST /feedback`, UI states, one-command stack (`make up`), runbooks, study protocol and participants confirmed; feature freeze; tag `v0.6-rc`; `SNAPSHOT.md`, `RUNS.md` |
 | W7 | 10-31 to 11-03 | D17-D19 | Evaluation | All experiments run on the frozen system; user study done; `evaluation/reports/final.md` draft (merged by D20 10:00 at the latest) |
-| W8 | 11-04 to 11-06 | D20-D22 | Delivery | Report, slides, demo video, clean-clone reproduction check; tag `v1.0`; submission |
+| W8 | 11-04 to 11-10 | D20-D25 | Delivery and presentation | D22: report, demo video, clean-clone reproduction check, tag `v1.0`. D23-D24: slides, rehearsal, dry run. D25: product presentation |
 
 ## Critical path
 
-`W1 sources + contracts (D03)` -> `W2 clean data (D06)` -> `W3 index + retrieval (D09)` -> `W4 RAG MVP (D12)` -> `W5 agent v2 + traces (D14)` -> `W6 freeze (D16)` -> `W7 evaluation (D19)` -> `W8 report + submission (D22)`.
+`W1 sources + contracts (D03)` -> `W2 clean data (D06)` -> `W3 index + retrieval (D09)` -> `W4 RAG MVP (D12)` -> `W5 agent v2 + traces (D14)` -> `W6 freeze (D16)` -> `W7 evaluation (D19)` -> `W8 report + v1.0 (D22)` -> `presentation (D25, 2026-11-10)`.
 Anything off this path must never delay it. The tightest link is W3: chunker (D07) -> overnight embedding (D08) -> load (D09 morning).
 
 ## Fixed technical defaults
@@ -50,8 +50,8 @@ These are defaults so tasks can be concrete. They change only through an ADR in 
 - LLM: open-source model served with an OpenAI-compatible server (Ollama or vLLM) on an external GPU (Colab/Kaggle/university), hosted API as fallback (ADR 0001). Model chosen by measurement in ADR 0006.
 - Embedding model: chosen in ADR 0007; must handle the query language users will type (check Vietnamese if users ask in Vietnamese).
 - Frontend: Streamlit unless ADR 0004 decides otherwise.
-- Big-data engine: PySpark or DuckDB/Polars, chosen in ADR 0005 with measured numbers.
-- Incremental ingestion: scheduled batch with a watermark; no Kafka (ADR 0010) unless the instructor requires it.
+- Big-data engine: PySpark in local mode preferred for the processing tier (brief), confirmed or rejected against DuckDB/Polars in ADR 0005 with measured numbers.
+- Incremental ingestion: scheduled batch with a watermark; no Kafka (ADR 0010; decision recorded in the brief).
 
 ## Planned ADRs (owner, due)
 
@@ -85,9 +85,9 @@ If the schedule slips further, the next items to drop, in this order: demo video
 
 - Each phase start (D01, D04, D07, D10, D13, D15, D17, D20): 10 minutes: read the phase file, confirm tasks, raise blockers.
 - Daily: journal entry; push work in progress at least once a day (draft PR is fine).
-- Gate days (D03, D06, D09, D12, D14, D16, D19, D22): gate checklist, merge, short demo to each other (10 minutes), close milestone, retro notes in `docs/journal/`.
+- Gate days (D03, D06, D09, D12, D14, D16, D19, D22; presentation D25): gate checklist, merge, short demo to each other (10 minutes), close milestone, retro notes in `docs/journal/`.
 - Sundays: buffer only (catch up, unattended long runs).
 
-## Open questions to settle in W1 (owner DAT)
+## Former open questions
 
-Instructor requirements (mandatory tools such as Spark/Kafka, fully local LLM or not, report format, presentation length, licence and repo visibility), confirmation of the 2026-11-06 deadline (and the hour) and of the presentation date, GPU access, exact sub-domain. Answers go into `docs/00-project-brief.md`; if they change a default above, write an ADR and update this file.
+Settled by the team on 2026-10-13 (the instructor does not answer design questions): see "Decisions on former open questions" in `docs/00-project-brief.md`. Still open: corpus size and first year included (ADR 0003, D03). If a later decision changes a default above, write an ADR and update this file.

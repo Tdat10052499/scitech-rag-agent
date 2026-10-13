@@ -1,12 +1,12 @@
 # Daily plan: how to use it
 
-This folder is the single source of truth for **who does what, on which day**, from 2026-10-13 to 2026-11-06 (replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md)).
+This folder is the single source of truth for **who does what, on which day**, from 2026-10-13 to the presentation on 2026-11-10 (replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md)).
 It is written so that an AI coding agent can answer "What do I need to do today?" without extra context.
 
 | File | Content |
 |---|---|
 | [00-overview.md](00-overview.md) | Roles, phases, gates, final deliverables, cut list (as applied) |
-| [calendar.md](calendar.md) | Date to Day ID (D01-D22), phase ("Week N") and week file anchor |
+| [calendar.md](calendar.md) | Date to Day ID (D01-D25), phase ("Week N") and week file anchor |
 | `week-01.md` ... `week-08.md` | One file per phase: every working day (`## Dnn`), every member: tasks with acceptance criteria |
 
 "Week N" is the name of phase N (2-3 working days). Task IDs (`Wn-Dd-CODE-k`) are the original ones; the `Dd` part no longer means the day of the week.
