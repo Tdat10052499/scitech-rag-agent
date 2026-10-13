@@ -15,9 +15,9 @@ It is written so that an AI coding agent can answer "What do I need to do today?
 
 | Code | GitHub | Name | Owns |
 |---|---|---|---|
-| DAT | @Tdat10052499 | Dat (maintainer) | `agent/`, `backend/`, `docs/contracts/`, shared files (`Makefile`, `docker-compose.yml`, `.github/`), LLM serving, integration |
-| FAO | @F4ol4n | Faolan | `pipelines/` (ingestion, cleaning, big-data processing, chunking, embeddings, indexing, incremental ingestion); retrieval quality inside `agent/retrieval/` together with DAT |
-| LDN | @Yui-Mika | Duong Ngoc Linh Dan | `frontend/`, `evaluation/` (golden set, metrics, user study) |
+| DAT | @Tdat10052499 | Hồ Du Tuấn Đạt (maintainer) | `agent/`, `backend/`, `docs/contracts/`, shared files (`Makefile`, `docker-compose.yml`, `.github/`), LLM serving, integration |
+| FAO | @F4ol4n | Nguyễn Minh Chính | `pipelines/` (ingestion, cleaning, big-data processing, chunking, embeddings, indexing, incremental ingestion); retrieval quality inside `agent/retrieval/` together with DAT |
+| LDN | @Yui-Mika | Dương Ngọc Linh Đan | `frontend/`, `evaluation/` (golden set, metrics, user study) |
 
 ## Procedure for an AI agent asked "What do I need to do today?"
 

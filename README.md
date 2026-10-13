@@ -54,8 +54,8 @@ Start with [AGENTS.md](AGENTS.md) (also the entry point for AI coding agents) an
 | Member | GitHub | Owns |
 |---|---|---|
 | Hồ Du Tuấn Đạt (maintainer) | [@Tdat10052499](https://github.com/Tdat10052499) | Agent, backend, contracts, LLM serving, integration |
-| Faolan | [@F4ol4n](https://github.com/F4ol4n) | Data pipeline, big-data processing, index, retrieval quality |
-| Duong Ngoc Linh Dan | [@Yui-Mika](https://github.com/Yui-Mika) | Frontend, evaluation, golden set, user study |
+| Nguyễn Minh Chính | [@F4ol4n](https://github.com/F4ol4n) | Data pipeline, big-data processing, index, retrieval quality |
+| Dương Ngọc Linh Đan | [@Yui-Mika](https://github.com/Yui-Mika) | Frontend, evaluation, golden set, user study |
 
 ## License
 Code: [MIT](LICENSE). Data keeps its source licence: arXiv metadata (titles, abstracts) is CC0 1.0; Wikipedia text is CC BY-SA 4.0 and is shown with attribution. Details: [docs/03-data-sources.md](docs/03-data-sources.md).
