@@ -41,6 +41,7 @@ Tuesday 2026-10-13 · afternoon only (the plan starts today)
 - Module: `docs/03-data-sources.md` (brief `docs/tasks/W01-01-scope-and-data-survey.md`)
 - Do: for arXiv (metadata snapshot and API/OAI-PMH), OpenAlex and Wikipedia, record: how to download, format, fields available, terms of use/licence, rate limits, update frequency. Link the official documentation for every claim.
 - **Replan:** start with arXiv (main source); the table must be usable by D02 09:00 because W1-D2-DAT-1 and W1-D2-DAT-2 depend on it.
+- **Replan (sub-domain chosen 2026-10-13: LLM/NLP, see the brief):** for arXiv, focus on how to obtain `cs.CL` (including cross-lists from `cs.LG`/`cs.AI`); for Wikipedia, on how to select NLP/LLM articles.
 - Outputs: updated table in `docs/03-data-sources.md` (draft PR).
 - Done when: every cell of the table is filled with a value and a source link, or marked "unknown" with the reason.
 - Depends on: none
@@ -62,9 +63,10 @@ Wednesday 2026-10-14
 #### W1-D2-DAT-1 Sub-domain shortlist with FAO
 - Module: `docs/00-project-brief.md`
 - Do: with FAO, shortlist 2-3 candidate sub-domains (for example a group of arXiv categories such as AI/ML/NLP) by: data volume available, relevance to users, team knowledge. Decide in a 20-minute call in the morning.
+- **Replan:** done early on D01 (2026-10-13): the team chose LLM/NLP (arXiv `cs.CL` + cross-lists, Wikipedia background) over Software, IoT and RL + UAV. No call needed; the decision and reasons are in the brief. The dependency on W1-D1-FAO-1 no longer applies; the volume check moves to W1-D2-FAO-1 and ADR 0003.
 - Outputs: decision and reasons written in the brief (In scope section).
 - Done when: brief updated in a PR approved by FAO.
-- Depends on: W1-D1-FAO-1
+- Depends on: none
 
 #### W1-D2-DAT-2 Contract review pass
 - Module: `docs/contracts/` (brief `docs/tasks/W01-02-freeze-contracts.md`)
@@ -86,6 +88,7 @@ Wednesday 2026-10-14
 #### W1-D2-FAO-1 [blocking] Sample download and size measurement
 - Module: `pipelines/`, `docs/03-data-sources.md`
 - Do: download a small sample (about 1,000 records) of the main source for the chosen sub-domain into `data/raw/sample/` (git-ignored). Measure record size, field completeness, and estimate full size for the sub-domain (records, GB).
+- **Replan:** sample from `cs.CL`. Also count `cs.CL` papers per submission year (e.g. from 2015 to today) and estimate full embedding time per candidate start year from a throughput test on the sample, so ADR 0003 can pick the start year that fits one overnight run (ADR 0010).
 - Outputs: numbers in `docs/03-data-sources.md`; a small anonymised fixture (20 records) in `pipelines/tests/fixtures/sample.jsonl` (commit only if the licence allows redistribution; otherwise generate synthetic records with the same fields).
 - Done when: estimate written with the method used; fixture or synthetic fixture committed.
 - Depends on: W1-D1-FAO-1
@@ -111,7 +114,7 @@ Wednesday 2026-10-14
 #### W1-D3-LDN-1 Evaluation plan draft
 - Module: `evaluation/PLAN.md` (brief `docs/tasks/W01-04-evaluation-plan.md`)
 - Do: write research questions (e.g. RQ1 does hybrid retrieval beat dense-only; RQ2 do agent steps improve faithfulness; RQ3 are follow-up suggestions useful), metric definitions with formulas (recall@k, MRR, faithfulness rate, answer relevance, suggestion usefulness rating), baselines, threats to validity.
-- **Replan:** RQ2 is now tested with the steps that remain after ADR 0010 (query rewriting, evidence check; decomposition is cut). RQ3 relies on a user study with n >= 5 (cut-list item 5): plan descriptive statistics only.
+- **Replan:** RQ2 is now tested with the steps that remain after ADR 0010 (query rewriting, evidence check; decomposition is cut). RQ3 relies on a user study with n >= 5 (cut-list item 5): plan descriptive statistics only. Because the sub-domain is LLM/NLP, add to threats to validity that the LLM may answer from prior knowledge rather than from retrieved evidence; the faithfulness procedure must judge support by the cited chunks only, not factual correctness.
 - Outputs: draft PR.
 - Done when: every metric has a formula or procedure and an owner.
 - Depends on: none
