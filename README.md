@@ -39,6 +39,15 @@ Details: [docs/01-architecture.md](docs/01-architecture.md).
 | `.github/` | Issue/PR templates, CI, CODEOWNERS |
 
 ## Quick start
+### macOS / Linux (with `make`)
+
+```bash
+cp .env.example .env        # fill in real values; never commit .env
+make setup                  # dev tooling + backend dependencies
+make up                     # start Qdrant via Docker
+make run                    # backend at http://localhost:8000 (GET /health)
+make lint test
+```
 ### Windows (PowerShell, without `make`)
 
 `make` is not installed on Windows by default. Run the Makefile commands directly
