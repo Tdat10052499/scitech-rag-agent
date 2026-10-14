@@ -37,3 +37,7 @@ Thumbs.db
 
 # Local agent state (keep shared instructions, ignore personal settings)
 .claude/settings.local.json
+
+# Committed JSONL: test fixtures and golden set (W1-D2-DAT-2)
+!pipelines/tests/fixtures/*.jsonl
+!evaluation/golden_set/*.jsonl
