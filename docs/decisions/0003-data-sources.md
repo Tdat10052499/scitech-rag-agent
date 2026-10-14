@@ -40,11 +40,13 @@ Extra sources:
 ## Decision
 **Corpus: every arXiv record whose `categories` contains `cs.CL` (primary or cross-list), all years: 121,860 records on the 2026-10-10 snapshot, titles and abstracts only.**
 - Embedding time does not limit the start year. On a T4 all 121,860 records take an estimated 14 min with `bge-small-en-v1.5` and 41 min with `bge-base-en-v1.5` (records / measured throughput), far inside one night even with a 3x margin (about 2 h).
-- A start year removes few records (2018 would save 7,916, 6.5%) but loses the papers users ask about first, for example "Attention Is All You Need" (2017) and the word2vec and seq2seq papers (2013-2014).
-- No year filter is also the simplest definition. It is the same set the OAI-PMH harvest `cs:cs:CL` returns for incremental ingestion (W5).
-- Cross-lists are kept because they are 20-28% of the category since 2018 and include most LLM papers filed under `cs.LG`/`cs.AI`. arXiv's own `cs.CL` listing counts them too.
+- A start year removes few records (2018 would save 7,916, 6.5%) but loses foundational papers users are likely to ask about, for example "Attention Is All You Need" (arXiv 1706.03762, 2017, categories `cs.CL cs.LG`, checked in the snapshot).
+- No year filter is also the simplest definition, and it matches incremental ingestion (W5), which harvests by date only (OAI-PMH set `cs:cs:CL`, `from=`). Whether that set also returns cross-lists is checked in ADR 0008.
+- Cross-lists are kept because they are 20-28% of the category each year since 2018, mostly papers with primary `cs.LG` (7,879) or `cs.AI` (5,759). arXiv's own `cs.CL` listing counts them too.
 
 **Processing: two tiers (option B).** The pipeline downloads and reads the whole Kaggle snapshot (3,205,432 records, 5.61 GB) on every rebuild, filters, cleans and profiles it, and indexes only `cs.CL`. Engine: ADR 0005.
+- Why not A: "index only" processes 233 MB, which needs no big-data tooling, and it ties every rebuild to arXiv's rate-limited OAI-PMH service (one request per 3 s) instead of one Kaggle file.
+- B is affordable: one streaming pass over the snapshot took 77 s in plain Python, and the D02 engine dry run extrapolates to about 17 s with DuckDB (estimate, measured in ADR 0005).
 
 **Sources:**
 
