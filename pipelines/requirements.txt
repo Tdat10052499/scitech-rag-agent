@@ -1,0 +1,2 @@
+# Runtime dependencies of pipelines/. CI installs this file once W1-D5-DAT-2 is merged.
+# Keep the CLI importable with the standard library only until then.
