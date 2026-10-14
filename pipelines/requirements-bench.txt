@@ -1,0 +1,7 @@
+# One-off measurement scripts in pipelines/scripts/ (W1-D2-FAO-1, W1-D5-FAO-1).
+# Not installed by CI: these are heavy (torch, Spark) and no test imports them.
+sentence-transformers>=3.0
+duckdb>=1.0
+polars>=1.0
+pyspark>=3.5
+psutil>=5.9
