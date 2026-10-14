@@ -1,6 +1,6 @@
 # 0004. Frontend framework: React + Vite + TypeScript
 
-- Status: proposed (becomes accepted after DAT's review)
+- Status: accepted (2026-10-14, DAT post-merge review of #22)
 - Date: 2026-10-14
 - Deciders: LDN (proposal), DAT (review)
 
