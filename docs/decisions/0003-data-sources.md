@@ -1,6 +1,6 @@
 # 0003. Corpus: all of arXiv `cs.CL` from the Kaggle snapshot, Wikipedia as background
 
-- Status: proposed
+- Status: accepted (2026-10-14, DAT review on #21)
 - Date: 2026-10-14
 - Deciders: FAO (author), DAT (reviewer)
 
@@ -8,7 +8,7 @@
 The sub-domain is LLM/NLP (brief, W1-D2-DAT-1). This ADR fixes which sources, which subset and how big it is, so the downloader (W2-D1-FAO-1) and the index have a fixed target.
 Constraints:
 - The full embedding run must fit in one night on the available GPU (ADR 0010; run planned for D08, 2026-10-21).
-- The GPU is a free Kaggle/Colab session. Kaggle's weekly quota is 30 h of session time, with 27 h 57 min left on 2026-10-14, shared with the LLM runs (`docs/runbooks/llm-serving.md`).
+- The GPU is a free Kaggle/Colab session. Kaggle's weekly quota is 30 h of session time (not GPU work), with 27 h 57 min left on 2026-10-14, shared with the LLM runs (`docs/runbooks/llm-serving.md`).
 - This is a Big Data course, so the scale must be stated with numbers.
 
 All numbers below were measured on 2026-10-14 (W1-D2-FAO-1) unless marked as an estimate; the method and full tables are in `docs/03-data-sources.md` (Measured subset).
@@ -72,8 +72,9 @@ Extra sources:
 ## Consequences
 - The downloader (W2-D1-FAO-1) fetches one file from Kaggle. It needs a Kaggle login on the machine that runs it, so its tests must use a mocked response and never call Kaggle.
 - The Kaggle snapshot is updated about weekly (version 307 on 2026-10-10). The manifest records the version or date used, and the frozen evaluation index (W6) names it.
-- The embedding estimate assumes one chunk per abstract and was measured on 1,000 records from 2022 on only. Older abstracts may differ in length. W2-D3-FAO-1 measures the abstract length distribution over all years, and the D08 run records the real time. If chunking splits long abstracts, multiply the estimate by the measured chunks per record.
-- The D08 overnight run shares the Kaggle/Colab GPU quota with the LLM. FAO and DAT book it in the Week 1 tracking issue.
+- The embedding estimate assumes one chunk per abstract and was measured on 1,000 records from 2022 on only. Older abstracts may differ in length. W2-D3-FAO-1 measures the abstract length distribution over all years, and the D08 run records the real time and the embedding model used (ADR 0007): the choice matters for the quota (14 vs 41 min, estimate). If chunking splits long abstracts, multiply the estimate by the measured chunks per record.
+- The D08 overnight run shares the Kaggle/Colab GPU quota with the LLM. FAO and DAT book it in the Week 1 tracking issue (#10) on D03.
+- Known risk: if the OAI-PMH set `cs:cs:CL` returns only primary `cs.CL`, incremental ingestion would miss the 20-28% of new papers that are cross-lists. ADR 0008 then harvests the `cs` set and filters by `categories` instead.
 - Pre-2018 papers (7,916 records, 6.5%) may rank for queries where newer work is more relevant. If the evaluation shows this, add a date-aware ranking feature or a filter instead of dropping them from the index.
 - If time is short, cut OpenAlex first (it adds no text), then Wikipedia. arXiv `cs.CL` alone meets the success criteria.
 - Revisit this ADR if the GPU becomes unavailable for a night. Then the start year becomes the lever (since 2022: 30 min with `bge-base`, 10 min with `bge-small`, estimate).
