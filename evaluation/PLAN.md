@@ -53,15 +53,15 @@ Language: the main set is in English, because the corpus is English arXiv titles
 
 The exact format, with validation rules, goes into `evaluation/golden_set/FORMAT.md` (W1-D4-LDN-1).
 
-Example (illustrative; the `doc_id` must be confirmed against the corpus by the coverage check before the item is committed):
+Example (the document is in FAO's 1,000-record sample; the coverage check will confirm it against the full index before the item is committed):
 
 ```json
-{"id": "gs-001", "question": "What mechanism does the Transformer use instead of recurrence or convolution to relate positions in a sequence?", "type": "explanatory", "relevant_doc_ids": ["1706.03762"], "reference_answer": "It relies solely on attention mechanisms (self-attention) instead of recurrent or convolutional layers.", "notes": "Written from the abstract of the original Transformer paper; answerable from the abstract alone.", "author": "LDN", "split": "dev"}
+{"id": "gs-001", "question": "Which aspects of large language model hallucination does the HaluEval 2.0 study investigate?", "type": "factual", "relevant_doc_ids": ["2401.03205"], "reference_answer": "Three aspects: how to detect hallucinations, why LLMs hallucinate (the sources across training and utilization stages), and how to mitigate them.", "notes": "Written from the abstract of arXiv 2401.03205; answerable from the abstract alone.", "author": "LDN", "split": "dev"}
 ```
 
 ### 3.3 How items are created and checked
 
-1. Items are written from real documents in the cleaned dataset (a 200-record sample from FAO, later the full index), so every question is answerable from the corpus. Questions are phrased in the writer's own words, not copied from the abstract, to avoid favouring keyword matching.
+1. Items are written from real documents: first the 1,000-record sample from FAO (arXiv `cs.CL` papers from 2022-2026, kept outside git in `data/raw/sample/sample.jsonl`), later the full index, so every question is answerable from the corpus. Questions are phrased in the writer's own words, not copied from the abstract, to avoid favouring keyword matching.
 2. `relevant_doc_ids` are the documents the writer judged necessary to answer. Other relevant documents may exist and are not labelled (see section 7).
 3. FAO checks 3 random items of the first 10 (W1-D4-LDN-1) and runs the coverage script that confirms every `relevant_doc_ids` exists in the loaded index (W4-D3-FAO-1). Items 31-60 get the same coverage check.
 4. The item mix covers all `type` values, with at least 5 multi-hop and 5 follow-up items by 30 items.
