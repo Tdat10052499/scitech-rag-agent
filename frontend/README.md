@@ -13,7 +13,7 @@ port 8000 (`make run`, or the raw command in the root README).
 
 ```bash
 cd frontend
-npm install       # first time; once package-lock.json is committed, use `npm ci`
+npm ci            # install exactly what package-lock.json says
 npm run dev       # http://localhost:5173 (API calls are proxied to the backend)
 ```
 
