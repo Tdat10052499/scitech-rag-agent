@@ -1,0 +1,2 @@
+# Dependencies of the LLM serving spike scripts (W1-D3-DAT-1); not needed by the modules.
+openai>=1.40
