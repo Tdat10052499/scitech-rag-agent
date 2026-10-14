@@ -1,0 +1,2 @@
+# Build output and tooling caches (node_modules/ and dist/ are also ignored at the repo root)
+*.tsbuildinfo
