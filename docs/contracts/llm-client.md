@@ -1,5 +1,7 @@
 # LLM client contract
 
+Frozen on 2026-10-15 (W1-D4-DAT-1, issue #7). Change only through an issue approved by the maintainer (DAT).
+
 All LLM access uses the OpenAI-compatible Chat Completions interface, so the backend can be switched between a self-hosted server (e.g. Ollama or vLLM, locally or on a remote GPU exposed through a tunnel) and a hosted API without code changes.
 
 ## Configuration (environment variables)
