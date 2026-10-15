@@ -1,6 +1,6 @@
 # Evaluation plan
 
-- Status: draft (W1-D3-LDN-1, 2026-10-14); final version in W1-D5-LDN-1 after DAT and FAO comments.
+- Status: draft 2 (W1-D3-LDN-1; updated 2026-10-15 after DAT's review on PR #25); final version in W1-D5-LDN-1 after FAO's comments.
 - Owner: LDN (`evaluation/`). Reviewers: DAT, FAO. Brief: `docs/tasks/W01-04-evaluation-plan.md`, issue #9.
 - Scope reference: `docs/decisions/0010-compressed-schedule.md` (reduced scope), `docs/00-project-brief.md` (LLM/NLP sub-domain).
 
@@ -11,7 +11,7 @@ This plan says how the system will be judged, so that evaluation is designed now
 | Part | Question it answers | Main metrics | Owner |
 |---|---|---|---|
 | Retrieval | Does the right evidence come back? | recall@k, MRR | LDN |
-| Answers | Is the answer supported by the evidence it cites, and does it address the question? | faithfulness, cited-document recall, answer relevance, refusal rate | LDN (manual labels: LDN and FAO) |
+| Answers | Is the answer supported by the evidence it cites, and does it address the question? | faithfulness, cited-document recall, answer relevance, refusal rate, correct refusal rate | LDN (manual labels: LDN and FAO) |
 | Follow-up suggestions | Do users find them useful? | usefulness rating, follow-up click rate | LDN |
 | Efficiency | How fast, and how does it scale? | latency p50/p95, ingestion throughput, index build time | DAT (latency), FAO (scaling) |
 
@@ -33,7 +33,7 @@ The golden set is a list of questions with the documents that should be retrieve
 
 Target size: 10 items at D03 (W1-D4-LDN-1), 30 at D06 (W2-D3-LDN-1), 45 at D09 (W3-D4-LDN-1), 60 at D14 (W5-D1-LDN-1).
 
-Language: the main set is in English, because the corpus is English arXiv titles and abstracts (`docs/03-data-sources.md`). A small separate group of 5-10 Vietnamese questions on the same documents is proposed in issue #7 to test cross-lingual retrieval; it depends on DAT and FAO agreeing and on the embedding model chosen in ADR 0007. If accepted, it is marked with `language: "vi"`, reported separately, and never mixed into the main recall@k and MRR numbers.
+Language: the main set is in English, because the corpus is English arXiv titles and abstracts (`docs/03-data-sources.md`). A small separate group of 5-10 Vietnamese questions on the same documents tests cross-lingual retrieval. DAT accepted it (issue #7) on the condition that it is dropped if the multilingual embedding model does not fit the D08 run (ADR 0007); the English-only bge models would handle it poorly. If kept, it is marked with `language: "vi"`, reported separately, and never mixed into the main recall@k and MRR numbers.
 
 ### 3.2 Item format (one JSON object per line in `evaluation/golden_set/golden.jsonl`)
 
@@ -41,15 +41,17 @@ Language: the main set is in English, because the corpus is English arXiv titles
 |---|---|---|
 | `id` | string | Unique, stable, for example `gs-001`. |
 | `question` | string | The user question. For `follow_up` items, the last user turn. |
-| `type` | string | One of `factual`, `explanatory`, `comparison`, `multi_hop`, `follow_up`. |
-| `relevant_doc_ids` | list of strings | `doc_id` values (as in `chunk.schema.json`) of documents that contain the information needed. A multi-hop item lists at least 2. |
-| `reference_answer` | string | Short answer written from the relevant documents; used as guidance for the judge, not as the only valid answer. |
+| `type` | string | One of `factual`, `explanatory`, `comparison`, `multi_hop`, `follow_up`, `unanswerable`. |
+| `relevant_doc_ids` | list of strings | `doc_id` values (as in `chunk.schema.json`) of documents that contain the information needed. A multi-hop item lists at least 2. Empty list for `unanswerable` items. |
+| `reference_answer` | string | Short answer written from the relevant documents; used as guidance for the judge, not as the only valid answer. For `unanswerable` items: the expected behaviour (the agent says the evidence is insufficient). |
 | `notes` | string | How the item was written, what makes it hard, uncertainty about relevance. |
 | `author` | string | Member code (`LDN`, `FAO`, `DAT`). |
-| `split` | string (proposed) | `dev` (items 1-30) or `test` (items 31-60), see 3.4. |
+| `split` | string | `dev` (items 1-30) or `test` (items 31-60), see 3.4. |
 | `language` | string (optional) | `en` (default) or `vi`. |
 | `history` | list (optional) | Earlier turns of the conversation for `follow_up` items (W5-D1-LDN-1 adds multi-turn items). |
 | `standalone_query` | string (optional) | What a correct rewrite of the last turn should look like, for `follow_up` items. |
+
+**Unanswerable group.** On DAT's request, about 5 extra items (not counted in the 60) have a question whose answer is not in the corpus, for example a recent event outside `cs.CL` or a detail that only appears in a full text. They check that the insufficient-evidence branch refuses when it should. The writer verifies by searching the sample or index that no document answers the question; absence cannot be proved for 122,000 papers, so the notes record what was searched. These items are excluded from recall@k and MRR (section 4).
 
 The exact format, with validation rules, goes into `evaluation/golden_set/FORMAT.md` (W1-D4-LDN-1).
 
@@ -64,14 +66,14 @@ Example (the document is in FAO's 1,000-record sample; the coverage check will c
 1. Items are written from real documents: first the 1,000-record sample from FAO (arXiv `cs.CL` papers from 2022-2026, kept outside git in `data/raw/sample/sample.jsonl`), later the full index, so every question is answerable from the corpus. Questions are phrased in the writer's own words, not copied from the abstract, to avoid favouring keyword matching.
 2. `relevant_doc_ids` are the documents the writer judged necessary to answer. Other relevant documents may exist and are not labelled (see section 7).
 3. FAO checks 3 random items of the first 10 (W1-D4-LDN-1) and runs the coverage script that confirms every `relevant_doc_ids` exists in the loaded index (W4-D3-FAO-1). Items 31-60 get the same coverage check.
-4. The item mix covers all `type` values, with at least 5 multi-hop and 5 follow-up items by 30 items.
+4. The item mix covers all answerable `type` values, with at least 5 multi-hop and 5 follow-up items by 30 items. The unanswerable group (about 5 items) is added alongside: 2 `dev` items by D09, so that `RETRIEVAL_MIN_SCORE` can be tuned on something, and the rest as `test` items by D14.
 
 ### 3.4 Development and test items
 
-The same items must not be used to choose settings and to report final results. Proposal:
+The same items must not be used to choose settings and to report final results. Agreed with DAT (review of PR #25):
 - Items 1-30 (`split: dev`) may be used for decisions: model choice (ADR 0006), embedding model (ADR 0007), default retriever (ADR 0009), prompt wording and thresholds such as `RETRIEVAL_MIN_SCORE`.
 - Items 31-60 (`split: test`) are not used for any decision. The final report gives numbers on all 60 items and on the 30 test items, and says if they differ materially.
-- W3-D4-LDN-1 reports on all items available (45) for information, but ADR 0009 should cite the dev numbers (items 1-30) as its basis. This changes how ADR 0009 is argued, so DAT must agree.
+- W3-D4-LDN-1 reports on all items available (45) for information, but ADR 0009 cites the dev numbers (items 1-30) as its basis.
 
 ## 4. Metrics
 
@@ -82,17 +84,19 @@ Notation: for question `q`, `R_q` is the set of relevant `doc_id`s (`relevant_do
 The retriever returns a ranked list of chunks. A chunk is a hit if its `doc_id` is in `R_q`. `k` is applied to the chunk list, as the LLM would receive it.
 
 - **Recall@k** for `k` in {1, 5, 10}: `recall@k(q) = |R_q ∩ D_k(q)| / |R_q|`, where `D_k(q)` is the set of distinct `doc_id`s among the top-k chunks. Reported as the mean over `q`. For items with one relevant document it equals hit rate. At small `k`, several chunks of the same document use up slots; this is part of the system's behaviour and is not corrected.
-- **MRR** (mean reciprocal rank): `MRR = (1/N) * sum_q 1/rank_q`, where `rank_q` is the position of the first hit chunk in the top 10, and the term is 0 if there is none.
+- **MRR** (mean reciprocal rank): `MRR = (1/N) * sum_q 1/rank_q`, where `rank_q` is the position of the first hit chunk in the top 10, and the term is 0 if there is none. Ranks are positions in the chunk list. Several chunks of one document do not change this: only the first hit chunk counts, and later chunks of the same document are not skipped when ranks are counted.
+- **Scope.** `unanswerable` items have no relevant document and are excluded from recall@k and MRR (N counts answerable items only).
 - **Reporting.** Always give `N` and a 95% bootstrap interval over questions (1,000 resamples). Compare two retrievers on the same questions: per-question differences, number of wins and losses, and the bootstrap interval of the mean difference. Per-type cells can be very small (fewer than 10 items); report `n` per cell and do not compare cells that small.
 
 ### 4.2 Answers (RQ2)
 
-Only non-refused answers enter the faithfulness and relevance metrics; refusals are reported separately.
+Only non-refused answers to answerable items enter the faithfulness and relevance metrics. A refused answer is not scored, even if it still contains factual sentences; their number is reported next to the refusal rate, so the choice is visible. Refusals are reported separately.
 
 - **Faithfulness rate.** The answer is split into sentences. Sentences without factual content (greetings, "I cannot answer", pure structure) are not checkable. Each checkable sentence is labelled *supported* or *not supported* by the chunks it cites with `[n]`, judged on those chunks only (procedure in section 5). `faithfulness(a) = supported / checkable` per answer; headline = mean over answers (macro), with the pooled rate over all sentences (micro) as a check. Also report the share of answers with faithfulness = 1.
 - **Cited-document recall.** `|R_q ∩ cited docs(a)| / |R_q|`: how many of the needed documents the answer actually cites. Combined with recall@k it shows whether the agent uses the evidence it retrieved.
-- **Invalid-citation rate.** Share of `[n]` markers pointing to a non-existent source number (counted before DAT's parser drops them; the count comes from the trace).
-- **Refusal rate.** Share of answers where the agent reports insufficient evidence. Because every golden question is answerable from the corpus, a high refusal rate on them is over-refusal, and it is reported next to faithfulness so that raising faithfulness by refusing more is visible.
+- **Invalid-citation rate.** Share of `[n]` markers pointing to a non-existent source number (counted before DAT's parser drops them; the agent trace of W5 stores the raw answer text, which DAT confirmed).
+- **Refusal rate (over-refusal).** Share of answers to answerable items where the agent reports insufficient evidence. Because these questions are answerable from the corpus, a high refusal rate is over-refusal, and it is reported next to faithfulness so that raising faithfulness by refusing more is visible.
+- **Correct refusal rate.** On the unanswerable group: share of items where the agent reports insufficient evidence. The complement is the share answered anyway, which are checked by hand for unsupported claims. With about 5 items each item is 20 points, so this is a coarse check, reported as a count (for example 4 of 5).
 - **Answer relevance.** Rating from 1 to 3 for how well the answer addresses the question: 1 = does not address it, 2 = partly, 3 = fully. Judged by an LLM judge against the question and the reference answer, and checked manually on the same sample as faithfulness. Reported as mean and distribution.
 
 ### 4.3 Follow-up suggestions (RQ3)
@@ -118,7 +122,7 @@ Manual protocol (written so that a second annotator can apply it):
 3. Numbers and names must match exactly; paraphrase is allowed.
 4. Record the label, a one-line reason for every *not supported*, and the annotator.
 
-LLM judge: same input and the same three labels, one sentence per call, with a fixed prompt stored in `evaluation/`. Settings: temperature 0, the judge model named in `evaluation/SNAPSHOT.md`, preferably not the model that generated the answers.
+LLM judge: same input and the same three labels, one sentence per call, with a fixed prompt stored in `evaluation/`. Settings: temperature 0. The judge model must differ from the generator; DAT chooses it in ADR 0006 (D06), the candidate being the hosted API fallback of ADR 0001, and it is named in `evaluation/SNAPSHOT.md`.
 
 Calibration: a random 20% of the answers are labelled by hand (split between LDN and FAO, same written procedure; DAT does not annotate because he built the agent). Report agreement between judge and human as Cohen's kappa on the sentence labels together with the raw agreement; where they disagree, the human label is used for the headline numbers, and this choice is stated. The pilot on 10 questions in W4-D4-LDN-1 tests whether two readings of the procedure agree before the full run.
 
@@ -135,7 +139,7 @@ Agent (RQ2), same retriever, same model, same prompts, temperature fixed and sta
 - +evidence check,
 - full agent.
 
-Per-type breakdown is reported for RQ2, because rewriting should matter mainly for `follow_up` items.
+Per-type breakdown is reported for RQ2, because rewriting should matter mainly for `follow_up` items. The unanswerable group is run under the same four conditions to see whether the evidence check changes the correct refusal rate.
 
 Diagnostic for the prior-knowledge threat (optional, if time remains): ask the same LLM the golden questions without retrieval ("closed book") and compare with the reference answers on a sample of 20. If the closed-book answers are often right, a faithful-looking answer proves little about retrieval, and the report says so.
 
@@ -154,7 +158,8 @@ All runs record: configuration file, git commit hash, dataset snapshot id (from 
 - **Simplified system.** Reranking and decomposition were cut (ADR 0010); results describe the reduced system, not the original design.
 - **Run variability.** The LLM runs on an external GPU session that can end and may be replaced by a fallback model; each run records the model actually used. One run per condition.
 - **User study.** 5-6 classmates, a convenience sample of AI students who know the team: possible courtesy bias, not representative of general users. Descriptive statistics only.
-- **Vietnamese subset (if accepted).** Very small, written by one person, and affected by translation choices; not comparable with the English numbers.
+- **Vietnamese subset (if kept).** Very small, written by one person, and affected by translation choices; not comparable with the English numbers.
+- **Unanswerable group.** About 5 items written by one person who knows the corpus; absence of an answer is checked by search, not proved. The correct refusal rate has a resolution of 20 points and is descriptive only.
 
 ## 8. Who does what, and when
 
@@ -171,12 +176,21 @@ All runs record: configuration file, git commit hash, dataset snapshot id (from 
 | User-study protocol, run plan (`RUNS.md`) | W6-D3-LDN-1 / W6-D5-LDN-1 | 29-30 Oct |
 | Final retrieval runs, faithfulness, user study, `final.md` | W7-D1..D5-LDN-1 | 31 Oct - 3 Nov |
 
-Task dates follow `docs/plan/calendar.md`; LDN is away on 23-26 October, so tasks of those days need to be done earlier or handed over (to be agreed with DAT).
+Task dates follow `docs/plan/calendar.md`. LDN is away on 23-26 October; DAT proposed a replan on issue #10 (W4 tasks pulled forward or moved to D12-D13). The dates of the W4 tasks above will change once the replan is agreed and written into `docs/plan/week-03.md` and `week-04.md`.
 
-## 9. Open questions (to settle before the final version)
+## 9. Decisions after DAT's review (PR #25) and what is still open
 
-1. Vietnamese subset: accepted or not (issue #7, DAT and FAO)?
-2. Add a few unanswerable questions (outside the corpus) as a separate group to check that the evidence check refuses when it should? Without them the plan measures over-refusal but not correct refusal.
-3. Which model is the LLM judge (ADR 0006 fallback or a hosted API), and is it different from the generator?
-4. Dev/test split in 3.4: does DAT agree that ADR 0009 is argued on items 1-30?
-5. Sentence splitting for faithfulness: a simple rule-based splitter, or let the judge split the answer? To be tested in the pilot (W4-D4-LDN-1).
+Decided:
+1. Vietnamese subset: accepted as a separate group, dropped if the multilingual model does not fit the D08 run (DAT, issue #7).
+2. Unanswerable group: added (about 5 items, correct refusal rate, excluded from recall@k and MRR).
+3. Judge model: different from the generator; DAT decides it in ADR 0006 on D06 and names it in `evaluation/SNAPSHOT.md`.
+4. Dev/test split: agreed; ADR 0009 cites the dev numbers (items 1-30). ADR 0006 on D06 uses the first 10 dev items, so its numbers are indicative only (n = 10).
+5. Sentence splitting: decided by the W4 pilot; keep whichever gives better judge-human agreement.
+6. DAT does not annotate faithfulness (he built the agent); no double annotation stays listed as a limitation.
+
+Requirements this plan puts on other modules (confirmed by DAT): the agent trace stores the raw answer text (W5); latency p50/p95 over 30 golden questions on the frozen system (W6/W7); `POST /feedback` logs to `data/logs/feedback.jsonl` (W6).
+
+Still open:
+- FAO's check of the first 10 items and of the plan (annotator split, coverage check).
+- Whether the Vietnamese group survives the choice of embedding model (ADR 0007).
+- Which 5 questions go into the unanswerable group, and which 2 are `dev`.
