@@ -1,9 +1,10 @@
 openapi: 3.0.3
 info:
   title: SciTech RAG Agent API
-  version: 0.1.0
+  version: 0.2.0
   description: >
-    Contract between frontend and backend. DRAFT: freeze in Week 1, then change only via an issue.
+    Contract between frontend and backend. Frozen on 2026-10-15 (W1-D4-DAT-1, decisions in issue #7).
+    Change only through an issue approved by the maintainer (DAT).
 paths:
   /health:
     get:
@@ -31,16 +32,25 @@ paths:
               $ref: "#/components/schemas/ChatRequest"
       responses:
         "200":
-          description: >
-            Stream of events (text/event-stream). Event names, in typical order:
-            `sources` (JSON array of Source), `token` (answer text fragment),
-            `followups` (JSON array of up to 4 strings), `done` (empty), `error` (JSON Error).
+          description: |
+            Stream of server-sent events (`text/event-stream`). Every `data:` line is JSON.
+            Events, in order:
+            1. `sources` (exactly once, always first): JSON array of `Source`; an empty array is
+               allowed when no chunk passes `RETRIEVAL_MIN_SCORE`.
+            2. `token` (zero or more): a JSON-encoded string with the next fragment of the answer
+               (JSON encoding keeps newlines from breaking SSE framing).
+            3. `followups` (at most once): JSON array of up to 4 strings.
+            4. Exactly one of `done` (payload `Done`; a missing or empty payload means
+               `insufficient_evidence: false`) or `error` (payload `Error`) ends the stream.
+            Citations: a marker `[n]` in the answer refers to the n-th element (1-based) of the
+            `sources` array of the same response.
           content:
             text/event-stream:
               schema:
                 type: string
         "422":
-          description: Invalid request
+          description: >
+            Invalid request (validation error), returned before any event is streamed.
 components:
   schemas:
     ChatRequest:
@@ -55,6 +65,7 @@ components:
           minLength: 1
     Source:
       type: object
+      description: One retrieved chunk shown as evidence; field names match chunk.schema.json.
       required: [chunk_id, doc_id, title, score]
       properties:
         chunk_id:
@@ -69,11 +80,35 @@ components:
           type: number
         snippet:
           type: string
+        source:
+          type: string
+          enum: [arxiv, openalex, wikipedia]
+        published_at:
+          type: string
+          format: date
+          description: Date of the first public version (arXiv) or of the revision (Wikipedia).
+        categories:
+          type: array
+          items:
+            type: string
+    Done:
+      type: object
+      description: Payload of the `done` event; all fields optional.
+      properties:
+        insufficient_evidence:
+          type: boolean
+          default: false
+          description: True when the agent answered that the evidence is insufficient.
+        message_id:
+          type: string
+          description: Id of this answer, used by rating buttons and `POST /feedback` (Week 6).
     Error:
       type: object
+      description: Payload of the `error` event. New codes only through an issue.
       required: [code, message]
       properties:
         code:
           type: string
+          enum: [llm_unavailable, retrieval_failed, timeout, internal]
         message:
           type: string

@@ -3,3 +3,6 @@ ruff>=0.6
 pytest>=8.0
 pre-commit>=3.7
 nbstripout>=0.7
+jsonschema>=4.21
+pyyaml>=6.0
+openapi-spec-validator>=0.7
