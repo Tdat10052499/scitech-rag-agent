@@ -1,6 +1,6 @@
 # 0005. Processing engine: PySpark in local mode, DuckDB for checks
 
-- Status: proposed
+- Status: accepted (2026-10-16, DAT review on #30)
 - Date: 2026-10-15
 - Deciders: FAO (author), DAT (reviewer)
 
@@ -43,8 +43,8 @@ On the 2 MB sample, start-up and first import dominate the time.
 | synthetic slice, 200,000 lines (342.5 MB) | DuckDB | 0.46 | 166 | 269 |
 | synthetic slice, 200,000 lines (342.5 MB) | Polars | 2.48 | 1,773 | 269 |
 | synthetic slice, 200,000 lines (342.5 MB) | PySpark | 16.36 | 1,492 | 269 |
-| synthetic full size, 3,205,432 lines (5.49 GB) | DuckDB | 5.30 | 626 | 123,286 |
-| synthetic full size, 3,205,432 lines (5.49 GB) | PySpark | 34.61 | 1,057 | 123,286 |
+| synthetic, about the size of the snapshot: 3,205,432 lines (5.49 GB) | DuckDB | 5.30 | 626 | 123,286 |
+| synthetic, about the size of the snapshot: 3,205,432 lines (5.49 GB) | PySpark | 34.61 | 1,057 | 123,286 |
 
 Polars was not run at full size: with eager `read_ndjson` its peak memory grows with the input (1.8 GB for 0.3 GB of JSON in both tables), which extrapolates to about 30-35 GB for the full snapshot (estimate). Polars would need `scan_ndjson` with the streaming engine instead.
 
@@ -67,8 +67,9 @@ Limits of table B: 20 distinct records repeated make the data more uniform than 
 
 ## Consequences
 - `clean` (W2-D2-FAO-1) runs where Java 17+ exists: WSL2 on FAO's laptop or Colab. Windows-native runs are not supported; `pipelines/AGENTS.md` and the runbook must say so.
-- `pipelines/requirements.txt` gains `pyspark` (W2-D2-FAO-1). CI already installs that file (W1-D5-DAT-2); GitHub's `ubuntu-latest` runner has Java 17. Tests use one shared `local[1]` session on the 20-record fixture, which adds about 15 s of JVM start-up to the CI run.
+- `pipelines/requirements.txt` gains `pyspark` (W2-D2-FAO-1). CI already installs that file (W1-D5-DAT-2); the first PR that adds `pyspark` checks that `ubuntu-latest` provides Java 17+ (if not, DAT adds `actions/setup-java` to `ci.yml`). Tests use one shared `local[1]` session on the 20-record fixture, which adds about 15 s of JVM start-up and the install of `pyspark` (about 480 MB, pip cache helps) to each CI run.
+- Spark tests **skip**, not fail, when PySpark or Java is missing (`pytest.importorskip("pyspark")` plus a skip when no `java` is found), so `make test` keeps working for Windows members without Java; they run in CI. `pipelines/AGENTS.md` states this (W2-D2-FAO-1).
 - The Spark job must not rely on schema inference over the whole file in production: `clean` passes an explicit schema for the snapshot fields (faster, and it fails loudly if Kaggle changes a field).
 - Reproducibility checks compare Spark's output counts with a DuckDB query over the same file; a mismatch fails the run.
 - Scaling numbers for the report (`pipelines/reports/scaling.md`) come from the real `clean` run on the full snapshot, not from table B.
-- Follow-up (FAO, not blocking): run `bench_engines.py` on Colab with the real `slice-200k.jsonl` and the real snapshot (`fao` notes, `adr-0005-colab.md`), and add the table here. Revisit this decision if PySpark on the real snapshot takes more than 15 minutes or more than 8 GB of memory, or if WSL2/Colab is unavailable when `clean` must run; then switch to DuckDB, which runs the same job natively on Windows.
+- Follow-up (FAO, before or with W2-D2-FAO-1 on D05): run `bench_engines.py` with PySpark on the real `slice-200k.jsonl` (Colab or WSL2), and on the real snapshot if possible, and add the rows here. The revisit rule below only works if this is measured. Revisit this decision if PySpark on the real snapshot takes more than 15 minutes or more than 8 GB of memory, or if WSL2/Colab is unavailable when `clean` must run; then switch to DuckDB, which runs the same job natively on Windows.
