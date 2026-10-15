@@ -1,6 +1,6 @@
 # Evaluation plan
 
-- Status: draft 2 (W1-D3-LDN-1; updated 2026-10-15 after DAT's review on PR #25); final version in W1-D5-LDN-1 after FAO's comments.
+- Status: draft 3 (W1-D3-LDN-1; updated 2026-10-16 after DAT's and FAO's review on PR #25); final version in W1-D5-LDN-1 after FAO's comments.
 - Owner: LDN (`evaluation/`). Reviewers: DAT, FAO. Brief: `docs/tasks/W01-04-evaluation-plan.md`, issue #9.
 - Scope reference: `docs/decisions/0010-compressed-schedule.md` (reduced scope), `docs/00-project-brief.md` (LLM/NLP sub-domain).
 
@@ -42,7 +42,7 @@ Language: the main set is in English, because the corpus is English arXiv titles
 | `id` | string | Unique, stable, for example `gs-001`. |
 | `question` | string | The user question. For `follow_up` items, the last user turn. |
 | `type` | string | One of `factual`, `explanatory`, `comparison`, `multi_hop`, `follow_up`, `unanswerable`. |
-| `relevant_doc_ids` | list of strings | `doc_id` values (as in `chunk.schema.json`) of documents that contain the information needed. A multi-hop item lists at least 2. Empty list for `unanswerable` items. |
+| `relevant_doc_ids` | list of strings | `doc_id` values, exactly as in the chunks (`chunk.schema.json`): the arXiv id without a version suffix (`2401.03205`, not `2401.03205v2`); old-style ids keep their slash (`cs/0501001`). Otherwise the coverage check and recall@k silently miss matches. These are the documents that contain the information needed. A multi-hop item lists at least 2. Empty list for `unanswerable` items. |
 | `reference_answer` | string | Short answer written from the relevant documents; used as guidance for the judge, not as the only valid answer. For `unanswerable` items: the expected behaviour (the agent says the evidence is insufficient). |
 | `notes` | string | How the item was written, what makes it hard, uncertainty about relevance. |
 | `author` | string | Member code (`LDN`, `FAO`, `DAT`). |
@@ -63,10 +63,10 @@ Example (the document is in FAO's 1,000-record sample; the coverage check will c
 
 ### 3.3 How items are created and checked
 
-1. Items are written from real documents: first the 1,000-record sample from FAO (arXiv `cs.CL` papers from 2022-2026, kept outside git in `data/raw/sample/sample.jsonl`), later the full index, so every question is answerable from the corpus. Questions are phrased in the writer's own words, not copied from the abstract, to avoid favouring keyword matching.
+1. Items are written from real documents: first the 1,000-record sample from FAO (arXiv `cs.CL` papers from 2022-2026, kept outside git in `data/raw/sample/sample.jsonl`), later the full index, so every question is answerable from the corpus (except the unanswerable group, 3.2). The sample is 2022-2026 only, while 26% of the index (32,246 of 121,860 records) is older (ADR 0003), so from item 31 on some items are written from older papers, using FAO's 200-record sample across all years (W2-D2-FAO-1, end of D05). Questions are phrased in the writer's own words, not copied from the abstract, to avoid favouring keyword matching.
 2. `relevant_doc_ids` are the documents the writer judged necessary to answer. Other relevant documents may exist and are not labelled (see section 7).
 3. FAO checks 3 random items of the first 10 (W1-D4-LDN-1) and runs the coverage script that confirms every `relevant_doc_ids` exists in the loaded index (W4-D3-FAO-1). Items 31-60 get the same coverage check.
-4. The item mix covers all answerable `type` values, with at least 5 multi-hop and 5 follow-up items by 30 items. The unanswerable group (about 5 items) is added alongside: 2 `dev` items by D09, so that `RETRIEVAL_MIN_SCORE` can be tuned on something, and the rest as `test` items by D14.
+4. The item mix covers all answerable `type` values, with at least 5 multi-hop and 5 follow-up items by 30 items. The unanswerable group (about 5 items) is added alongside: 2 `dev` items by D09 and the rest as `test` items by D14. Two items are too few to tune a threshold, so `RETRIEVAL_MIN_SCORE` is tuned on the answerable dev items (keeping over-refusal low), and the 2 unanswerable dev items only check that they are refused.
 
 ### 3.4 Development and test items
 
@@ -154,7 +154,8 @@ All runs record: configuration file, git commit hash, dataset snapshot id (from 
 - **Prior knowledge (LLM/NLP topic).** The LLM knows this field from training and may answer from memory instead of the retrieved evidence. Faithfulness is therefore judged against the cited chunks only, so a correct claim from memory counts as unsupported. The opposite also holds: an answer can be faithful to a wrong or irrelevant chunk. Faithfulness is not correctness, and the report must not present it as such.
 - **Judge bias.** An LLM judge can prefer its own style, long answers, or fail on subtle numeric differences. The manual sample (20%) estimates this; the sample is small and the agreement figure itself has a wide interval.
 - **Annotators.** Two annotators label different halves with one written procedure, so agreement between annotators is unknown (no double annotation). DAT does not annotate; this is a limitation, not a flaw in the procedure.
-- **Corpus and snapshot.** Titles and abstracts of arXiv `cs.CL` papers from one snapshot (about 122,000 records, 2026-10-10); questions that need full text are out of scope. Incremental ingestion after the freeze is not part of the evaluated index.
+- **Corpus and snapshot.** Titles and abstracts of arXiv `cs.CL` papers from one snapshot (121,860 records, Kaggle snapshot version 307 of 2026-10-10, ADR 0003); questions that need full text are out of scope. Incremental ingestion after the freeze is not part of the evaluated index.
+- **Year bias.** The first items come from a 2022-2026 sample, while 26% of the index is older. Until items from older papers are added (from item 31 on), results mainly describe recent papers.
 - **Simplified system.** Reranking and decomposition were cut (ADR 0010); results describe the reduced system, not the original design.
 - **Run variability.** The LLM runs on an external GPU session that can end and may be replaced by a fallback model; each run records the model actually used. One run per condition.
 - **User study.** 5-6 classmates, a convenience sample of AI students who know the team: possible courtesy bias, not representative of general users. Descriptive statistics only.
