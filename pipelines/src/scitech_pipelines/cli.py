@@ -57,6 +57,52 @@ def add_download_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_clean_arguments(parser: argparse.ArgumentParser) -> None:
+    from scitech_pipelines.clean import ARXIV_FILE, DEFAULT_CATEGORY, DEFAULT_SAMPLE_SIZE
+
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=None,
+        help=f"arXiv snapshot (default: <data-dir>/raw/arxiv/{ARXIV_FILE}).",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Output directory (default: <data-dir>/processed/documents).",
+    )
+    parser.add_argument(
+        "--category", default=DEFAULT_CATEGORY, help="Sub-domain category (ADR 0003)."
+    )
+    parser.add_argument(
+        "--sample-size",
+        type=int,
+        default=DEFAULT_SAMPLE_SIZE,
+        help="Records in the golden-set sample, written next to --out (0: none).",
+    )
+    parser.add_argument(
+        "--master",
+        default=os.environ.get("SPARK_MASTER") or "local[*]",
+        help="Spark master (env SPARK_MASTER, default local[*]).",
+    )
+    parser.add_argument(
+        "--driver-memory",
+        default=os.environ.get("SPARK_DRIVER_MEMORY") or "4g",
+        help="Spark driver memory (env SPARK_DRIVER_MEMORY, default 4g).",
+    )
+    parser.add_argument(
+        "--snapshot-version",
+        default=None,
+        help="Kaggle dataset version to record (default: from the download manifest).",
+    )
+    parser.add_argument(
+        "--skip-duckdb-check",
+        action="store_true",
+        help="Do not compare the category count with DuckDB (ADR 0005).",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with one sub-command per pipeline step."""
     parser = argparse.ArgumentParser(
@@ -73,6 +119,8 @@ def build_parser() -> argparse.ArgumentParser:
         sub = subparsers.add_parser(name, help=help_text, description=help_text)
         if name == "download":
             add_download_arguments(sub)
+        elif name == "clean":
+            add_clean_arguments(sub)
     return parser
 
 
@@ -96,10 +144,36 @@ def run_download(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_clean(args: argparse.Namespace) -> int:
+    from scitech_pipelines.clean import ARXIV_FILE, clean_arxiv, create_spark
+
+    data_dir = Path(args.data_dir)
+    src = args.input or data_dir / "raw" / "arxiv" / ARXIV_FILE
+    out = args.out or data_dir / "processed" / "documents"
+    sample_out = out.parent / f"{out.name}-sample"
+    spark = create_spark(args.master, args.driver_memory)
+    try:
+        clean_arxiv(
+            spark,
+            src,
+            out,
+            category=args.category,
+            sample_out=sample_out,
+            sample_size=args.sample_size,
+            duckdb_check=not args.skip_duckdb_check,
+            snapshot_version=args.snapshot_version,
+        )
+    finally:
+        spark.stop()
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return the process exit code."""
     args = build_parser().parse_args(argv)
     if args.command == "download":
         return run_download(args)
+    if args.command == "clean":
+        return run_clean(args)
     print(f"{args.command}: not implemented")
     return 0
