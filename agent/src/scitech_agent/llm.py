@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import sys
 import time
@@ -32,7 +33,11 @@ Message = Mapping[str, str]  # {"role": "system" | "user" | "assistant", "conten
 
 DEFAULT_TEMPERATURE = 0.0
 DEFAULT_MAX_TOKENS = 512
-RETRY_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
+# Retried: timeout, rate limit, server and gateway errors. Cloudflare answers 52x/530 when the
+# quick tunnel or the Kaggle server behind it is gone (runbook `docs/runbooks/llm-serving.md`).
+RETRY_STATUSES = frozenset({408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 530})
+
+logger = logging.getLogger(__name__)
 
 
 # --- Errors -------------------------------------------------------------------------------------
@@ -84,6 +89,8 @@ class LLMConfig:
             max_retries = int(env.get("LLM_MAX_RETRIES") or 2)
         except ValueError as exc:
             raise LLMConfigError(f"LLM_TIMEOUT / LLM_MAX_RETRIES must be numbers: {exc}") from None
+        if not env["LLM_BASE_URL"].strip().startswith(("http://", "https://")):
+            raise LLMConfigError("LLM_BASE_URL must start with http:// or https://")
         if timeout <= 0 or max_retries < 0:
             raise LLMConfigError("LLM_TIMEOUT must be > 0 and LLM_MAX_RETRIES >= 0")
         return cls(
@@ -180,6 +187,8 @@ class OpenAICompatibleLLM:
     def _body(
         self, messages: Sequence[Message], temperature: float, max_tokens: int, stream: bool
     ) -> dict[str, Any]:
+        if max_tokens <= 0:
+            raise ValueError("max_tokens must be > 0")
         return {
             "model": self.config.model,
             "messages": _check_messages(messages),
@@ -227,6 +236,7 @@ class OpenAICompatibleLLM:
             except (httpx.HTTPError, _RetryableStatus) as exc:
                 if started or attempt >= self.config.max_retries:
                     raise _to_llm_error(exc) from exc
+                logger.warning("LLM stream attempt %d failed (%s); retrying", attempt + 1, exc)
             self._sleep(self.config.backoff * 2**attempt)
             attempt += 1
 
@@ -237,6 +247,7 @@ class OpenAICompatibleLLM:
             except (httpx.HTTPError, _RetryableStatus) as exc:
                 if attempt >= self.config.max_retries:
                     raise _to_llm_error(exc) from exc
+                logger.warning("LLM attempt %d failed (%s); retrying", attempt + 1, exc)
             self._sleep(self.config.backoff * 2**attempt)
         raise AssertionError("unreachable")
 

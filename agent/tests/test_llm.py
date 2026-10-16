@@ -77,6 +77,7 @@ def test_config_defaults_and_placeholder_key() -> None:
         {**ENV, "LLM_TIMEOUT": "soon"},
         {**ENV, "LLM_TIMEOUT": "0"},
         {**ENV, "LLM_MAX_RETRIES": "-1"},
+        {**ENV, "LLM_BASE_URL": "llm.test/v1"},
     ],
 )
 def test_config_errors_are_clear(env: dict[str, str]) -> None:
@@ -123,6 +124,19 @@ def test_chat_retries_5xx_then_succeeds() -> None:
     client, pauses = make_client(lambda r: next(responses))
     assert client.chat(MESSAGES) == "ok"
     assert pauses == [0.5, 1.0]  # exponential backoff
+
+
+def test_dead_cloudflare_tunnel_is_retried_then_llm_unavailable() -> None:
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(530, text="error code: 1033")
+
+    client, pauses = make_client(handler, max_retries=2)
+    with pytest.raises(LLMUnavailableError, match="530"):
+        client.chat(MESSAGES)
+    assert len(calls) == 3 and pauses == [0.5, 1.0]
 
 
 def test_chat_gives_up_after_max_retries() -> None:
@@ -177,6 +191,12 @@ def test_malformed_response_is_llm_error() -> None:
     client, _ = make_client(lambda r: httpx.Response(200, json={"unexpected": True}))
     with pytest.raises(LLMError, match="unexpected response"):
         client.chat(MESSAGES)
+
+
+def test_max_tokens_must_be_positive() -> None:
+    client, _ = make_client(lambda r: pytest.fail("no request expected"))
+    with pytest.raises(ValueError, match="max_tokens"):
+        client.chat(MESSAGES, max_tokens=0)
 
 
 @pytest.mark.parametrize("messages", [[], [{"role": "user"}], [{"role": "user", "content": 1}]])
