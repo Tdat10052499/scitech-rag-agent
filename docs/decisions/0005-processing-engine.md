@@ -1,6 +1,6 @@
 # 0005. Processing engine: PySpark in local mode, DuckDB for checks
 
-- Status: accepted (2026-10-16, DAT review on #30)
+- Status: accepted (2026-10-16, DAT review on #30); real-data measurements added 2026-10-16 (table C)
 - Date: 2026-10-15
 - Deciders: FAO (author), DAT (reviewer)
 
@@ -48,7 +48,18 @@ On the 2 MB sample, start-up and first import dominate the time.
 
 Polars was not run at full size: with eager `read_ndjson` its peak memory grows with the input (1.8 GB for 0.3 GB of JSON in both tables), which extrapolates to about 30-35 GB for the full snapshot (estimate). Polars would need `scan_ndjson` with the streaming engine instead.
 
-Limits of table B: 20 distinct records repeated make the data more uniform than the real snapshot (Spark's schema inference and the JSON parsers see only one shape), and the file was just written, so it was in the OS cache. Real-data times will be higher. The first, cold run of the slice took 5.15 s (DuckDB), 12.39 s (Polars) and 44.46 s (PySpark). A run of the same script on Colab with the real `slice-200k.jsonl` and the real snapshot is a follow-up (below), not a condition of this decision.
+Limits of table B: 20 distinct records repeated make the data more uniform than the real snapshot (Spark's schema inference and the JSON parsers see only one shape), and the file was just written, so it was in the OS cache. Real-data times will be higher. The first, cold run of the slice took 5.15 s (DuckDB), 12.39 s (Polars) and 44.46 s (PySpark). The follow-up run on real data is table C.
+
+**C. Kaggle notebook, real data** (4 CPUs, 34 GB RAM, Linux, OpenJDK 17.0.20, PySpark 4.x and DuckDB from pip; 2026-10-16, one run each). Input: the Kaggle dataset version 307, the same file as `data/raw/arxiv/` from the downloader (W2-D1-FAO-1), and its first 200,000 lines, identical in size to the slice of table A.
+
+| Input | Engine | Wall time (s) | Peak memory (MB) | Records kept |
+|---|---|---:|---:|---:|
+| `slice-200k.jsonl`, first 200,000 snapshot lines (302.6 MB) | DuckDB | 1.21 | 176 | 268 |
+| `slice-200k.jsonl`, first 200,000 snapshot lines (302.6 MB) | PySpark | 26.20 | 849 | 268 |
+| `arxiv-metadata-oai-snapshot.json`, the full snapshot (5,610.3 MB, 3,205,432 lines) | DuckDB | 16.34 | 1,164 | 121,860 |
+| `arxiv-metadata-oai-snapshot.json`, the full snapshot (5,610.3 MB, 3,205,432 lines) | PySpark | 79.54 | 3,251 | 121,860 |
+
+Both engines agree on the per-year counts, and the 121,860 records kept match the `cs.CL` count of ADR 0003. On the real snapshot PySpark took 2.3 times as long and 3.1 times the memory of the synthetic file in table B (a different machine, also 4 CPUs, so only a rough comparison), far from the "10 times slower" margin assumed in the decision below.
 
 **Setup effort:**
 
@@ -61,15 +72,15 @@ Limits of table B: 20 distinct records repeated make the data more uniform than 
 ## Decision
 **PySpark 4.x in local mode is the engine of the processing tier (`clean` and later batch jobs over the snapshot). DuckDB is used for profiling, quick checks and tests that compare counts, and is the fallback if Spark becomes a blocker.**
 
-- PySpark is workable at our scale: on the synthetic full-size file (5.49 GB, 3.2M lines) the whole job took 35 s with about 1.1 GB peak memory on 4 CPUs. Even if real data is 10 times slower (estimate), a rebuild stays within minutes and within the memory of every machine we have. This meets the brief's condition, so the brief's preference applies.
+- PySpark is workable at our scale: on the synthetic full-size file (5.49 GB, 3.2M lines) the whole job took 35 s with about 1.1 GB peak memory on 4 CPUs. Even if real data is 10 times slower (estimate), a rebuild stays within minutes and within the memory of every machine we have. This meets the brief's condition, so the brief's preference applies. Confirmed on the real snapshot (table C): 80 s and 3.3 GB peak on 4 CPUs.
 - DuckDB is faster (5.3 s, 0.6 GB on the same file) and easier to install, and would be the choice on speed alone. We still pick Spark because the course is assessed on big-data tooling, and Spark's DataFrame API is the one that scales from `local[*]` to a cluster without rewriting `clean`. The extra 30 s per rebuild is not a cost that matters for a job that runs a few times.
 - Polars is not chosen: its eager reader needs memory proportional to the input (about 30-35 GB for the snapshot, estimate), and it brings no advantage over DuckDB for checks.
 
 ## Consequences
-- `clean` (W2-D2-FAO-1) runs where Java 17+ exists: WSL2 on FAO's laptop or Colab. Windows-native runs are not supported; `pipelines/AGENTS.md` and the runbook must say so.
+- `clean` (W2-D2-FAO-1) runs where Java 17+ exists: WSL2 on FAO's laptop, Colab, or a Kaggle notebook (where the snapshot is already mounted, table C). Windows-native runs are not supported; `pipelines/AGENTS.md` and the runbook must say so.
 - `pipelines/requirements.txt` gains `pyspark` (W2-D2-FAO-1). CI already installs that file (W1-D5-DAT-2); the first PR that adds `pyspark` checks that `ubuntu-latest` provides Java 17+ (if not, DAT adds `actions/setup-java` to `ci.yml`). Tests use one shared `local[1]` session on the 20-record fixture, which adds about 15 s of JVM start-up and the install of `pyspark` (about 480 MB, pip cache helps) to each CI run.
 - Spark tests **skip**, not fail, when PySpark or Java is missing (`pytest.importorskip("pyspark")` plus a skip when no `java` is found), so `make test` keeps working for Windows members without Java; they run in CI. `pipelines/AGENTS.md` states this (W2-D2-FAO-1).
 - The Spark job must not rely on schema inference over the whole file in production: `clean` passes an explicit schema for the snapshot fields (faster, and it fails loudly if Kaggle changes a field).
 - Reproducibility checks compare Spark's output counts with a DuckDB query over the same file; a mismatch fails the run.
 - Scaling numbers for the report (`pipelines/reports/scaling.md`) come from the real `clean` run on the full snapshot, not from table B.
-- Follow-up (FAO, before or with W2-D2-FAO-1 on D05): run `bench_engines.py` with PySpark on the real `slice-200k.jsonl` (Colab or WSL2), and on the real snapshot if possible, and add the rows here. The revisit rule below only works if this is measured. Revisit this decision if PySpark on the real snapshot takes more than 15 minutes or more than 8 GB of memory, or if WSL2/Colab is unavailable when `clean` must run; then switch to DuckDB, which runs the same job natively on Windows.
+- Follow-up (FAO, before or with W2-D2-FAO-1 on D05): run `bench_engines.py` with PySpark on the real `slice-200k.jsonl` and on the real snapshot. Done on 2026-10-16 in a Kaggle notebook (table C): 79.5 s and 3,251 MB on the full snapshot, well inside the revisit limits below. Revisit this decision if PySpark on the real snapshot takes more than 15 minutes or more than 8 GB of memory, or if WSL2, Colab and Kaggle are all unavailable when `clean` must run; then switch to DuckDB, which runs the same job natively on Windows.
