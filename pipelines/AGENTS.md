@@ -9,3 +9,7 @@ Source of truth for output: `docs/contracts/chunk.schema.json`. Sources and lice
 - Respect source terms and rate limits (e.g. pause between API requests). Record licence per record in the `license` field.
 - Large-scale processing (Spark or similar) is justified only if the data volume requires it; record that decision in `docs/decisions/`.
 - Validate outputs against the chunk schema in tests.
+
+## Commands
+- `python -m scitech_pipelines download --source arxiv|wikipedia|all [--out data/raw]`: raw data into `data/raw/<source>/` with a `manifest.json` (sizes, SHA-256). Re-running skips a complete source; `--force` downloads again. arXiv needs a Kaggle login (`kaggle auth login`); Wikipedia options: `--wiki-depth` (default 2), `--wiki-pause` (default 1 s), `--wiki-max-pages` (for a quick test). The arXiv manifest records the Kaggle dataset `version` (ADR 0003; W6 names the frozen index after it); the Wikipedia manifest records page counts per category depth, and pages without text are listed in `pages_without_text.txt` so a resumed run skips them. Wikipedia requests retry 429/5xx, timeouts and connection errors with backoff.
+- Tests never call Kaggle or Wikipedia: they use fakes (`tests/test_download.py`).
