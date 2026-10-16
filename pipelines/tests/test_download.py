@@ -10,6 +10,7 @@ import pytest
 
 from scitech_pipelines.cli import main
 from scitech_pipelines.download import (
+    KaggleApiClient,
     WikiClient,
     crawl_category,
     download_arxiv,
@@ -29,8 +30,14 @@ def quiet(_: str) -> None:
 class FakeKaggle:
     """Writes a zip with the fixture as the snapshot, like `dataset_download_files`."""
 
-    def __init__(self) -> None:
+    def __init__(self, version_error: bool = False) -> None:
         self.downloads = 0
+        self.version_error = version_error
+
+    def remote_version(self, dataset: str) -> int | None:
+        if self.version_error:
+            raise ConnectionError("no metadata")
+        return 307
 
     def remote_files(self, dataset: str) -> list[dict[str, Any]]:
         return [{"name": SNAPSHOT, "bytes": FIXTURE.stat().st_size, "created": "2026-10-10"}]
@@ -54,6 +61,7 @@ def test_arxiv_download_extracts_and_writes_manifest(tmp_path: Path) -> None:
     assert on_disk == manifest
     assert manifest["source"] == "arxiv"
     assert manifest["url"] == "https://www.kaggle.com/datasets/Cornell-University/arxiv"
+    assert manifest["version"] == 307
     assert manifest["files"] == [
         {"name": SNAPSHOT, "bytes": FIXTURE.stat().st_size, "sha256": sha256_file(FIXTURE)}
     ]
@@ -77,6 +85,41 @@ def test_arxiv_downloads_again_when_file_changed_or_forced(tmp_path: Path) -> No
     download_arxiv(tmp_path, client=kaggle, force=True, log=quiet)
     assert kaggle.downloads == 3
     assert (tmp_path / "arxiv" / SNAPSHOT).read_bytes() == FIXTURE.read_bytes()
+
+
+def test_arxiv_metadata_failure_does_not_block_download(tmp_path: Path) -> None:
+    logged: list[str] = []
+    manifest = download_arxiv(tmp_path, client=FakeKaggle(version_error=True), log=logged.append)
+    assert manifest["version"] is None
+    assert manifest["files"][0]["name"] == SNAPSHOT
+    assert any("WARNING could not read the dataset version" in line for line in logged)
+
+
+def test_kaggle_api_client_reads_version_and_files_from_kaggle_types() -> None:
+    """The real wrapper against the response types of the `kaggle` package (no network)."""
+    types = pytest.importorskip("kagglesdk.datasets.types.dataset_api_service")
+    from datetime import datetime
+
+    file = types.ApiDatasetFile()
+    file.name = SNAPSHOT
+    file.total_bytes = 5_610_000_000
+    file.creation_date = datetime(2026, 10, 10, 3, 0)
+    response = types.ApiListDatasetFilesResponse()
+    response.dataset_files = [file]
+
+    class FakeApi:
+        def dataset_status(self, dataset: str, format: str | None = None) -> str:
+            assert format == "json(current_version_number)"
+            return json.dumps({"current_version_number": 307})
+
+        def dataset_list_files(self, dataset: str):
+            return response
+
+    client = KaggleApiClient(api=FakeApi())
+    assert client.remote_version("Cornell-University/arxiv") == 307
+    assert client.remote_files("Cornell-University/arxiv") == [
+        {"name": SNAPSHOT, "bytes": 5_610_000_000, "created": "2026-10-10 03:00:00"}
+    ]
 
 
 def test_extract_zip_keeps_files_inside_out_dir(tmp_path: Path) -> None:
@@ -119,11 +162,16 @@ EMPTY_PAGES = {2}
 
 
 class FakeResponse:
-    def __init__(self, data: dict[str, Any]) -> None:
+    def __init__(
+        self, data: dict[str, Any], status_code: int = 200, headers: dict[str, str] | None = None
+    ) -> None:
         self.data = data
+        self.status_code = status_code
+        self.headers = headers or {}
 
     def raise_for_status(self) -> None:
-        pass
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
 
     def json(self) -> dict[str, Any]:
         return self.data
@@ -132,15 +180,26 @@ class FakeResponse:
 class FakeWiki:
     """Answers `list=categorymembers` (with continuation) and page-text queries."""
 
-    def __init__(self, maxlag_first: bool = False, fail_on_page: int | None = None) -> None:
+    def __init__(
+        self,
+        maxlag_first: bool = False,
+        fail_on_page: int | None = None,
+        transient: list[Any] | None = None,
+    ) -> None:
         self.calls: list[dict[str, Any]] = []
         self.headers: list[dict[str, str]] = []
         self.maxlag_first = maxlag_first
         self.fail_on_page = fail_on_page
+        self.transient = transient or []  # exceptions or FakeResponses returned first, in order
 
     def get(self, url: str, *, params: dict[str, Any], headers: dict[str, str], timeout: float):
         self.calls.append(params)
         self.headers.append(headers)
+        if self.transient:
+            failure = self.transient.pop(0)
+            if isinstance(failure, Exception):
+                raise failure
+            return failure
         if self.maxlag_first:
             self.maxlag_first = False
             return FakeResponse({"error": {"code": "maxlag", "info": "lagged"}})
@@ -202,6 +261,28 @@ def test_wiki_client_pauses_retries_maxlag_and_sends_user_agent() -> None:
     assert session.calls[0]["maxlag"] == "5" and session.calls[0]["format"] == "json"
 
 
+def test_wiki_client_retries_transient_errors_with_backoff() -> None:
+    session = FakeWiki(
+        transient=[
+            TimeoutError("read timed out"),
+            FakeResponse({}, status_code=429, headers={"Retry-After": "30"}),
+            FakeResponse({}, status_code=503),
+        ]
+    )
+    sleeps: list[float] = []
+    wiki = WikiClient(session, pause=1.0, sleep=sleeps.append)
+    assert wiki.get({"list": "categorymembers", "cmtitle": ROOT})["query"]["categorymembers"]
+    assert sleeps == [5.0, 30.0, 20.0, 1.0]  # backoff 5 s, Retry-After, backoff 20 s, pause
+
+
+def test_wiki_client_gives_up_after_max_retries() -> None:
+    session = FakeWiki(transient=[FakeResponse({}, status_code=503)] * 3)
+    wiki = WikiClient(session, sleep=no_sleep, max_retries=2)
+    with pytest.raises(RuntimeError, match="HTTP 503"):
+        wiki.get({"list": "categorymembers", "cmtitle": ROOT})
+    assert len(session.calls) == 3
+
+
 def read_pages(out: Path) -> list[dict[str, Any]]:
     text = (out / "wikipedia" / "pages.jsonl").read_text("utf-8")
     return [json.loads(line) for line in text.splitlines()]
@@ -225,8 +306,15 @@ def test_wikipedia_download_writes_pages_and_manifest(tmp_path: Path) -> None:
     }
     assert manifest["licence"] == "CC BY-SA 4.0"
     assert manifest["pages_listed"] == 4
-    assert manifest["pages_without_text_this_run"] == 1
-    assert [f["name"] for f in manifest["files"]] == ["category_members.json", "pages.jsonl"]
+    assert manifest["pages_downloaded"] == 3
+    assert manifest["pages_without_text"] == 1
+    assert manifest["pages_listed_by_depth"] == {"0": 2, "1": 2}
+    assert manifest["pages_downloaded_by_depth"] == {"0": 1, "1": 2}
+    assert [f["name"] for f in manifest["files"]] == [
+        "category_members.json",
+        "pages.jsonl",
+        "pages_without_text.txt",
+    ]
 
 
 def test_wikipedia_resumes_after_interruption_and_skips_when_complete(tmp_path: Path) -> None:
@@ -240,7 +328,8 @@ def test_wikipedia_resumes_after_interruption_and_skips_when_complete(tmp_path: 
     session = FakeWiki()
     download_wikipedia(tmp_path, session=session, max_depth=1, sleep=no_sleep, log=quiet)
     fetched = [c["pageids"] for c in session.calls if "pageids" in c]
-    assert fetched == ["2", "3", "4"]  # cached crawl reused, page 1 not fetched again
+    # cached crawl reused; page 1 (downloaded) and page 2 (no text) are not requested again
+    assert fetched == ["3", "4"]
     assert [p["pageid"] for p in read_pages(tmp_path)] == [1, 3, 4]
 
     session = FakeWiki()

@@ -4,7 +4,8 @@
   Kaggle resumes a partial zip; the zip is extracted and then deleted.
 - `wikipedia`: English Wikipedia pages under `Category:Natural language processing` and its
   subcategories (MediaWiki API, plain-text extracts), one JSON object per page in `pages.jsonl`.
-  Requests are serial with a pause between them; an interrupted crawl resumes where it stopped.
+  Requests are serial with a pause between them, transient errors (429, 5xx, timeouts) are
+  retried with backoff, and an interrupted page download resumes where it stopped.
 
 Each source directory gets a `manifest.json` (source, URL, date, file sizes, SHA-256 checksums).
 A re-run skips a source whose manifest lists files that are all present with the same size.
@@ -81,6 +82,8 @@ def is_complete(source_dir: Path, manifest: dict[str, Any] | None) -> bool:
 
 
 class KaggleClient(Protocol):
+    def remote_version(self, dataset: str) -> int | None: ...
+
     def remote_files(self, dataset: str) -> list[dict[str, Any]]: ...
 
     def download_zip(self, dataset: str, out_dir: Path) -> Path: ...
@@ -88,24 +91,32 @@ class KaggleClient(Protocol):
 
 class KaggleApiClient:
     """Thin wrapper around the `kaggle` package. Imported lazily: importing `kaggle` checks for
-    credentials, which tests and CI do not have. Log in once with `kaggle auth login`."""
+    credentials, which tests and CI do not have. Log in once with `kaggle auth login`.
+    Tests pass a stand-in for `KaggleApi` as `api`."""
 
-    def __init__(self) -> None:
-        from kaggle.api.kaggle_api_extended import KaggleApi
+    def __init__(self, api: Any = None) -> None:
+        if api is None:
+            from kaggle.api.kaggle_api_extended import KaggleApi
 
-        self.api = KaggleApi()
-        self.api.authenticate()
+            api = KaggleApi()
+            api.authenticate()
+        self.api = api
+
+    def remote_version(self, dataset: str) -> int | None:
+        """Current version number of the dataset on Kaggle (ADR 0003: the manifest records it)."""
+        status = self.api.dataset_status(dataset, format="json(current_version_number)")
+        version = json.loads(status).get("current_version_number")
+        return int(version) if version else None
 
     def remote_files(self, dataset: str) -> list[dict[str, Any]]:
         response = self.api.dataset_list_files(dataset)
-        files = getattr(response, "files", None) or []
         return [
             {
-                "name": getattr(f, "name", None),
-                "bytes": getattr(f, "total_bytes", None),
-                "created": str(getattr(f, "creation_date", "")) or None,
+                "name": f.name,
+                "bytes": f.total_bytes,
+                "created": str(f.creation_date) if f.creation_date else None,
             }
-            for f in files
+            for f in response.files
         ]
 
     def download_zip(self, dataset: str, out_dir: Path) -> Path:
@@ -155,11 +166,19 @@ def download_arxiv(
 
     started = time.monotonic()
     client = client or KaggleApiClient()
+    # Metadata only: the download must not depend on it, but a gap is reported loudly because
+    # the frozen index (W6) is named after the version.
+    try:
+        version = client.remote_version(dataset)
+    except Exception as exc:
+        log(f"arxiv: WARNING could not read the dataset version ({exc}); record it by hand")
+        version = None
     try:
         remote = client.remote_files(dataset)
-    except Exception as exc:  # metadata only; the download itself must not depend on it
-        log(f"arxiv: could not list remote files ({exc}); continuing")
+    except Exception as exc:
+        log(f"arxiv: WARNING could not list remote files ({exc})")
         remote = []
+    log(f"arxiv: {dataset} version {version}")
     zip_path = client.download_zip(dataset, source_dir)
     zip_bytes = zip_path.stat().st_size
     extracted = extract_zip(zip_path, source_dir, log)
@@ -168,6 +187,7 @@ def download_arxiv(
         "source": "arxiv",
         "dataset": dataset,
         "url": f"https://www.kaggle.com/datasets/{dataset}",
+        "version": version,
         "licence": "CC0-1.0 (metadata); see ADR 0003",
         "downloaded_at": _now(),
         "seconds": round(time.monotonic() - started, 1),
@@ -186,6 +206,9 @@ def download_arxiv(
 # --- Wikipedia (MediaWiki API) ------------------------------------------------------------------
 
 
+RETRY_STATUS = {429, 500, 502, 503, 504}
+
+
 class HttpSession(Protocol):
     def get(self, url: str, *, params: dict[str, Any], headers: dict[str, str], timeout: float):
         ...
@@ -193,7 +216,9 @@ class HttpSession(Protocol):
 
 class WikiClient:
     """Serial MediaWiki API client: one request at a time, a pause after each, and a retry when
-    the API reports replication lag (`maxlag`), as the Wikimedia API etiquette asks."""
+    the API reports replication lag (`maxlag`), as the Wikimedia API etiquette asks. HTTP 429 and
+    5xx answers, timeouts and connection errors are retried with exponential backoff (honouring
+    `Retry-After`), so a short outage does not stop an overnight run."""
 
     def __init__(
         self,
@@ -213,18 +238,36 @@ class WikiClient:
         self.max_retries = max_retries
         self.requests = 0
 
+    def backoff(self, attempt: int, retry_after: str | None = None) -> float:
+        if retry_after and retry_after.isdigit():
+            return min(float(retry_after), 300.0)
+        return min(5.0 * 2**attempt, 120.0)
+
     def get(self, params: dict[str, Any]) -> dict[str, Any]:
         query = {"action": "query", "format": "json", "formatversion": "2", "maxlag": "5", **params}
         for attempt in range(self.max_retries + 1):
-            response = self.session.get(self.api, params=query, headers=self.headers, timeout=60)
+            last = attempt == self.max_retries
+            try:
+                response = self.session.get(
+                    self.api, params=query, headers=self.headers, timeout=60
+                )
+            except OSError:  # requests' ConnectionError and Timeout are OSErrors
+                if last:
+                    raise
+                self.sleep(self.backoff(attempt))
+                continue
+            self.requests += 1
+            status = getattr(response, "status_code", 200)
+            if status in RETRY_STATUS and not last:
+                self.sleep(self.backoff(attempt, response.headers.get("Retry-After")))
+                continue
             response.raise_for_status()
             data = response.json()
-            self.requests += 1
             self.sleep(self.pause)
             error = data.get("error")
             if not error:
                 return data
-            if error.get("code") == "maxlag" and attempt < self.max_retries:
+            if error.get("code") == "maxlag" and not last:
                 self.sleep(5.0)
                 continue
             raise RuntimeError(f"MediaWiki API error: {error}")
@@ -314,6 +357,14 @@ def _done_pageids(path: Path) -> set[int]:
     return done
 
 
+def _no_text_pageids(path: Path) -> set[int]:
+    if not path.is_file():
+        return set()
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    # A last line cut off by an interrupted run has no newline and is ignored.
+    return {int(line) for line in lines if line.endswith("\n") and line.strip().isdigit()}
+
+
 def download_wikipedia(
     out: Path,
     *,
@@ -349,9 +400,11 @@ def download_wikipedia(
 
     members_path = source_dir / "category_members.json"
     pages_path = source_dir / "pages.jsonl"
+    # Page ids that returned no text; recorded so a resumed run does not request them again.
+    no_text_path = source_dir / "pages_without_text.txt"
     if force:
-        members_path.unlink(missing_ok=True)
-        pages_path.unlink(missing_ok=True)
+        for path in (members_path, pages_path, no_text_path):
+            path.unlink(missing_ok=True)
     cached = json.loads(members_path.read_text("utf-8")) if members_path.is_file() else None
     if cached and cached.get("settings") == settings:
         members = cached["pages"]
@@ -366,20 +419,25 @@ def download_wikipedia(
         )
 
     done = _done_pageids(pages_path)
-    todo = [m for m in members if m["pageid"] not in done]
+    no_text = _no_text_pageids(no_text_path)
+    todo = [m for m in members if m["pageid"] not in done and m["pageid"] not in no_text]
     log(f"wikipedia: {len(done):,} pages already downloaded, {len(todo):,} to go")
-    empty = 0
-    with pages_path.open("a", encoding="utf-8") as f:
+    with pages_path.open("a", encoding="utf-8") as f, no_text_path.open("a", encoding="utf-8") as e:
         for i, member in enumerate(todo, 1):
             page = fetch_page(wiki, member["pageid"])
             if page is None:
-                empty += 1
+                no_text.add(member["pageid"])
+                e.write(f"{member['pageid']}\n")
+                e.flush()
                 continue
             page.update(depth=member["depth"], category=member["category"])
             f.write(json.dumps(page, ensure_ascii=False) + "\n")
             f.flush()
             if i % 100 == 0:
                 log(f"wikipedia: {i:,}/{len(todo):,}")
+
+    depth_of = {m["pageid"]: m["depth"] for m in members}
+    downloaded = [p for p in _done_pageids(pages_path) if p in depth_of]
 
     manifest = {
         "source": "wikipedia",
@@ -391,10 +449,21 @@ def download_wikipedia(
         "seconds": round(time.monotonic() - started, 1),
         "requests": wiki.requests,
         "pages_listed": len(members),
-        "pages_without_text_this_run": empty,
-        "files": [file_entry(members_path), file_entry(pages_path)],
+        "pages_downloaded": len(downloaded),
+        "pages_without_text": len(no_text),
+        "pages_listed_by_depth": _count_by_depth(depth_of.values()),
+        "pages_downloaded_by_depth": _count_by_depth(depth_of[p] for p in downloaded),
+        "files": [file_entry(p) for p in (members_path, pages_path, no_text_path)],
     }
     write_manifest(source_dir, manifest)
-    pages = len(_done_pageids(pages_path))
-    log(f"wikipedia: {pages:,} pages in {pages_path} ({manifest['files'][1]['bytes']:,} bytes)")
+    size = manifest["files"][1]["bytes"]
+    by_depth = manifest["pages_downloaded_by_depth"]
+    log(f"wikipedia: {len(downloaded):,} pages ({size:,} bytes), by depth {by_depth}")
     return manifest
+
+
+def _count_by_depth(depths: Any) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for depth in sorted(depths):
+        counts[str(depth)] = counts.get(str(depth), 0) + 1
+    return counts

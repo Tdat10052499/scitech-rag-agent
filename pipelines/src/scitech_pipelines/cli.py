@@ -52,8 +52,8 @@ def add_download_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--user-agent",
-        default=os.environ.get("WIKI_USER_AGENT", DEFAULT_USER_AGENT),
-        help="User-Agent for the MediaWiki API (env WIKI_USER_AGENT).",
+        default=os.environ.get("WIKI_USER_AGENT") or DEFAULT_USER_AGENT,
+        help="User-Agent for the MediaWiki API (env WIKI_USER_AGENT; empty: built-in default).",
     )
 
 
