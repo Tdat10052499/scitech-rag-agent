@@ -150,6 +150,14 @@ def _authors() -> Column:
     return F.filter(F.transform(names, lambda n: F.trim(n)), lambda n: n != "")
 
 
+def _date(value: Column | str, pattern: str) -> Column:
+    """Parse a date, null when it does not match. `try_to_timestamp` exists since Spark 3.5;
+    `try_to_date` only in newer PySpark releases than the 4.0 that Kaggle installs."""
+    from pyspark.sql import functions as F
+
+    return F.to_date(F.try_to_timestamp(value, F.lit(pattern)))
+
+
 def in_category(category: str) -> Column:
     from pyspark.sql import functions as F
 
@@ -161,7 +169,7 @@ def normalise(raw: DataFrame) -> DataFrame:
     from pyspark.sql import functions as F
 
     first_created = F.try_element_at("versions", F.lit(1))["created"]
-    published = F.try_to_date(F.regexp_extract(first_created, FIRST_VERSION_DATE, 1), "d MMM yyyy")
+    published = _date(F.regexp_extract(first_created, FIRST_VERSION_DATE, 1), "d MMM yyyy")
     return raw.select(
         F.trim("id").alias("doc_id"),
         F.lit("arxiv").alias("source"),
@@ -170,7 +178,7 @@ def normalise(raw: DataFrame) -> DataFrame:
         _authors().alias("authors"),
         F.split(F.trim(F.col("categories")), r"\s+").alias("categories"),
         published.alias("published_at"),
-        F.try_to_date(F.col("update_date"), "yyyy-MM-dd").alias("updated_at"),
+        _date("update_date", "yyyy-MM-dd").alias("updated_at"),
         F.concat(F.lit(ABS_URL), F.trim("id")).alias("url"),
         F.lit(METADATA_LICENSE).alias("license"),
         F.year(published).alias("year"),
