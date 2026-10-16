@@ -1,0 +1,2 @@
+# Runtime dependencies of agent/.
+httpx>=0.27  # LLM client: OpenAI-compatible Chat Completions over HTTP (W2-D1-DAT-1)
