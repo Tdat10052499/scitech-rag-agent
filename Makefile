@@ -2,8 +2,8 @@
 
 PYTHON ?= python
 
-setup:  ## Install dev tooling and Python module dependencies (backend, pipelines)
-	$(PYTHON) -m pip install -r requirements-dev.txt -r backend/requirements.txt -r pipelines/requirements.txt
+setup:  ## Install dev tooling and Python module dependencies (backend, agent, pipelines)
+	$(PYTHON) -m pip install -r requirements-dev.txt -r backend/requirements.txt -r agent/requirements.txt -r pipelines/requirements.txt
 	pre-commit install
 
 test:  ## Run all tests

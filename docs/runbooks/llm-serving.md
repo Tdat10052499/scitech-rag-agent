@@ -20,6 +20,11 @@ export LLM_API_KEY=not-needed                               # Ollama ignores the
 export LLM_MODEL=qwen2.5:3b
 python notebooks/llm-serving/bench_llm.py --runs 1 --prompts en --out bench_smoke.jsonl
 ```
+Check the project's own client (W2-D1-DAT-1) with the same variables, from the repository root after `make setup`:
+```bash
+PYTHONPATH=agent/src python -m scitech_agent.llm "What is retrieval-augmented generation?" --stream
+```
+PowerShell: `$env:PYTHONPATH="agent/src"` first. It prints the answer, then the time to the first fragment and the total time on stderr.
 The URL changes on every session: never commit it, share it only inside the team.
 
 ## 3. Measurement method

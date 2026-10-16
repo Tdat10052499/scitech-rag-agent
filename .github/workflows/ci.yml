@@ -20,9 +20,10 @@ jobs:
           cache-dependency-path: |
             requirements-dev.txt
             backend/requirements.txt
+            agent/requirements.txt
             pipelines/requirements.txt
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt -r backend/requirements.txt -r pipelines/requirements.txt
+        run: pip install -r requirements-dev.txt -r backend/requirements.txt -r agent/requirements.txt -r pipelines/requirements.txt
       - name: Lint
         run: ruff check .
       - name: Test
