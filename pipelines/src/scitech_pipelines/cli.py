@@ -166,6 +166,36 @@ def add_profile_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_chunk_arguments(parser: argparse.ArgumentParser) -> None:
+    from scitech_pipelines.chunk import DEFAULT_MAX_WORDS, DEFAULT_OVERLAP_WORDS, env_int
+
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=None,
+        help="Cleaned documents (default: <data-dir>/processed/documents).",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Output directory (default: <data-dir>/processed/chunks).",
+    )
+    parser.add_argument(
+        "--max-words",
+        type=int,
+        default=env_int("CHUNK_MAX_WORDS", DEFAULT_MAX_WORDS),
+        help=f"Words per chunk, title included (env CHUNK_MAX_WORDS, default {DEFAULT_MAX_WORDS}).",
+    )
+    parser.add_argument(
+        "--overlap-words",
+        type=int,
+        default=env_int("CHUNK_OVERLAP_WORDS", DEFAULT_OVERLAP_WORDS),
+        help="Words shared by consecutive chunks of one abstract "
+        f"(env CHUNK_OVERLAP_WORDS, default {DEFAULT_OVERLAP_WORDS}).",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with one sub-command per pipeline step."""
     parser = argparse.ArgumentParser(
@@ -188,6 +218,8 @@ def build_parser() -> argparse.ArgumentParser:
             add_validate_arguments(sub)
         elif name == "profile":
             add_profile_arguments(sub)
+        elif name == "chunk":
+            add_chunk_arguments(sub)
     return parser
 
 
@@ -259,6 +291,19 @@ def run_profile(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_chunk(args: argparse.Namespace) -> int:
+    from scitech_pipelines.chunk import chunk_documents
+
+    data_dir = Path(args.data_dir)
+    chunk_documents(
+        args.input or data_dir / "processed" / "documents",
+        args.out or data_dir / "processed" / "chunks",
+        max_words=args.max_words,
+        overlap_words=args.overlap_words,
+    )
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return the process exit code."""
     args = build_parser().parse_args(argv)
@@ -270,5 +315,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_validate(args)
     if args.command == "profile":
         return run_profile(args)
+    if args.command == "chunk":
+        return run_chunk(args)
     print(f"{args.command}: not implemented")
     return 0
