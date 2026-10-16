@@ -110,6 +110,8 @@ def create_spark(master: str = "local[*]", driver_memory: str = "4g") -> SparkSe
         .appName("scitech-clean")
         .config("spark.driver.memory", driver_memory)
         .config("spark.ui.enabled", "false")
+        .config("spark.ui.showConsoleProgress", "false")
+        .config("spark.sql.shuffle.partitions", "16")
         .config("spark.sql.session.timeZone", "UTC")
         .getOrCreate()
     )
@@ -283,7 +285,8 @@ def clean_arxiv(
     }
     records_out = sum(by_year.values())
 
-    final.write.mode("overwrite").partitionBy("year").parquet(str(out))
+    # One file per year (at most about 25k records each) instead of one per shuffle partition.
+    final.repartition("year").write.mode("overwrite").partitionBy("year").parquet(str(out))
     sample_count = 0
     if sample_out is not None and sample_size > 0:
         # A fixed hash order spreads the sample over all years and gives the same records on

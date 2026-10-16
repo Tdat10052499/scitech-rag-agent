@@ -103,6 +103,7 @@ def test_clean_fixture_end_to_end(spark, tmp_path: Path) -> None:
     assert sorted(p.name for p in out.glob("year=*")) == [
         f"year={y}" for y in sorted(manifest["records_by_year"])
     ]
+    assert all(len(list(d.glob("*.parquet"))) == 1 for d in out.glob("year=*"))
     assert json.loads((out / clean.CLEAN_MANIFEST).read_text(encoding="utf-8")) == manifest
 
     docs = read_parquet(spark, out)
