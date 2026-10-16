@@ -1,3 +1,5 @@
 # Runtime dependencies of pipelines/. CI installs this file.
 kaggle>=2.0  # download: arXiv snapshot (W2-D1-FAO-1); imported lazily, needs `kaggle auth login`
 requests>=2.31  # download: MediaWiki API (W2-D1-FAO-1)
+pyspark>=4.0  # clean: processing engine (ADR 0005, W2-D2-FAO-1); needs Java 17+, imported lazily
+duckdb>=1.1  # clean: independent count check (ADR 0005, W2-D2-FAO-1)

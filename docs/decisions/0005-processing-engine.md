@@ -50,7 +50,7 @@ Polars was not run at full size: with eager `read_ndjson` its peak memory grows 
 
 Limits of table B: 20 distinct records repeated make the data more uniform than the real snapshot (Spark's schema inference and the JSON parsers see only one shape), and the file was just written, so it was in the OS cache. Real-data times will be higher. The first, cold run of the slice took 5.15 s (DuckDB), 12.39 s (Polars) and 44.46 s (PySpark). The follow-up run on real data is table C.
 
-**C. Kaggle notebook, real data** (4 CPUs, 34 GB RAM, Linux, OpenJDK 17.0.20, PySpark 4.x and DuckDB from pip; 2026-10-16, one run each). Input: the Kaggle dataset version 307, the same file as `data/raw/arxiv/` from the downloader (W2-D1-FAO-1), and its first 200,000 lines, identical in size to the slice of table A.
+**C. Kaggle notebook, real data** (4 CPUs, 34 GB RAM, Linux, OpenJDK 17.0.20, PySpark 4.x and DuckDB from pip; 2026-10-16, one run each, in the order of the table: the slice was just written, so it was in the OS cache; DuckDB read the full snapshot first in the session (probably cold), PySpark right after it (probably from the OS cache)). Input: the Kaggle dataset version 307, the same file as `data/raw/arxiv/` from the downloader (W2-D1-FAO-1), and its first 200,000 lines, identical in size to the slice of table A.
 
 | Input | Engine | Wall time (s) | Peak memory (MB) | Records kept |
 |---|---|---:|---:|---:|
