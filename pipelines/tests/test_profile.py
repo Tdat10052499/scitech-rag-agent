@@ -31,7 +31,7 @@ def doc(doc_id: str, year: int, categories: list[str], abstract: str, **fields) 
 
 DOCS = [
     doc("2304.00001", 2023, ["cs.CL"], "one two three four"),
-    doc("2404.00001", 2024, ["cs.CL", "cs.LG"], "one two", authors=[]),
+    doc("2404.00001", 2024, ["cs.CL", "cs.LG", "cs.AI"], "one two", authors=[]),
     doc("2404.00002", 2024, ["cs.LG", "cs.CL"], " ".join(["w"] * 300), updated_at="2024-05-01"),
 ]
 
@@ -127,6 +127,7 @@ def test_profile_counts_raw_and_cleaned_data(tmp_path: Path) -> None:
     assert docs["categories_listed"] == [
         {"category": "cs.CL", "records": 3},
         {"category": "cs.LG", "records": 2},
+        {"category": "cs.AI", "records": 1},
     ]
     assert docs["cross_listed"] == 1
     assert docs["abstract_words"]["min"] == 2 and docs["abstract_words"]["max"] == 300
@@ -156,6 +157,7 @@ def test_report_says_how_every_section_was_computed(tmp_path: Path) -> None:
     assert "| Duplicates removed (`doc_id`) | 1 (4.8%) |" in report
     assert "| 2024 | 2 |" in report
     assert "| `cs.LG` | 2 | 66.7% | 1 | 33.3% |" in report
+    assert "| `cs.AI` | 1 | 33.3% | 0 | 0.0% |" in report  # listed, never primary
     assert "256 words 1 (33.3%)" in report
     cells = None  # every table row has as many cells as its table's header
     for line in report.splitlines():
