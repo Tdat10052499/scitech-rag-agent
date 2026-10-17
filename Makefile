@@ -19,7 +19,7 @@ down:  ## Stop local infrastructure
 	docker compose down
 
 run:  ## Run the backend API locally with auto-reload
-	$(PYTHON) -m uvicorn app.main:app --app-dir backend/src --reload --port 8000
+	PYTHONPATH=agent/src $(PYTHON) -m uvicorn app.main:app --app-dir backend/src --reload --port 8000
 
 frontend-setup:  ## Install frontend dependencies from the lockfile (Node.js 22, ADR 0004)
 	cd frontend && npm ci
