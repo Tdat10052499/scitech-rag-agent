@@ -36,18 +36,66 @@ def write_jsonl(path: Path, records: list[dict]) -> Path:
 # --- without Spark --------------------------------------------------------------------------
 
 
-def test_java_available_uses_java_home(monkeypatch, tmp_path: Path) -> None:
+def test_java_executable_prefers_java_home(monkeypatch, tmp_path: Path) -> None:
     (tmp_path / "bin").mkdir()
     (tmp_path / "bin" / "java").write_text("")
     monkeypatch.setenv("JAVA_HOME", str(tmp_path))
-    monkeypatch.setattr(clean.shutil, "which", lambda name: None)
-    assert clean.java_available()
+    monkeypatch.setattr(clean.shutil, "which", lambda name: "/usr/bin/java")
+    assert clean.java_executable() == str(tmp_path / "bin" / "java")
+    monkeypatch.delenv("JAVA_HOME")
+    assert clean.java_executable() == "/usr/bin/java"
+
+
+@pytest.mark.parametrize(
+    ("output", "major"),
+    [
+        ('java version "1.8.0_402"\nJava(TM) SE Runtime Environment', 8),
+        ('openjdk version "17.0.20.1" 2026-07-21\nOpenJDK Runtime Environment', 17),
+        ('openjdk version "21" 2023-09-19', 21),
+        ("not java", None),
+    ],
+)
+def test_java_major_version(monkeypatch, output: str, major: int | None) -> None:
+    def run(cmd, **kwargs):
+        assert cmd == ["java", "-version"]
+        return clean.subprocess.CompletedProcess(cmd, 0, stdout="", stderr=output)
+
+    monkeypatch.setattr(clean.subprocess, "run", run)
+    assert clean.java_major_version("java") == major
+
+
+def test_java_major_version_when_java_cannot_start(monkeypatch) -> None:
+    def run(cmd, **kwargs):
+        raise OSError("broken")
+
+    monkeypatch.setattr(clean.subprocess, "run", run)
+    assert clean.java_major_version("java") is None
+
+
+@pytest.mark.parametrize(("major", "ok"), [(8, False), (11, False), (17, True), (21, True)])
+def test_java_available_needs_java_17(monkeypatch, major: int, ok: bool) -> None:
+    monkeypatch.setattr(clean, "java_executable", lambda: "java")
+    monkeypatch.setattr(clean, "java_major_version", lambda java: major)
+    assert clean.java_available() is ok
 
 
 def test_create_spark_without_java_says_where_to_run(monkeypatch) -> None:
-    monkeypatch.delenv("JAVA_HOME", raising=False)
-    monkeypatch.setattr(clean.shutil, "which", lambda name: None)
-    with pytest.raises(RuntimeError, match="WSL2, Colab or a Kaggle notebook"):
+    monkeypatch.setattr(clean, "java_executable", lambda: None)
+    with pytest.raises(RuntimeError, match="none was found.*WSL2, Colab or a Kaggle notebook"):
+        clean.create_spark()
+
+
+def test_create_spark_with_unreadable_java_version(monkeypatch) -> None:
+    monkeypatch.setattr(clean, "java_executable", lambda: "/opt/java")
+    monkeypatch.setattr(clean, "java_major_version", lambda java: None)
+    with pytest.raises(RuntimeError, match="the version of /opt/java could not be read"):
+        clean.create_spark()
+
+
+def test_create_spark_with_old_java_names_the_version(monkeypatch) -> None:
+    monkeypatch.setattr(clean, "java_executable", lambda: "C:/java8/bin/java.exe")
+    monkeypatch.setattr(clean, "java_major_version", lambda java: 8)
+    with pytest.raises(RuntimeError, match="found Java 8 at C:/java8/bin/java.exe"):
         clean.create_spark()
 
 

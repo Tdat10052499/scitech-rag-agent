@@ -24,7 +24,9 @@ from __future__ import annotations
 import json
 import os
 import platform
+import re
 import shutil
+import subprocess
 import time
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -60,12 +62,37 @@ COLUMNS = (
 Log = Callable[[str], None]
 
 
-def java_available() -> bool:
-    """True if a `java` executable is on JAVA_HOME or PATH (PySpark needs Java 17+)."""
+MIN_JAVA = 17  # PySpark 4 is compiled for Java 17 (class file version 61)
+
+
+def java_executable() -> str | None:
+    """The `java` Spark would start: JAVA_HOME first, then PATH."""
     home = os.environ.get("JAVA_HOME")
-    if home and any((Path(home) / "bin" / name).is_file() for name in ("java", "java.exe")):
-        return True
-    return shutil.which("java") is not None
+    if home:
+        for name in ("java", "java.exe"):
+            if (Path(home) / "bin" / name).is_file():
+                return str(Path(home) / "bin" / name)
+    return shutil.which("java")
+
+
+def java_major_version(java: str) -> int | None:
+    """Major version from `java -version` (`1.8.0_402` -> 8, `17.0.2` -> 17); None if unknown."""
+    try:
+        result = subprocess.run([java, "-version"], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r'version "(\d+)(?:\.(\d+))?', result.stderr + result.stdout)
+    if not match:
+        return None
+    major = int(match.group(1))
+    return int(match.group(2) or 0) if major == 1 else major
+
+
+def java_available() -> bool:
+    """True if the `java` on JAVA_HOME or PATH is Java 17 or newer, as PySpark 4 needs."""
+    java = java_executable()
+    version = java_major_version(java) if java else None
+    return version is not None and version >= MIN_JAVA
 
 
 def snapshot_schema() -> StructType:
@@ -96,10 +123,19 @@ def snapshot_schema() -> StructType:
 
 
 def create_spark(master: str = "local[*]", driver_memory: str = "4g") -> SparkSession:
-    """Start a local Spark session. Fails early with a clear message when Java is missing."""
-    if not java_available():
+    """Start a local Spark session. Fails early with a clear message when Java is missing or
+    older than 17."""
+    java = java_executable()
+    version = java_major_version(java) if java else None
+    if version is None or version < MIN_JAVA:
+        if java is None:
+            found = "none was found"
+        elif version is None:
+            found = f"the version of {java} could not be read"
+        else:
+            found = f"found Java {version} at {java}"
         raise RuntimeError(
-            "PySpark needs Java 17 or newer and none was found (JAVA_HOME or PATH). "
+            f"PySpark needs Java {MIN_JAVA} or newer and {found} (JAVA_HOME or PATH). "
             "`clean` does not run natively on Windows: use WSL2, Colab or a Kaggle notebook "
             "(pipelines/AGENTS.md, ADR 0005)."
         )

@@ -38,12 +38,14 @@ Friday 2026-10-23
 #### W4-D1-LDN-1 Streaming answer rendering with citations
 - Module: `frontend/`
 - Do: render tokens progressively including Markdown; turn `[n]` into clickable references to the sources panel; keep the UI responsive while streaming; a stop button if the framework allows.
+- **Replan:** merged into W3-D2-LDN-1 (D07), see Week 3. Nothing left on D10.
 - Done when: works against the backend with FakeLLM; screenshot/GIF.
 - Depends on: W3-D2-LDN-1
 
 #### W4-D2-LDN-1 Automated end-to-end smoke test
 - Module: `evaluation/` or `backend/tests/` (agree with DAT)
 - Do: test that starts the backend with FakeLLM and a fake retriever, posts a question, and checks the event sequence and that cited numbers exist in `sources`.
+- **Replan:** LDN is away 2026-10-23 to 2026-10-26 and back on D13 (#10). Moved to Week 5/6, the first cut agreed on #10: not on the critical path. The day and owner are set when the Week 5 plan is reviewed (D12, W4-D5-DAT-1).
 - Done when: runs in CI.
 - Depends on: W2-D2-DAT-1
 
@@ -80,6 +82,7 @@ Saturday 2026-10-24
 #### W4-D3-LDN-1 Clickable follow-ups and conversation flow
 - Module: `frontend/`
 - Do: follow-up chips send their text as the next question in the same session; new conversation button resets `session_id`; scroll handling for long answers.
+- **Replan:** the UI part (chips, new conversation, scrolling) is done against the fake backend before LDN leaves. The 3-turn check with the real backend is done by DAT on D12 or by LDN on D13.
 - Done when: a 3-turn conversation works in the UI with the real backend.
 - Depends on: W4-D1-LDN-1, W4-D3-DAT-1
 
@@ -92,12 +95,14 @@ Monday 2026-10-26 · Integration and gate day
 
 #### W4-D4-DAT-1 Integration session and bug triage
 - Do (morning): run the full stack together (1 hour call); each member asks 10 questions; file every problem as an issue with label and priority; fix P0 issues in agent/backend today.
+- **Replan:** LDN is away on D12: the integration session runs with DAT and FAO, and DAT also takes the `area:frontend` P0 fixes (with FAO) and the real-backend check of W4-D3-LDN-1.
 - Done when: all P0 issues have an owner; your P0 fixes merged.
 - Depends on: W4-D2-DAT-1, W4-D3-LDN-1
 
 #### W4-D5-DAT-1 MVP gate, tag and demo video v1
 - Do (end of day): gate checklist; tag `v0.4-mvp`; record a 3-minute demo video of the flow (store outside git, link in the tracking issue); review the cut list against progress.
 - **Replan:** if the P0 fixes run late, the video may be recorded on D13 before 10:00; the tag may not wait.
+- **Replan:** DAT runs the gate demo; the user-study invitations were sent by LDN by D09.
 - Done when: tag pushed via PR-merged commit; video link recorded.
 - Depends on: W4-D4-DAT-1
 
@@ -105,6 +110,7 @@ Monday 2026-10-26 · Integration and gate day
 
 #### W4-D4-FAO-1 Fix data and retrieval issues from integration
 - Do: take issues labelled `area:data` or `area:retrieval`; fix P0s.
+- **Replan:** also label the faithfulness pilot answers by hand (W4-D4-LDN-1), from the integration-session answers, without looking at the judge output; commit the labels on D12.
 - Done when: your P0 issues closed.
 - Depends on: W4-D4-DAT-1
 
@@ -120,14 +126,20 @@ Monday 2026-10-26 · Integration and gate day
 - Module: `evaluation/PLAN.md`, `evaluation/src/scitech_eval/answers.py`
 - Do: define how faithfulness is judged (claim-level: each sentence supported / not supported by cited chunks), with an LLM-judge prompt and a manual protocol. Pilot on 10 golden questions: judge manually and with the LLM, compute agreement.
 - **Replan:** the manual protocol must be precise enough for a second annotator (FAO) to apply it in Week 7 (W7-D2-LDN-1).
+- **Replan:** before leaving (by D09), LDN commits the 10 pilot questions with the path where their answers will be saved, a labelling sheet (one row per answer sentence: answer id, sentence, cited chunk ids, label `supported` / `not supported` / `not checkable`, one-line reason) and the judge prompt. The manual protocol is section 5 of `evaluation/PLAN.md`. FAO labels the pilot answers by hand on D12 without seeing the judge output (W4-D4-FAO-1); LDN runs the judge and computes agreement on D13; pilot numbers go in LDN's D13 journal entry.
 - Done when: procedure written; pilot numbers in the journal.
 - Depends on: W4-D2-DAT-1
 
 #### W4-D5-LDN-1 UI fixes from integration
 - Do: close `area:frontend` P0/P1 issues from the integration session.
-- **Replan:** also send user-study invitations today (5-6 classmates, sessions on D18 Mon 2026-11-02 and D19 Tue 2026-11-03); recruiting early is the main risk control for the study.
+- **Replan:** user-study invitations (5-6 classmates, sessions on D18 Mon 2026-11-02 and D19 Tue 2026-11-03; recruiting early is the main risk control for the study) are sent before LDN leaves (by D09), not on D12. The integration fixes of `area:frontend` P0/P1 issues on D12 are taken by DAT and FAO; what is left moves to LDN on D13.
 - Done when: issues closed or moved to Week 5 with reason; invitations sent.
 - Depends on: W4-D4-DAT-1
 
 ## Cut or merged in the replan
-None in Week 4 (W2-D5-FAO-1 was merged into W4-D2-FAO-1).
+W2-D5-FAO-1 was merged into W4-D2-FAO-1. LDN's absence on D10-D12 (2026-10-23 to 2026-10-26, agreed on #10); W4-D3/D4/D5-LDN-1 stay and are split by their **Replan:** lines:
+
+| Task | Decision | Where it went / reason |
+|---|---|---|
+| W4-D1-LDN-1 Streaming answer rendering with citations | Merged | Into W3-D2-LDN-1 on D07: same component as the sources panel. |
+| W4-D2-LDN-1 Automated end-to-end smoke test | Moved | To Week 5/6; not on the critical path, first cut named on #10. |
