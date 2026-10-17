@@ -1,6 +1,7 @@
 import type { Message } from "./types";
 
-// Hard-coded conversation for W2-D1-LDN-1 (layout only; no network). Titles and snippets are
+// Hard-coded conversation of W2-D1-LDN-1 (layout only; no network). Not used since W2-D2-LDN-1
+// connected the UI to /chat; the W2-D5 tidy-up removes it. Titles and snippets are
 // taken from arXiv abstracts; scores and dates are made up for the mock.
 export const mockConversation: Message[] = [
   {
@@ -47,6 +48,7 @@ export const mockConversation: Message[] = [
       "How many passages should I retrieve?",
     ],
     insufficientEvidence: false,
+    status: "done",
   },
   {
     id: "m3",
@@ -62,5 +64,6 @@ export const mockConversation: Message[] = [
     sources: [],
     followups: ["What is retrieval-augmented generation?", "How are LLM hallucinations detected?"],
     insufficientEvidence: true,
+    status: "done",
   },
 ];
