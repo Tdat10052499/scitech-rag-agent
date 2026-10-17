@@ -1,7 +1,8 @@
 """Command-line interface of the data pipeline.
 
 Each sub-command is implemented by its own task (download: W2-D1-FAO-1, clean: W2-D2-FAO-1,
-chunk: W3-D1-FAO-1, embed: W3-D2-FAO-1, load: W3-D3-FAO-1); the others are stubs for now.
+validate: W2-D4-FAO-1, chunk: W3-D1-FAO-1, embed: W3-D2-FAO-1, load: W3-D3-FAO-1); the
+others are stubs for now.
 Paths and settings come from arguments, with environment variables as defaults.
 """
 
@@ -15,6 +16,7 @@ from pathlib import Path
 STEPS: dict[str, str] = {
     "download": "Download raw source data into the raw data directory.",
     "clean": "Normalise, de-duplicate and filter raw data into Parquet.",
+    "validate": "Run the data quality checks on the cleaned documents.",
     "chunk": "Split cleaned documents into chunks (docs/contracts/chunk.schema.json).",
     "embed": "Compute embeddings for chunks.",
     "load": "Load chunks and embeddings into the vector store.",
@@ -103,6 +105,27 @@ def add_clean_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_validate_arguments(parser: argparse.ArgumentParser) -> None:
+    from scitech_pipelines.clean import DEFAULT_CATEGORY
+
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=None,
+        help="Cleaned documents (default: <data-dir>/processed/documents).",
+    )
+    parser.add_argument(
+        "--category", default=DEFAULT_CATEGORY, help="Sub-domain every record must be in."
+    )
+    parser.add_argument(
+        "--golden",
+        type=Path,
+        action="append",
+        default=[],
+        help="Golden-set file whose relevant_doc_ids must exist (repeatable).",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with one sub-command per pipeline step."""
     parser = argparse.ArgumentParser(
@@ -121,6 +144,8 @@ def build_parser() -> argparse.ArgumentParser:
             add_download_arguments(sub)
         elif name == "clean":
             add_clean_arguments(sub)
+        elif name == "validate":
+            add_validate_arguments(sub)
     return parser
 
 
@@ -168,6 +193,13 @@ def run_clean(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_validate(args: argparse.Namespace) -> int:
+    from scitech_pipelines.validate import run_validate as validate
+
+    path = args.input or Path(args.data_dir) / "processed" / "documents"
+    return 0 if validate(path, category=args.category, golden=args.golden) else 1
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return the process exit code."""
     args = build_parser().parse_args(argv)
@@ -175,5 +207,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_download(args)
     if args.command == "clean":
         return run_clean(args)
+    if args.command == "validate":
+        return run_validate(args)
     print(f"{args.command}: not implemented")
     return 0
