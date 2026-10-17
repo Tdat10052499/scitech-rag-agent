@@ -16,7 +16,6 @@ import json
 import math
 import os
 import platform
-import shutil
 import time
 from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
@@ -24,6 +23,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from scitech_pipelines.chunk import CHUNK_FILE, CHUNK_MANIFEST
+from scitech_pipelines.validate import _quote
 
 EMBED_MANIFEST = "_embed_manifest.json"
 EMBED_STATE = "_embed_state.json"
@@ -99,7 +99,7 @@ def _read_chunks(chunks: Path, limit: int | None) -> list[tuple[str, str]]:
     import duckdb
 
     con = duckdb.connect()
-    sql = f"SELECT chunk_id, text FROM read_parquet('{(chunks / CHUNK_FILE).as_posix()}') "
+    sql = f"SELECT chunk_id, text FROM read_parquet({_quote((chunks / CHUNK_FILE).as_posix())}) "
     sql += "ORDER BY chunk_id" + (f" LIMIT {int(limit)}" if limit else "")
     rows = con.execute(sql).fetchall()
     con.close()
@@ -131,7 +131,7 @@ def _check_output(out: Path, expected: int, dimension: int) -> None:
     n, distinct, bad = con.execute(
         "SELECT count(*), count(DISTINCT chunk_id), "
         f"count(*) FILTER (WHERE len(embedding) <> {dimension}) "
-        f"FROM read_parquet('{(out / 'part-*.parquet').as_posix()}')"
+        f"FROM read_parquet({_quote((out / 'part-*.parquet').as_posix())})"
     ).fetchone()
     con.close()
     if (n, distinct, bad) != (expected, expected, 0):
@@ -139,6 +139,23 @@ def _check_output(out: Path, expected: int, dimension: int) -> None:
             f"embed output check failed: {n} vectors, {distinct} distinct chunk_id, "
             f"{bad} with a dimension other than {dimension}; expected {expected} (use --force)"
         )
+
+
+def _own_files(out: Path) -> list[Path]:
+    """The files of this step in `out`. Anything else there is refused, so a wrong `--out`
+    (e.g. `data/processed`) is never written into or deleted by `--force`."""
+    if not out.is_dir():
+        return []
+    own, others = [], []
+    for path in out.iterdir():
+        is_own = path.name in (EMBED_STATE, EMBED_MANIFEST) or (
+            path.name.startswith("part-") and path.name.endswith((".parquet", ".parquet.tmp"))
+        )
+        (own if is_own and path.is_file() else others).append(path)
+    if others:
+        names = ", ".join(sorted(p.name for p in others)[:5])
+        raise ValueError(f"{out} holds other files ({names}); --out must be for embeddings only")
+    return own
 
 
 def _complete_manifest(out: Path, dimension: int) -> dict[str, Any] | None:
@@ -185,9 +202,11 @@ def embed_chunks(
             "bytes": (chunks / CHUNK_FILE).stat().st_size,
         },
     }
-    if force and out.exists():
-        shutil.rmtree(out)
-    if out.exists() and any(out.iterdir()):
+    own = _own_files(out)
+    if force:
+        for path in own:
+            path.unlink()
+    if own and not force:
         previous = (
             json.loads((out / EMBED_STATE).read_text(encoding="utf-8"))
             if (out / EMBED_STATE).is_file()

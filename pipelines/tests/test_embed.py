@@ -192,6 +192,14 @@ def test_wrong_dimension_fails(chunks: Path, tmp_path: Path):
         embed_chunks(chunks, tmp_path / "emb", Short(), log=lambda _: None)
 
 
+def test_out_with_other_files_is_refused_even_with_force(chunks: Path):
+    # A typo such as --out data/processed must not write into or delete the chunks.
+    for force in (False, True):
+        with pytest.raises(ValueError, match="--out must be for embeddings only"):
+            embed_chunks(chunks, chunks.parent, FakeEncoder(), force=force, log=lambda _: None)
+    assert (chunks / "chunks.parquet").is_file()
+
+
 def test_missing_chunks_name_the_step(tmp_path: Path):
     with pytest.raises(FileNotFoundError, match="run `chunk` first"):
         embed_chunks(tmp_path / "nothing", tmp_path / "emb", FakeEncoder(), log=lambda _: None)
