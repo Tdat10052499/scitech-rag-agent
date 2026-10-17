@@ -1,0 +1,16 @@
+# Example run config. Paths are relative to the repository root.
+# Run:  python -m scitech_eval retrieval --config evaluation/configs/toy.yaml --out-dir /tmp/runs
+name: toy-canned
+golden_path: evaluation/tests/data/toy_golden.jsonl
+split: dev            # dev (default), test or all; test items are for final numbers only
+language: en          # Vietnamese items are reported separately
+query: question       # question (as asked) or standalone_query (rewrite used for follow_up items)
+ks: [1, 5, 10]
+dataset_snapshot: toy
+bootstrap:
+  resamples: 1000
+  seed: 0
+retriever:
+  factory: scitech_eval.retrievers:canned
+  params:
+    rankings_path: evaluation/tests/data/toy_rankings.json
