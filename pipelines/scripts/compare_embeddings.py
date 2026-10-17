@@ -127,9 +127,16 @@ def count_over_limit(
 
 
 def score(
-    name: str, rankings: dict[str, list[dict]], golden: Path, snapshot: str, out: Path
+    name: str,
+    rankings: dict[str, list[dict]],
+    golden: Path,
+    snapshot: str,
+    out: Path,
+    model: str = "",
+    prefix: str = "",
 ) -> dict[str, Any]:
-    """Score one ranking with the harness, as asked (`question`) and rewritten for follow-ups."""
+    """Score one ranking with the harness, as asked (`question`) and rewritten for follow-ups.
+    The run setup fields (`retriever_type` ... `notes`) are recorded by harness schema 2 (#66)."""
     import yaml
 
     from scitech_eval.runner import run_from_config
@@ -147,6 +154,10 @@ def score(
             "query": mode,
             "ks": KS,
             "dataset_snapshot": snapshot,
+            "retriever_type": "dense",
+            "embedding_model": model,
+            "index_snapshot": "none: exact search over the chunk vectors",
+            "notes": f"ADR 0007 comparison; query prefix {prefix!r}",
             "bootstrap": {"resamples": 1000, "seed": 0},
             "retriever": {
                 "factory": "scitech_eval.retrievers:canned",
@@ -216,7 +227,15 @@ def compare(
             entry["conditions"][label] = {
                 "prefix": prefix,
                 "encode_and_search_seconds": round(seconds, 3),
-                **score(name, dict(zip(queries, ranked, strict=True)), golden, snapshot, out),
+                **score(
+                    name,
+                    dict(zip(queries, ranked, strict=True)),
+                    golden,
+                    snapshot,
+                    out,
+                    model=model_name,
+                    prefix=prefix,
+                ),
             }
             m = entry["conditions"][label]["question"]["metrics"]
             log(f"  {label}: recall@5 {m['recall@5']['mean']:.3f}  MRR {m['mrr']['mean']:.3f}")

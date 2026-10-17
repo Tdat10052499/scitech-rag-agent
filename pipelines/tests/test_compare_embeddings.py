@@ -117,6 +117,9 @@ def test_compare_scores_every_condition(setup, tmp_path: Path, monkeypatch):
     assert model["tokens"]["max_seq_length"] == 40
     assert (out / "summary.md").read_text(encoding="utf-8").count("`fake/model-a`") == 3
     assert len(list((out / "runs").glob("*.json"))) == 4
+    config = (out / "configs" / "adr0007-model-a-query-prefix-question.yaml").read_text("utf-8")
+    assert "retriever_type: dense" in config
+    assert "embedding_model: fake/model-a" in config
 
 
 def test_compare_refuses_vectors_of_other_chunks(setup, tmp_path: Path):
