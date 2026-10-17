@@ -1,0 +1,4 @@
+# Extra dependency of `python -m scitech_pipelines embed` (W3-D2-FAO-1), only where it runs
+# (a Kaggle or Colab GPU notebook already has it). Not installed by CI: tests use a fake encoder.
+-r requirements.txt
+sentence-transformers>=3.0
