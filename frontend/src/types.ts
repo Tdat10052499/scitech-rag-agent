@@ -1,5 +1,5 @@
 // Shapes of the data the chat screen shows. `Source` follows the frozen API contract
-// (docs/contracts/api.openapi.yaml, 0.2.0); optional fields are simply absent when unknown.
+// (docs/contracts/api.openapi.yaml, 0.2.1); optional fields are simply absent when unknown.
 export type Source = {
   chunk_id: string;
   doc_id: string;
