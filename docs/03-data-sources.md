@@ -2,7 +2,7 @@
 
 Status: **verified on 2026-10-14 (W1-D2-FAO-1 measurements, W1-D3-FAO-1 recommendation).** Access, format, terms and rate limits below come from each source's own documentation (linked) or from a check run on 2026-10-13/14. Sizes of the chosen subset were measured in W1-D2-FAO-1; the recommendation is recorded in [ADR 0003](decisions/0003-data-sources.md).
 
-Sub-domain (from the brief, W1-D2-DAT-1): LLM/NLP, i.e. arXiv `cs.CL` including papers cross-listed to `cs.CL` from `cs.LG`/`cs.AI`, plus Wikipedia background articles.
+Sub-domain (from the brief, W1-D2-DAT-1): LLM/NLP, i.e. arXiv `cs.CL` including papers cross-listed to `cs.CL` from other categories (mostly `cs.LG` and `cs.AI`), plus Wikipedia background articles.
 
 ## Survey
 
