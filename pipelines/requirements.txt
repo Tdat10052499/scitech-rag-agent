@@ -3,3 +3,7 @@ kaggle>=2.0  # download: arXiv snapshot (W2-D1-FAO-1); imported lazily, needs `k
 requests>=2.31  # download: MediaWiki API (W2-D1-FAO-1)
 pyspark>=4.0  # clean: processing engine (ADR 0005, W2-D2-FAO-1); needs Java 17+, imported lazily
 duckdb>=1.1  # clean: independent count check (ADR 0005, W2-D2-FAO-1)
+numpy>=1.26  # embed: vector arrays (W3-D2-FAO-1)
+pyarrow>=15  # embed: writes the vectors as fixed-size float32 lists in Parquet (W3-D2-FAO-1)
+# embed also needs sentence-transformers (with PyTorch, several GB), so it is kept out of this
+# file and CI: install pipelines/requirements-embed.txt where `embed` runs (Kaggle GPU notebook).

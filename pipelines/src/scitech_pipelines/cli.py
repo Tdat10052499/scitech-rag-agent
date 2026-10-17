@@ -19,7 +19,7 @@ STEPS: dict[str, str] = {
     "validate": "Run the data quality checks on the cleaned documents.",
     "profile": "Write the data profile of the raw and cleaned data (Markdown and JSON).",
     "chunk": "Split cleaned documents into chunks (docs/contracts/chunk.schema.json).",
-    "embed": "Compute embeddings for chunks.",
+    "embed": "Compute an embedding for every chunk (resumable).",
     "load": "Load chunks and embeddings into the vector store.",
 }
 SOURCES = ("arxiv", "wikipedia")
@@ -196,6 +196,53 @@ def add_chunk_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_embed_arguments(parser: argparse.ArgumentParser) -> None:
+    from scitech_pipelines.embed import DEFAULT_BATCH_SIZE, DEFAULT_PART_SIZE
+
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=None,
+        help="Chunks directory (default: <data-dir>/processed/chunks).",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Output directory (default: <data-dir>/processed/embeddings).",
+    )
+    parser.add_argument(
+        "--model",
+        default=os.environ.get("EMBEDDING_MODEL"),
+        help="Embedding model, a sentence-transformers name (env EMBEDDING_MODEL, ADR 0007).",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help=f"Texts per model call (default {DEFAULT_BATCH_SIZE}).",
+    )
+    parser.add_argument(
+        "--part-size",
+        type=int,
+        default=DEFAULT_PART_SIZE,
+        help=f"Chunks per output file; a resumed run restarts at the first missing file "
+        f"(default {DEFAULT_PART_SIZE}).",
+    )
+    parser.add_argument(
+        "--device", default=None, help="cuda, cpu, ... (default: GPU if there is one)."
+    )
+    parser.add_argument(
+        "--passage-prefix",
+        default="",
+        help="Text put before every chunk, for models that expect one (e.g. 'passage: ').",
+    )
+    parser.add_argument(
+        "--limit", type=int, default=None, help="Embed only the first N chunks (model comparison)."
+    )
+    parser.add_argument("--force", action="store_true", help="Delete the output and start again.")
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with one sub-command per pipeline step."""
     parser = argparse.ArgumentParser(
@@ -220,6 +267,8 @@ def build_parser() -> argparse.ArgumentParser:
             add_profile_arguments(sub)
         elif name == "chunk":
             add_chunk_arguments(sub)
+        elif name == "embed":
+            add_embed_arguments(sub)
     return parser
 
 
@@ -304,6 +353,24 @@ def run_chunk(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_embed(args: argparse.Namespace) -> int:
+    from scitech_pipelines.embed import SentenceTransformerEncoder, check_model_name, embed_chunks
+
+    data_dir = Path(args.data_dir)
+    model = check_model_name(args.model)
+    encoder = SentenceTransformerEncoder(model, batch_size=args.batch_size, device=args.device)
+    embed_chunks(
+        args.input or data_dir / "processed" / "chunks",
+        args.out or data_dir / "processed" / "embeddings",
+        encoder,
+        part_size=args.part_size,
+        passage_prefix=args.passage_prefix,
+        limit=args.limit,
+        force=args.force,
+    )
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return the process exit code."""
     args = build_parser().parse_args(argv)
@@ -317,5 +384,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_profile(args)
     if args.command == "chunk":
         return run_chunk(args)
+    if args.command == "embed":
+        return run_embed(args)
     print(f"{args.command}: not implemented")
     return 0
