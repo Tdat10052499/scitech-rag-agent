@@ -150,9 +150,8 @@ def profile_documents(con, documents: Path, category: str) -> dict[str, Any]:
         "SELECT c, count(*) AS k FROM (SELECT unnest(categories) AS c FROM docs) "
         f"GROUP BY c ORDER BY k DESC, c LIMIT {TOP_CATEGORIES}"
     ).fetchall()
-    primary = con.execute(
-        "SELECT categories[1] AS c, count(*) AS k FROM docs "
-        f"GROUP BY c ORDER BY k DESC, c LIMIT {TOP_CATEGORIES}"
+    primary = con.execute(  # every category, so each listed one finds its primary count
+        "SELECT categories[1] AS c, count(*) AS k FROM docs GROUP BY c ORDER BY k DESC, c"
     ).fetchall()
     cross = con.execute(
         f"SELECT count(*) FROM docs WHERE categories[1] <> {_quote(category)}"
@@ -374,16 +373,17 @@ def render_markdown(p: dict[str, Any]) -> str:
     ]
     primary = {r["category"]: r["records"] for r in docs["primary_category"]}
     for r in docs["categories_listed"]:
-        first = primary.get(r["category"])
+        first = primary.get(r["category"], 0)
         lines.append(
             f"| `{r['category']}` | {_n(r['records'])} | {_pct(r['records'], docs['records'])} | "
-            f"{_n(first)} | {_pct(first, docs['records']) if first else 'n/a'} |"
+            f"{_n(first)} | {_pct(first, docs['records'])} |"
         )
     lines += [
         "",
         f"How computed: the {TOP_CATEGORIES} categories listed most often in `categories`; "
-        "primary = the first category in the list, as arXiv orders it. A paper lists several "
-        "categories, so the shares add up to more than 100%.",
+        "primary = the first category in the list, as arXiv orders it (all primary categories "
+        "are in the JSON file). A paper lists several categories, so the shares add up to more "
+        "than 100%.",
         "",
         "## 6. Lengths",
         "",
