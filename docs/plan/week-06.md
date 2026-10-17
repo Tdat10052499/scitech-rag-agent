@@ -5,7 +5,7 @@
 
 Goal: the product is complete for the reduced scope, runs with one command, and is frozen for evaluation.
 
-Gate (D16, Fri 2026-10-30, end of day): UI complete for the reduced scope (rating buttons, empty/loading/error states); `POST /feedback` writes to `data/logs/feedback.jsonl`; `make up` starts Qdrant + backend + frontend; runbooks merged; user study protocol ready and 5-6 participants confirmed for D18-D19; feature freeze declared; tag `v0.6-rc`; `evaluation/SNAPSHOT.md` complete; `evaluation/RUNS.md` ready.
+Gate (D16, Fri 2026-10-30, end of day): UI complete for the reduced scope (rating buttons, empty/loading/error states); `POST /feedback` writes to `data/logs/feedback.jsonl`; `make up` starts Qdrant + backend + frontend; runbooks merged; user study protocol ready and 5-6 participants confirmed for D18-D19; feature freeze declared; tag `v0.6-rc`; `evaluation/SNAPSHOT.md` complete; golden set at 60 items (**Replan:** only needed here if the D14 gate accepted 45, see W5-D1-LDN-1); `evaluation/RUNS.md` ready.
 
 Feature freeze is declared on D16 after the bug bash. From then on, only bug fixes are merged until the end of the project.
 
