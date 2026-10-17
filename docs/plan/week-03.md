@@ -45,6 +45,7 @@ Tuesday 2026-10-20
 #### W3-D2-LDN-1 Sources panel and evidence states
 - Module: `frontend/`
 - Do: sources list with title, year, categories, score and link; highlight citation numbers `[n]` in the answer and link them to the sources list; distinct style for the "insufficient evidence" answer.
+- **Replan:** LDN is away 2026-10-23 to 2026-10-26 and back on D13 (#10). Merged with W4-D1-LDN-1 into one D07 task, because both build the same component: sources panel, progressive token rendering with Markdown, clickable `[n]` references. No stop button. Done when: works against the backend with the fake LLM; screenshot or GIF in the PR. LDN leaves a hand-over note in the LDN journal on D07.
 - Done when: works with the stub events; screenshot in PR.
 - Depends on: W2-D2-LDN-1
 
@@ -109,12 +110,14 @@ Thursday 2026-10-22 · Gate day
 #### W3-D3-LDN-1 First dense-retrieval evaluation
 - Module: `evaluation/runs/`, `evaluation/reports/`
 - Do: run the harness with the dense retriever on the 30-item golden set; inspect 5 failures (wrong or missing documents) and note likely causes.
+- **Replan:** inspect 3 failures instead of 5 (LDN may be busy on D08-D09, #10).
 - Done when: run file committed (small JSON) and failure notes in the journal.
 - Depends on: W3-D2-DAT-1, W3-D3-FAO-1
 
 #### W3-D4-LDN-1 Compare dense, BM25, hybrid; golden set to 45
 - Module: `evaluation/reports/retrieval-v1.md`, `evaluation/golden_set/`
 - Do: run all three retrievers; table of recall@1/5/10 and MRR with sample size; short discussion of differences and their limits (small n). Add 15 golden items (total 45; drafted on D08).
+- **Replan:** run on the 30 dev items (ADR 0009 cites dev numbers). Golden items 31-45 are written on D04-D07 if possible; if not, the D14 gate asks for >= 45 and the set reaches 60 by D16 (see W5-D1-LDN-1). **Plan B:** if LDN cannot run the comparison on D09, FAO or DAT runs the three retrievers with LDN's harness and pastes the table; LDN writes the discussion on D13, and ADR 0009 may merge as "proposed" (see W3-D5-DAT-1).
 - Done when: report merged and reviewed by FAO.
 - Depends on: W3-D4-DAT-1, W3-D3-LDN-1
 

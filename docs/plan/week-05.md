@@ -5,7 +5,7 @@
 
 Goal: the agent rewrites queries and checks evidence within limits, every request is traceable, and the evaluation runner works end to end. Incremental ingestion is either working or formally cut.
 
-Gate (D14, Wed 2026-10-28, end of day): query rewriting and evidence check merged behind config flags; step and time limits enforced; per-request traces written; `Agent.run_batch` available; golden set >= 60; answer runner works on 10 questions with the real stack; incremental ingestion either adds new items without duplicates or cut-list item 6 is applied and recorded in the tracking issue.
+Gate (D14, Wed 2026-10-28, end of day): query rewriting and evidence check merged behind config flags; step and time limits enforced; per-request traces written; `Agent.run_batch` available; golden set >= 60 (**Replan:** >= 45 if items 31-45 were late, see W5-D1-LDN-1); answer runner works on 10 questions with the real stack; incremental ingestion either adds new items without duplicates or cut-list item 6 is applied and recorded in the tracking issue.
 
 Contract change planned this week: none (the optional `status` event is cut together with the step display, cut-list item 3).
 
@@ -47,6 +47,7 @@ Tuesday 2026-10-27
 #### W5-D1-LDN-1 Golden set to 60 with multi-turn items
 - Module: `evaluation/golden_set/`
 - Do: add 15 items (total 60): multi-turn sequences (2-3 turns with the expected standalone query) and multi-hop questions needing 2 documents.
+- **Replan:** if items 31-45 were not ready by D07 (W3-D4-LDN-1), the D14 gate accepts >= 45 items and this task finishes the set to 60 by D16.
 - Done when: FAO's coverage script reports zero missing documents.
 - Depends on: W4-D3-FAO-1
 
