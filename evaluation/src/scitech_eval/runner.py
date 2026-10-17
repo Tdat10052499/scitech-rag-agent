@@ -17,6 +17,7 @@ from scitech_eval.metrics import MRR_DEPTH, bootstrap_ci, mean, recall_at_k, rec
 from scitech_eval.retrievers import Retriever
 
 SCHEMA_VERSION = 1
+QUERY_MODES = ("question", "standalone_query")
 NOTE = (
     "Relevance labels are incomplete (pooling, PLAN.md section 7); recall and MRR are "
     "conservative. Unanswerable items are excluded. One run per condition."
@@ -34,12 +35,15 @@ def load_config(path: Path) -> dict:
         raise ValueError(f"{path}: missing 'retriever.factory' (module:callable)")
     config.setdefault("split", "dev")  # decisions use dev items; test items only for final numbers
     config.setdefault("language", "en")  # Vietnamese items are reported separately
+    config.setdefault("query", "question")  # question | standalone_query (follow-up items)
     config.setdefault("ks", [1, 5, 10])
     config.setdefault("dataset_snapshot", "unspecified")
     config.setdefault("bootstrap", {})
     ks = config["ks"]
     if not ks or not all(isinstance(k, int) and k > 0 for k in ks):
         raise ValueError(f"{path}: 'ks' must be positive integers")
+    if config["query"] not in QUERY_MODES:
+        raise ValueError(f"{path}: 'query' must be one of {', '.join(QUERY_MODES)}")
     if config["split"] not in ("dev", "test", "all"):
         raise ValueError(f"{path}: 'split' must be dev, test or all")
     return config
@@ -70,6 +74,16 @@ def _summary(values: list[float], resamples: int, seed: int) -> dict:
     return {"mean": mean(values), "ci95": [low, high]}
 
 
+def query_for(item: GoldenItem, mode: str) -> str:
+    """Text sent to the retriever: the question as asked, or the self-contained rewrite.
+
+    `standalone_query` exists only on follow-up items; every other item keeps its question.
+    """
+    if mode == "standalone_query" and item.standalone_query:
+        return item.standalone_query
+    return item.question
+
+
 def run_retrieval(config: dict, items: list[GoldenItem], retriever: Retriever) -> dict:
     """Score `retriever` on the answerable `items` selected by the config."""
     ks = sorted(set(config["ks"]))
@@ -88,13 +102,15 @@ def run_retrieval(config: dict, items: list[GoldenItem], retriever: Retriever) -
 
     per_question = []
     for item in answerable:
-        hits = retriever.search(item.question, depth)
+        query = query_for(item, config["query"])
+        hits = retriever.search(query, depth)
         doc_ids = [h.doc_id for h in hits]
         relevant = set(item.relevant_doc_ids)
         per_question.append(
             {
                 "id": item.id,
                 "type": item.type,
+                "query": query,
                 "relevant_doc_ids": list(item.relevant_doc_ids),
                 "retrieved": [{"chunk_id": h.chunk_id, "doc_id": h.doc_id} for h in hits],
                 "recall": {str(k): recall_at_k(relevant, doc_ids, k) for k in ks},
