@@ -27,8 +27,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "check-golden":
-        corpus = read_corpus_doc_ids(args.corpus, args.id_field) if args.corpus else None
-        problems = check_golden(args.path, corpus)
+        try:
+            corpus = read_corpus_doc_ids(args.corpus, args.id_field) if args.corpus else None
+            problems = check_golden(args.path, corpus)
+        except (OSError, KeyError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
         for p in problems:
             print(p)
         print(f"{args.path}: {'OK' if not problems else f'{len(problems)} problem(s)'}")
@@ -36,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         path = run_from_config(args.config, args.out_dir)
-    except (GoldenError, ValueError, KeyError) as exc:
+    except (GoldenError, OSError, ValueError, KeyError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     result = json.loads(path.read_text(encoding="utf-8"))
