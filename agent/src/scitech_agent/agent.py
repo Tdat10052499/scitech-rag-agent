@@ -188,10 +188,16 @@ class Agent:
 # --- Prompt building --------------------------------------------------------------------------
 
 
+def _inside_source(text: str) -> str:
+    """Chunk text cannot close or open a `<source>` block itself."""
+    return re.sub(r"<(/?source)", r"&lt;\1", text, flags=re.IGNORECASE)
+
+
 def format_sources(evidence: list[ScoredChunk]) -> str:
     """Numbered sources; the numbers are the citation markers `[n]` of the answer."""
     blocks = [
-        f'<source id="{n}">\nTitle: {chunk.title}\nText: {chunk.text}\n</source>'
+        f'<source id="{n}">\nTitle: {_inside_source(chunk.title)}\n'
+        f"Text: {_inside_source(chunk.text)}\n</source>"
         for n, chunk in enumerate(evidence, start=1)
     ]
     return "\n\n".join(blocks)

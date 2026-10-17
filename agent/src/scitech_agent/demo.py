@@ -41,21 +41,22 @@ DEMO_CHUNKS = [
         license="CC0-1.0",
     ),
     ScoredChunk(
-        chunk_id="wiki-Transformer_(deep_learning_architecture)#0",
-        doc_id="wiki-Transformer_(deep_learning_architecture)",
+        chunk_id="1810.04805#0",
+        doc_id="1810.04805",
         score=0.74,
-        title="Transformer (deep learning architecture)",
-        text="A transformer is a deep learning architecture based on multi-head attention ...",
-        source="wikipedia",
-        url="https://en.wikipedia.org/wiki/Transformer_(deep_learning_architecture)",
-        license="CC BY-SA 4.0",
+        title="BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        text="BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding. "
+        "We introduce a new language representation model called BERT ...",
+        source="arxiv",
+        url="https://arxiv.org/abs/1810.04805",
+        license="CC0-1.0",
     ),
 ]
 
 DEMO_ANSWER = (
     "This is a demo answer from the offline agent. "
     "The Transformer relies only on attention, without recurrence [1].\n"
-    "It is now the standard architecture for language models [2]."
+    "BERT pre-trains a bidirectional Transformer encoder on unlabelled text [2]."
 )
 
 DEMO_FOLLOWUPS = [
