@@ -1,0 +1,2 @@
+# Runtime dependencies of the evaluation harness (tooling such as pytest is in requirements-dev.txt).
+pyyaml>=6.0
