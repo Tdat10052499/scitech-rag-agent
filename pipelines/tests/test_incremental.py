@@ -356,7 +356,7 @@ def test_cli_incremental_fetch_defaults(tmp_path: Path, monkeypatch: pytest.Monk
     out = tmp_path / "x.jsonl"
     assert main([*args, "--until", "2026-10-15", "--out", str(out), "--category", ""]) == 0
     assert seen["out"] == out and seen["until"] == date(2026, 10, 15)
-    assert seen["set_spec"] == "cs" and seen["category"] == ""
+    assert seen["set_spec"] == "cs:cs:CL" and seen["category"] == ""
     with pytest.raises(SystemExit):
         main([*args[:-1], "14/10/2026"])
     with pytest.raises(SystemExit):

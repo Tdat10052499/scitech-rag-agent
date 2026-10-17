@@ -29,7 +29,7 @@ from scitech_pipelines.clean import DEFAULT_CATEGORY
 from scitech_pipelines.download import DEFAULT_USER_AGENT, RETRY_STATUS, HttpSession, file_entry
 
 DEFAULT_BASE_URL = "https://oaipmh.arxiv.org/oai"
-DEFAULT_SET = "cs"
+DEFAULT_SET = "cs:cs:CL"  # holds cross-lists too: live check in ADR 0008
 METADATA_PREFIX = "arXiv"
 MIN_PAUSE = 3.0  # arXiv: one request every 3 s for the API, OAI-PMH and RSS together
 OAI_ID_PREFIX = "oai:arXiv.org:"
