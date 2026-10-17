@@ -125,10 +125,15 @@ def snapshot_schema() -> StructType:
 def create_spark(master: str = "local[*]", driver_memory: str = "4g") -> SparkSession:
     """Start a local Spark session. Fails early with a clear message when Java is missing or
     older than 17."""
-    if not java_available():
-        java = java_executable()
-        version = java_major_version(java) if java else None
-        found = f"found Java {version} at {java}" if version else "none was found"
+    java = java_executable()
+    version = java_major_version(java) if java else None
+    if version is None or version < MIN_JAVA:
+        if java is None:
+            found = "none was found"
+        elif version is None:
+            found = f"the version of {java} could not be read"
+        else:
+            found = f"found Java {version} at {java}"
         raise RuntimeError(
             f"PySpark needs Java {MIN_JAVA} or newer and {found} (JAVA_HOME or PATH). "
             "`clean` does not run natively on Windows: use WSL2, Colab or a Kaggle notebook "

@@ -85,6 +85,13 @@ def test_create_spark_without_java_says_where_to_run(monkeypatch) -> None:
         clean.create_spark()
 
 
+def test_create_spark_with_unreadable_java_version(monkeypatch) -> None:
+    monkeypatch.setattr(clean, "java_executable", lambda: "/opt/java")
+    monkeypatch.setattr(clean, "java_major_version", lambda java: None)
+    with pytest.raises(RuntimeError, match="the version of /opt/java could not be read"):
+        clean.create_spark()
+
+
 def test_create_spark_with_old_java_names_the_version(monkeypatch) -> None:
     monkeypatch.setattr(clean, "java_executable", lambda: "C:/java8/bin/java.exe")
     monkeypatch.setattr(clean, "java_major_version", lambda java: 8)
