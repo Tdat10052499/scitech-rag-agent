@@ -43,6 +43,7 @@ class Check:
     name: str
     passed: bool
     detail: str
+    skipped: bool = False  # shown as SKIP; counts as passed
 
 
 def _quote(value: str) -> str:
@@ -180,6 +181,10 @@ def validate_documents(
                 f"manifest {expected:,}, Parquet {records:,}",
             )
         )
+    else:
+        checks.append(
+            Check("count matches clean manifest", True, f"no {CLEAN_MANIFEST}", skipped=True)
+        )
 
     if golden:
         wanted = read_golden_doc_ids(golden)
@@ -222,7 +227,8 @@ def run_validate(
     width = max(len(c.name) for c in checks)
     log(f"validate: {path} ({records:,} records)")
     for check in checks:
-        log(f"  {'PASS' if check.passed else 'FAIL'}  {check.name:<{width}}  {check.detail}")
+        status = "SKIP" if check.skipped else "PASS" if check.passed else "FAIL"
+        log(f"  {status}  {check.name:<{width}}  {check.detail}")
     failed = [c.name for c in checks if not c.passed]
     log(
         "validate: all checks passed"
