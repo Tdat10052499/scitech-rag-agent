@@ -2,7 +2,7 @@
 
 Status: **verified on 2026-10-14 (W1-D2-FAO-1 measurements, W1-D3-FAO-1 recommendation).** Access, format, terms and rate limits below come from each source's own documentation (linked) or from a check run on 2026-10-13/14. Sizes of the chosen subset were measured in W1-D2-FAO-1; the recommendation is recorded in [ADR 0003](decisions/0003-data-sources.md).
 
-Sub-domain (from the brief, W1-D2-DAT-1): LLM/NLP, i.e. arXiv `cs.CL` including papers cross-listed to `cs.CL` from other categories (mostly `cs.LG` and `cs.AI`), plus Wikipedia background articles.
+Sub-domain (from the brief, W1-D2-DAT-1): LLM/NLP, i.e. arXiv `cs.CL` including papers cross-listed to `cs.CL` from other categories (mostly `cs.LG` and `cs.AI`). Wikipedia background articles were planned and downloaded, but are cut from the v1.0 index (ADR 0003 update of 2026-10-17, #34).
 
 ## Survey
 
@@ -59,7 +59,7 @@ On a T4, every candidate start year (even all 121,860 records) embeds in under a
 ## Recommendation (ADR 0003)
 
 - **arXiv (core corpus):** every record whose `categories` contains `cs.CL`, all years: 121,860 records (233 MB) on the 2026-10-10 snapshot. Bulk load from the Kaggle snapshot; the pipeline reads the whole file (3,205,432 records, 5.61 GB) and indexes only `cs.CL`. Incremental ingestion (W5) through OAI-PMH, set `cs:cs:CL`, `from=` date. Search API for quick samples only.
-- **Wikipedia (background):** NLP/LLM pages by category through the API; volume measured by the crawl in W2-D1-FAO-1 (estimate: hundreds to a few thousand pages). `license` = `CC BY-SA 4.0`, the UI links the article. Cut after OpenAlex if time is short.
+- **Wikipedia (background):** NLP/LLM pages by category through the API; volume measured by the crawl in W2-D1-FAO-1 (estimate: hundreds to a few thousand pages). `license` = `CC BY-SA 4.0`, the UI links the article. Cut from the v1.0 index on 2026-10-17 (ADR 0003 update, #34); the raw download stays for later.
 - **OpenAlex:** optional enrichment by DOI `10.48550/arXiv.<id>` (20 of 20 sample records found); no text. First source to cut if time is short.
 - **Out of scope:** full-text PDFs, other arXiv categories, the OpenAlex snapshot, Wikipedia dumps.
 
