@@ -137,10 +137,9 @@ Monday 2026-10-26 · Integration and gate day
 - Depends on: W4-D4-DAT-1
 
 ## Cut or merged in the replan
-W2-D5-FAO-1 was merged into W4-D2-FAO-1. LDN's absence on D10-D12 (2026-10-23 to 2026-10-26, agreed on #10):
+W2-D5-FAO-1 was merged into W4-D2-FAO-1. LDN's absence on D10-D12 (2026-10-23 to 2026-10-26, agreed on #10); W4-D3/D4/D5-LDN-1 stay and are split by their **Replan:** lines:
 
 | Task | Decision | Where it went / reason |
 |---|---|---|
 | W4-D1-LDN-1 Streaming answer rendering with citations | Merged | Into W3-D2-LDN-1 on D07: same component as the sources panel. |
 | W4-D2-LDN-1 Automated end-to-end smoke test | Moved | To Week 5/6; not on the critical path, first cut named on #10. |
-| W4-D3-LDN-1, W4-D4-LDN-1, W4-D5-LDN-1 | Split | Preparation before D10 (UI against the fake backend, pilot material, invitations); D12 parts taken by DAT and FAO; the rest on D13. |
