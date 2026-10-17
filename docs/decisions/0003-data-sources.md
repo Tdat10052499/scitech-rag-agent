@@ -54,7 +54,7 @@ Extra sources:
 |---|---|---|---|---|
 | arXiv, Kaggle snapshot `Cornell-University/arxiv` | Core corpus, bulk load | `kaggle datasets download` (log in with `kaggle auth login`) | 5.61 GB in, 121,860 records out | `CC0-1.0` for title and abstract. The snapshot `license` field is the e-print licence, not the metadata licence |
 | arXiv OAI-PMH, set `cs:cs:CL` | Incremental ingestion (W5, ADR 0008) | `from=` date, 1 request per 3 s | about 460 records per week | `CC0-1.0` |
-| Wikipedia (English) | Background explanations of NLP/LLM concepts | MediaWiki API, pages under `Category:Natural language processing` and subcategories | Estimate, not measured: hundreds to a few thousand pages. Measured by the category crawl in W2-D1-FAO-1 | `CC BY-SA 4.0`; the UI links the article |
+| Wikipedia (English) | Background explanations of NLP/LLM concepts | MediaWiki API, pages under `Category:Natural language processing` and subcategories | Estimate at decision time: hundreds to a few thousand pages. Measured by the crawl in W2-D1-FAO-1: 1,186 pages listed, 1,169 with text. Cut from v1.0, see Consequences | `CC BY-SA 4.0`; the UI links the article |
 | OpenAlex | Optional enrichment (citations, topics), not a text source | REST API by DOI `10.48550/arXiv.<id>` with `select=` | One request per paper if used | CC0 1.0 |
 
 **Big-data scale, in numbers:**

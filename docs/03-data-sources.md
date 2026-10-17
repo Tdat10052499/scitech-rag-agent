@@ -59,7 +59,7 @@ On a T4, every candidate start year (even all 121,860 records) embeds in under a
 ## Recommendation (ADR 0003)
 
 - **arXiv (core corpus):** every record whose `categories` contains `cs.CL`, all years: 121,860 records (233 MB) on the 2026-10-10 snapshot. Bulk load from the Kaggle snapshot; the pipeline reads the whole file (3,205,432 records, 5.61 GB) and indexes only `cs.CL`. Incremental ingestion (W5) through OAI-PMH, set `cs:cs:CL`, `from=` date. Search API for quick samples only.
-- **Wikipedia (background):** NLP/LLM pages by category through the API; volume measured by the crawl in W2-D1-FAO-1 (estimate: hundreds to a few thousand pages). `license` = `CC BY-SA 4.0`, the UI links the article. Cut from the v1.0 index on 2026-10-17 (ADR 0003 update, #34); the raw download stays for later.
+- **Wikipedia (background):** NLP/LLM pages by category through the API; volume measured by the crawl in W2-D1-FAO-1 (1,186 pages listed, 1,169 with text, `pipelines/reports/data_profile.md` section 8). `license` = `CC BY-SA 4.0`, the UI links the article. Cut from the v1.0 index on 2026-10-17 (ADR 0003 update, #34); the raw download stays for later.
 - **OpenAlex:** optional enrichment by DOI `10.48550/arXiv.<id>` (20 of 20 sample records found); no text. First source to cut if time is short.
 - **Out of scope:** full-text PDFs, other arXiv categories, the OpenAlex snapshot, Wikipedia dumps.
 
