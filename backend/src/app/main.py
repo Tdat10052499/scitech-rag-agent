@@ -26,7 +26,7 @@ def cors_origins_from_env() -> list[str]:
 
 
 def create_app(cors_origins: list[str] | None = None) -> FastAPI:
-    app = FastAPI(title="SciTech RAG Agent", version="0.2.0")
+    app = FastAPI(title="SciTech RAG Agent", version="0.2.1")
 
     origins = cors_origins_from_env() if cors_origins is None else cors_origins
     if origins:
