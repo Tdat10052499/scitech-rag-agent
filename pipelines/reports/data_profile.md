@@ -30,7 +30,7 @@ How computed: records by counting the lines of the snapshot with DuckDB; sizes f
 | Duplicate ids in the whole snapshot | 92 |
 | Records out | 121,860 |
 
-How computed: from `_clean_manifest.json` written by `clean`; duplicate ids in the whole snapshot as `count(*) - count(DISTINCT id)` over all records with DuckDB.
+How computed: from `_clean_manifest.json` written by `clean`; duplicate ids in the whole snapshot as `count(*) - count(DISTINCT id)` over all records with DuckDB. That row covers every category; only duplicates among the `cs.CL` records are removed by `clean` (row "Duplicates removed"), so the rest belong to records outside the category.
 
 ## 3. Runtime and hardware
 

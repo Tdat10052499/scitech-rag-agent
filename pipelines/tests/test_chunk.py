@@ -188,14 +188,44 @@ def test_cli_chunk_uses_data_dir_and_env(monkeypatch, tmp_path: Path) -> None:
     write_documents(tmp_path / "processed" / "documents", fixture_documents())
     monkeypatch.setenv("CHUNK_MAX_WORDS", "100")
     monkeypatch.setenv("CHUNK_OVERLAP_WORDS", "")
-    args = build_parser().parse_args(["chunk"])
-    assert args.max_words == 100 and args.overlap_words == chunk.DEFAULT_OVERLAP_WORDS
 
     assert main(["--data-dir", str(tmp_path), "chunk"]) == 0
     manifest = json.loads(
         (tmp_path / "processed" / "chunks" / chunk.CHUNK_MANIFEST).read_text(encoding="utf-8")
     )
     assert manifest["max_words"] == 100 and manifest["counts"]["documents"] == 20
+    assert manifest["overlap_words"] == chunk.DEFAULT_OVERLAP_WORDS
+
+    assert main(["--data-dir", str(tmp_path), "chunk", "--max-words", "120"]) == 0
+    manifest = json.loads(
+        (tmp_path / "processed" / "chunks" / chunk.CHUNK_MANIFEST).read_text(encoding="utf-8")
+    )
+    assert manifest["max_words"] == 120  # the argument wins over the environment
+
+
+def test_bad_env_value_only_breaks_chunk(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("CHUNK_MAX_WORDS", "lots")
+    build_parser().parse_args(["validate"])  # other commands still parse
+    with pytest.raises(ValueError, match="CHUNK_MAX_WORDS must be a whole number"):
+        main(["--data-dir", str(tmp_path), "chunk"])
+
+
+def test_out_with_other_files_is_refused(tmp_path: Path) -> None:
+    documents = write_documents(tmp_path / "processed" / "documents", fixture_documents())
+    # A typo such as --out data/processed must not delete the cleaned documents.
+    with pytest.raises(ValueError, match="--out must be a directory for chunks only"):
+        chunk_documents(documents, tmp_path / "processed", log=lambda _: 0)
+    assert (documents / clean.CLEAN_MANIFEST).is_file()
+
+
+def test_paths_with_an_apostrophe(tmp_path: Path) -> None:
+    root = tmp_path / "it's"
+    root.mkdir()
+    documents = write_documents(tmp_path / "documents", fixture_documents()).rename(
+        root / "documents"
+    )
+    manifest = chunk_documents(documents, root / "chunks", log=lambda _: 0)
+    assert manifest["counts"]["chunks"] == 20
 
 
 def test_chunks_of_real_clean_output_are_valid(tmp_path: Path) -> None:

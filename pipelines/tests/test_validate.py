@@ -6,7 +6,7 @@ import pytest
 
 from scitech_pipelines import clean
 from scitech_pipelines.cli import main
-from scitech_pipelines.validate import validate_documents
+from scitech_pipelines.validate import run_validate, validate_documents
 
 duckdb = pytest.importorskip("duckdb")
 
@@ -139,6 +139,24 @@ def test_golden_doc_ids_must_exist(tmp_path: Path) -> None:
 def test_missing_input_names_the_clean_step(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="clean"):
         validate_documents(tmp_path / "nothing")
+
+
+def test_missing_manifest_is_shown_as_skipped(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = write_documents(tmp_path / "documents", [doc("2404.00001")])
+    assert results(out)["count matches clean manifest"] == (True, f"no {clean.CLEAN_MANIFEST}")
+    assert run_validate(out)
+    line = next(x for x in capsys.readouterr().out.splitlines() if "clean manifest" in x)
+    assert line.split() == [
+        "SKIP",
+        "count",
+        "matches",
+        "clean",
+        "manifest",
+        "no",
+        "_clean_manifest.json",
+    ]
 
 
 def test_cli_exit_code_and_summary(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

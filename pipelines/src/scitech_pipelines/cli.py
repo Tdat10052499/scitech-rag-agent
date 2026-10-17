@@ -167,7 +167,7 @@ def add_profile_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def add_chunk_arguments(parser: argparse.ArgumentParser) -> None:
-    from scitech_pipelines.chunk import DEFAULT_MAX_WORDS, DEFAULT_OVERLAP_WORDS, env_int
+    from scitech_pipelines.chunk import DEFAULT_MAX_WORDS, DEFAULT_OVERLAP_WORDS
 
     parser.add_argument(
         "--input",
@@ -184,13 +184,13 @@ def add_chunk_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--max-words",
         type=int,
-        default=env_int("CHUNK_MAX_WORDS", DEFAULT_MAX_WORDS),
+        default=None,
         help=f"Words per chunk, title included (env CHUNK_MAX_WORDS, default {DEFAULT_MAX_WORDS}).",
     )
     parser.add_argument(
         "--overlap-words",
         type=int,
-        default=env_int("CHUNK_OVERLAP_WORDS", DEFAULT_OVERLAP_WORDS),
+        default=None,
         help="Words shared by consecutive chunks of one abstract "
         f"(env CHUNK_OVERLAP_WORDS, default {DEFAULT_OVERLAP_WORDS}).",
     )
@@ -341,14 +341,26 @@ def run_profile(args: argparse.Namespace) -> int:
 
 
 def run_chunk(args: argparse.Namespace) -> int:
-    from scitech_pipelines.chunk import chunk_documents
+    from scitech_pipelines.chunk import (
+        DEFAULT_MAX_WORDS,
+        DEFAULT_OVERLAP_WORDS,
+        chunk_documents,
+        env_int,
+    )
 
     data_dir = Path(args.data_dir)
+    # The environment is read here, not in the parser, so a bad value only affects `chunk`.
+    max_words = args.max_words
+    if max_words is None:
+        max_words = env_int("CHUNK_MAX_WORDS", DEFAULT_MAX_WORDS)
+    overlap_words = args.overlap_words
+    if overlap_words is None:
+        overlap_words = env_int("CHUNK_OVERLAP_WORDS", DEFAULT_OVERLAP_WORDS)
     chunk_documents(
         args.input or data_dir / "processed" / "documents",
         args.out or data_dir / "processed" / "chunks",
-        max_words=args.max_words,
-        overlap_words=args.overlap_words,
+        max_words=max_words,
+        overlap_words=overlap_words,
     )
     return 0
 

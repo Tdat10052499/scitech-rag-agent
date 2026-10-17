@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import tempfile
 import time
 from collections.abc import Callable, Iterable, Iterator
@@ -21,10 +20,11 @@ from pathlib import Path
 from typing import Any
 
 from scitech_pipelines.clean import CLEAN_MANIFEST
-from scitech_pipelines.validate import documents_glob
+from scitech_pipelines.validate import _quote, documents_glob
 
 CHUNK_FILE = "chunks.parquet"
 CHUNK_MANIFEST = "_chunk_manifest.json"
+OUTPUT_FILES = (CHUNK_FILE, CHUNK_MANIFEST)  # the only files a re-run replaces in --out
 DEFAULT_MAX_WORDS = 320
 DEFAULT_OVERLAP_WORDS = 48
 # Fields of chunk.schema.json and their Parquet types. `embedding_model` is set by `embed`.
@@ -107,7 +107,7 @@ def _documents(con, documents: Path) -> Iterator[dict[str, Any]]:
     fields += ["published_at", "url", "license"]
     result = con.execute(
         f"SELECT {', '.join(fields)} FROM read_parquet("
-        f"'{documents_glob(documents)}', hive_partitioning = true) ORDER BY doc_id"
+        f"{_quote(documents_glob(documents))}, hive_partitioning = true) ORDER BY doc_id"
     )
     while rows := result.fetchmany(BATCH):
         for row in rows:
@@ -129,16 +129,25 @@ def chunk_documents(
     log: Log = print,
 ) -> dict[str, Any]:
     """Chunk every cleaned document into `<out>/chunks.parquet` and write `_chunk_manifest.json`.
-    Re-running replaces the output."""
+    Re-running replaces those two files; an `out` holding anything else is refused, so a wrong
+    `--out` cannot delete other data."""
     import duckdb
 
     check_sizes(max_words, overlap_words)
     if not (documents / CLEAN_MANIFEST).is_file():
         raise FileNotFoundError(f"{documents / CLEAN_MANIFEST} not found (run `clean` first)")
     started = time.monotonic()
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
+    others = (
+        sorted(p.name for p in out.iterdir() if p.name not in OUTPUT_FILES) if out.is_dir() else []
+    )
+    if others:
+        raise ValueError(
+            f"{out} holds other files ({', '.join(others[:5])}); --out must be a directory "
+            "for chunks only"
+        )
+    out.mkdir(parents=True, exist_ok=True)
+    for name in OUTPUT_FILES:
+        (out / name).unlink(missing_ok=True)
     con = duckdb.connect()
     with tempfile.TemporaryDirectory(dir=out.parent) as tmp:
         staged = Path(tmp) / "chunks.jsonl"
@@ -152,13 +161,13 @@ def chunk_documents(
         )
         columns = ", ".join(f"{name}: '{kind}'" for name, kind in COLUMNS.items())
         con.execute(
-            f"COPY (SELECT * FROM read_json('{staged.as_posix()}', "
+            f"COPY (SELECT * FROM read_json({_quote(staged.as_posix())}, "
             f"format = 'newline_delimited', columns = {{{columns}}}) ORDER BY doc_id, chunk_index) "
-            f"TO '{(out / CHUNK_FILE).as_posix()}' (FORMAT parquet)"
+            f"TO {_quote((out / CHUNK_FILE).as_posix())} (FORMAT parquet)"
         )
     con.execute(
         f"CREATE VIEW chunks AS SELECT *, len(string_split(text, ' ')) AS words "
-        f"FROM read_parquet('{(out / CHUNK_FILE).as_posix()}')"
+        f"FROM read_parquet({_quote((out / CHUNK_FILE).as_posix())})"
     )
     n_chunks, n_docs, unique = con.execute(
         "SELECT count(*), count(DISTINCT doc_id), count(DISTINCT chunk_id) = count(*) FROM chunks"
@@ -210,4 +219,9 @@ def chunk_documents(
 
 def env_int(name: str, default: int) -> int:
     value = os.environ.get(name, "").strip()
-    return int(value) if value else default
+    if not value:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        raise ValueError(f"{name} must be a whole number, got {value!r}") from None
