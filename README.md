@@ -59,10 +59,11 @@ cd scitech-rag-agent
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1          # if blocked: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 Copy-Item .env.example .env           # fill in real values; never commit .env
-python -m pip install -r requirements-dev.txt -r backend/requirements.txt   # make setup
+python -m pip install -r requirements-dev.txt -r backend/requirements.txt -r agent/requirements.txt   # make setup
 pre-commit install                    # make setup (git hooks)
 ruff check .                          # make lint
 python -m pytest                      # make test
+$env:PYTHONPATH = "agent/src"         # the backend imports the agent package
 python -m uvicorn app.main:app --app-dir backend/src --reload --port 8000   # make run
 ```
 

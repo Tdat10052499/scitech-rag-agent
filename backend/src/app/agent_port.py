@@ -1,8 +1,8 @@
 """What the backend expects from an agent, and the events it streams.
 
 The backend only orchestrates (backend/AGENTS.md): it validates the request, asks an agent for
-events and turns them into server-sent events. The real `Agent` (W2-D3-DAT-1) implements
-`ChatAgent`; until then `FakeAgent` stands in, so the endpoint and the UI can be built offline.
+events and turns them into server-sent events. `agent_adapter.AgentAdapter` implements
+`ChatAgent` on top of the real `scitech_agent.Agent` (W2-D3-DAT-1).
 """
 
 from __future__ import annotations
@@ -50,6 +50,7 @@ class ChatAgent(Protocol):
     def run(self, session_id: str, message: str) -> Iterator[AgentEvent]:
         """Yield `SourcesEvent` first, then tokens, optional follow-ups and one `DoneEvent`.
 
-        Raise `AgentError` for failures that map to a contract error code.
+        Raise `AgentError` for failures that map to a contract error code, before or after
+        `SourcesEvent` (an early failure gives a stream that is only an `error` event, #36).
         """
         ...

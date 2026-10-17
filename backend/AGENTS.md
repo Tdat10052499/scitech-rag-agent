@@ -6,3 +6,4 @@ Scope: FastAPI app that exposes the contract in `docs/contracts/api.openapi.yaml
 - Implement endpoints exactly as the contract defines; if the contract is wrong, open an issue instead of diverging.
 - No business logic here that belongs to the agent; the backend orchestrates and validates.
 - Configuration only via environment variables (`.env.example`).
+- `/chat` runs `scitech_agent.Agent` through `app.agent_adapter.AgentAdapter` (offline `demo_agent()` for now), so `agent/src` must be importable: `make run` sets `PYTHONPATH=agent/src` (PowerShell: `$env:PYTHONPATH = "agent/src"`); pytest gets it from `pyproject.toml`.

@@ -3,21 +3,27 @@
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from scitech_agent.demo import demo_agent
+
+from .agent_adapter import AgentAdapter
 from .agent_port import ChatAgent
-from .fake_agent import FakeAgent
 from .schemas import ChatRequest
 from .sse import chat_events
 
 
+@lru_cache(maxsize=1)
 def get_agent() -> ChatAgent:
-    """Agent used by `/chat`. Tests override it; W2-D3-DAT-1 replaces the fake with the real one."""
-    return FakeAgent()
+    """Agent used by `/chat`: the real pipeline with the offline demo retriever and LLM, until
+    the index and the LLM server are wired in (W3). One instance, so session history persists.
+    Tests override it."""
+    return AgentAdapter(demo_agent())
 
 
 def cors_origins_from_env() -> list[str]:
