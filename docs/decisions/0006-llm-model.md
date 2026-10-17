@@ -37,8 +37,8 @@ Fallback (for a lost GPU session or a demo without Kaggle):
 - A. A 3B model on the laptop CPU with Ollama (measured, ~15-19 s per 200 tokens).
 - B. A hosted API through the same interface (not measured; needs a key and has a cost).
 
-## Method (to be reviewed by LDN before the run)
-**Items:** the 10 golden items of W1-D4-LDN-1 (`gs-001` to `gs-010`, all `dev`, English) as merged on `main`. The replan on `docs/plan/week-02.md` (W2-D4-DAT-1) uses these instead of waiting for 30.
+## Method (revised after LDN's review on #58: separate grounded column, LDN rates all 30, golden set version recorded)
+**Items:** the 10 golden items of W1-D4-LDN-1 (`gs-001` to `gs-010`, all `dev`, English). The replan on `docs/plan/week-02.md` (W2-D4-DAT-1) uses these instead of waiting for 30. If #56 is merged before the run, its wording is used (it changes gs-001, gs-003, gs-005 and gs-007, rule 10); otherwise the wording on `main`. The results record the commit and the sha256 of `evaluation/golden_set/golden.jsonl` that were used.
 
 **Input ("hand-pasted context"):**
 - The context of each item is the title and abstract of each document in its `relevant_doc_ids`, taken from the cleaned corpus (snapshot 307).
@@ -54,34 +54,37 @@ Fallback (for a lost GPU session or a demo without Kaggle):
 
 | Measure | How | Scale |
 |---|---|---|
-| Answer quality | Rated by hand against the question, the pasted sources and the `reference_answer` (which guides the rating but is not the only valid answer) | 1 = does not address the question or contradicts the sources, 2 = partly, 3 = fully and only from the sources. The same 1-3 scale as "answer relevance" in `evaluation/PLAN.md` section 4, with "only from the sources" added |
+| Relevance | Rated by hand against the question and the `reference_answer` (which guides the rating but is not the only valid answer), worded as "answer relevance" in `evaluation/PLAN.md` section 4.2, so it can be compared with the W7 numbers | 1 = does not address the question, 2 = partly (for example, answers only one part of a two-part question such as gs-001), 3 = fully |
+| Grounded | Rated by hand against the pasted abstracts. Kept apart from relevance, as faithfulness is in `evaluation/PLAN.md` section 4.2, because 3B models often add claims from memory (prior-knowledge threat, section 7) | Yes = every factual claim is in the pasted abstracts; no = at least one is not |
 | Citation adherence | Counted automatically: sentences with at least one `[n]`, and invalid markers (a number outside 1..number of sources) | Share of factual sentences cited; count of invalid markers |
 | Language | Answer in the language of the question (all 10 are English) | Yes / no |
 | Speed | TTFT, total time and completion tokens from the streamed call, as in `bench_llm.py` | Seconds; tokens/s |
 
 **Blind rating:**
 - The 30 answers are shuffled, and the model names are replaced by codes before rating.
-- DAT rates all 30.
-- LDN independently rates a random 9 (3 per model) with the same written scale. Agreement is reported as the number of equal ratings out of 9; where the two ratings differ, both are shown.
-- With 9 pairs, a kappa would be too unstable to report.
+- LDN rates all 30 on both columns, on D06 after the run.
+- DAT rates all 30 on relevance only. Grounded is rated by LDN alone, because DAT built the agent and does not annotate faithfulness (`evaluation/PLAN.md` section 9, decision 6); a single rater for grounded is a limitation of this ADR.
+- Relevance agreement is reported as the number of equal ratings out of 30; where the two ratings differ, both are shown. Each rater's means are reported separately.
+- 30 pairs show whether the written scale is understood, not that the ratings are reliable, so no kappa is reported.
 
 **Decision rule (fixed before the run):**
-1. Highest mean quality.
-2. If the means differ by 0.2 or less (2 of 10 ratings), the difference counts as noise at n = 10. The tie then goes to the model with fewer invalid citations, then to the faster model.
-3. `qwen2.5:7b` is chosen only if it is better than the best 3B model by more than that margin, because it is about 2 times slower per answer.
+1. Highest mean relevance.
+2. If the means differ by 0.2 or less (2 of 10 ratings), the difference counts as noise at n = 10. The tie then goes to the model with fewer ungrounded answers, then fewer invalid citations, then to the faster model.
+3. The means are compared for each rater. If the top two models differ by more than 0.2 in one rater's means but not in the other's, it is a tie and step 2 applies.
+4. `qwen2.5:7b` is chosen only if it is better than the best 3B model by more than that margin, because it is about 2 times slower per answer.
 
-**What n = 10 can and cannot show:** the ranking is indicative only. One rating changes a mean by 0.1. The items are English-only and have no `unanswerable` or `follow_up` type, so refusal behaviour and multi-turn use are not tested here. Those come in W4 (evidence check) and W7 (RQ2).
+**What n = 10 can and cannot show:** the ranking is indicative only. One rating changes a mean by 0.1, so one disagreement between raters can reach the 0.2 margin. The items are English-only and have no `unanswerable` or `follow_up` type, so refusal behaviour and multi-turn use are not tested here. Those come in W4 (evidence check) and W7 (RQ2).
 
 ## Results
-Run on **TBD** (Kaggle session, Ollama version **TBD**, tunnel). Raw answers and ratings: **TBD** (path outside git or in `evaluation/runs/`, as LDN prefers).
+Run on **TBD** (Kaggle session, Ollama version **TBD**, tunnel). Golden set: commit **TBD**, sha256 of `golden.jsonl` **TBD**. Raw answers and ratings: **TBD** (path outside git or in `evaluation/runs/`, as LDN prefers).
 
-| Model (tag, quantisation) | Mean quality (1-3) | Ratings 1 / 2 / 3 | Factual sentences cited | Invalid `[n]` | TTFT median s | Total median s | tok/s median |
-|---|---|---|---|---|---|---|---|
-| `qwen2.5:3b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| `llama3.2:3b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| `qwen2.5:7b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| Model (tag, quantisation) | Mean relevance LDN / DAT (1-3) | Relevance 1 / 2 / 3 (LDN) | Ungrounded answers (LDN, of 10) | Factual sentences cited | Invalid `[n]` | TTFT median s | Total median s | tok/s median |
+|---|---|---|---|---|---|---|---|---|
+| `qwen2.5:3b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| `llama3.2:3b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| `qwen2.5:7b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
 
-Rater agreement (DAT vs LDN): **TBD** of 9 equal.
+Relevance agreement (DAT vs LDN): **TBD** of 30 equal.
 
 ## Decision
 **TBD after the run:**
