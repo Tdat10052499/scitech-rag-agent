@@ -15,6 +15,7 @@ CHUNKS = [
         "Dense retrieval",
         "Dense passage retrieval for QA.",
         source="arxiv",
+        chunk_index=0,
         categories=("cs.CL", "cs.IR"),
     ),
     ScoredChunk(
@@ -24,6 +25,7 @@ CHUNKS = [
         "Sparse retrieval",
         "BM25 keyword retrieval for QA.",
         source="arxiv",
+        chunk_index=0,
         categories=("cs.IR",),
     ),
     ScoredChunk(
@@ -33,6 +35,7 @@ CHUNKS = [
         "Question answering",
         "Question answering on Wikipedia.",
         source="wikipedia",
+        chunk_index=0,
     ),
 ]
 
@@ -74,3 +77,18 @@ def test_demo_retriever_triggers() -> None:
     assert retriever.search("insufficient evidence please", k=5) == []
     with pytest.raises(RetrievalError):
         retriever.search("please fail:retrieval_failed", k=5)
+
+
+def test_source_and_chunk_index_are_required() -> None:
+    # A store that forgets to map them must fail, not label every hit `arxiv` / index 0.
+    with pytest.raises(TypeError):
+        ScoredChunk("x#0", "x", 0.5, "Title", "Text")
+
+
+def test_demo_agent_ignores_retrieval_settings_from_env(monkeypatch) -> None:
+    from scitech_agent.demo import demo_agent
+
+    monkeypatch.setenv("RETRIEVAL_MIN_SCORE", "0.9")
+    monkeypatch.setenv("RETRIEVAL_TOP_K", "1")
+    events = list(demo_agent().run("s", "What is attention?"))
+    assert len(events[0].chunks) == len(DEMO_CHUNKS)

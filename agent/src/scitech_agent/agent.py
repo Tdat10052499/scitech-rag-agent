@@ -180,7 +180,8 @@ class Agent:
         with self._lock:
             turns = self._history.pop(session_id, [])
             turns.append(turn)
-            self._history[session_id] = turns[-self.config.history_turns :]
+            keep = self.config.history_turns
+            self._history[session_id] = turns[-keep:] if keep > 0 else []
             while len(self._history) > MAX_SESSIONS:  # in-memory only: drop the oldest sessions
                 self._history.popitem(last=False)
 

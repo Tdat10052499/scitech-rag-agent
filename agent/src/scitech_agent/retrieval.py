@@ -31,8 +31,8 @@ class ScoredChunk:
     score: float
     title: str
     text: str
-    source: str = "arxiv"
-    chunk_index: int = 0
+    source: str  # required, as in chunk.schema.json: a store must map it, not default it
+    chunk_index: int
     url: str | None = None
     published_at: str | None = None  # ISO date, as in chunk.schema.json
     categories: tuple[str, ...] = field(default_factory=tuple)
