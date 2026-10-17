@@ -321,7 +321,9 @@ def render_markdown(p: dict[str, Any]) -> str:
         f"| Records out | {_n(counts.get('records_out'))} |",
         "",
         "How computed: from `_clean_manifest.json` written by `clean`; duplicate ids in the whole "
-        "snapshot as `count(*) - count(DISTINCT id)` over all records with DuckDB.",
+        "snapshot as `count(*) - count(DISTINCT id)` over all records with DuckDB. That row covers "
+        f"every category; only duplicates among the `{p['category']}` records are removed by "
+        '`clean` (row "Duplicates removed"), so the rest belong to records outside the category.',
         "",
         "## 3. Runtime and hardware",
         "",
