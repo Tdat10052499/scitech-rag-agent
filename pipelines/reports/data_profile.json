@@ -1,0 +1,1153 @@
+{
+  "created_at": "2026-10-17T04:31:55+00:00",
+  "category": "cs.CL",
+  "machine": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "cpus": 8,
+    "ram_bytes": 16981118976,
+    "duckdb": "1.5.6"
+  },
+  "profile_seconds": 22.4,
+  "clean_peak_mb": 2865.0,
+  "download_manifest": {
+    "source": "arxiv",
+    "dataset": "Cornell-University/arxiv",
+    "url": "https://www.kaggle.com/datasets/Cornell-University/arxiv",
+    "version": 307,
+    "licence": "CC0-1.0 (metadata); see ADR 0003",
+    "downloaded_at": "2026-10-16T06:44:17+00:00",
+    "seconds": 149.8,
+    "zip_bytes": 1859360559,
+    "remote_files": [
+      {
+        "name": "arxiv-metadata-oai-snapshot.json",
+        "bytes": 5610256780,
+        "created": "2026-10-10 23:53:25.539000"
+      }
+    ],
+    "files": [
+      {
+        "name": "arxiv-metadata-oai-snapshot.json",
+        "bytes": 5610256780,
+        "sha256": "9ee5aafa99209d6dbf4cd8c138dc662f290a7b49065d7301d4a0152bc0701c75"
+      }
+    ]
+  },
+  "wikipedia_manifest": {
+    "source": "wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Category:Natural_language_processing",
+    "api": "https://en.wikipedia.org/w/api.php",
+    "licence": "CC BY-SA 4.0",
+    "settings": {
+      "root": "Category:Natural language processing",
+      "max_depth": 2,
+      "max_pages": null
+    },
+    "downloaded_at": "2026-10-16T07:13:34+00:00",
+    "seconds": 1718.8,
+    "requests": 1223,
+    "pages_listed": 1186,
+    "pages_downloaded": 1169,
+    "pages_without_text": 17,
+    "pages_listed_by_depth": {
+      "0": 233,
+      "1": 549,
+      "2": 404
+    },
+    "pages_downloaded_by_depth": {
+      "0": 232,
+      "1": 546,
+      "2": 391
+    },
+    "files": [
+      {
+        "name": "category_members.json",
+        "bytes": 164833,
+        "sha256": "3ad81c7ab5f043660f6ae90fddcc100443053b88e66763f32dd16a8d9641ed93"
+      },
+      {
+        "name": "pages.jsonl",
+        "bytes": 8064368,
+        "sha256": "67cec6c9814298253e0398334347d2ae87cfcbd5e16bfe5db0e76766a3ed7021"
+      },
+      {
+        "name": "pages_without_text.txt",
+        "bytes": 166,
+        "sha256": "c15389a080b625e02e6bcbc312e6b4aee28c655e4e985823d056a4a688e3d7cc"
+      }
+    ]
+  },
+  "clean_manifest": {
+    "step": "clean",
+    "source": "arxiv",
+    "input": "/kaggle/input/datasets/Cornell-University/arxiv/arxiv-metadata-oai-snapshot.json",
+    "input_bytes": 5610256780,
+    "snapshot_version": "307",
+    "category": "cs.CL",
+    "cleaned_at": "2026-10-16T16:38:43+00:00",
+    "seconds": 97.2,
+    "engine": "pyspark 4.0.4 (local[*])",
+    "platform": "Linux-6.18.48+-x86_64-with-glibc2.39",
+    "counts": {
+      "records_in": 3205432,
+      "in_category": 121860,
+      "in_category_duckdb": 121860,
+      "dropped_no_abstract": 0,
+      "dropped_no_title": 0,
+      "dropped_no_date": 0,
+      "duplicates_removed": 0,
+      "records_out": 121860
+    },
+    "records_by_year": {
+      "1994": 223,
+      "1995": 225,
+      "1996": 202,
+      "1997": 164,
+      "1998": 113,
+      "1999": 58,
+      "2000": 122,
+      "2001": 79,
+      "2002": 66,
+      "2003": 55,
+      "2004": 54,
+      "2005": 25,
+      "2006": 52,
+      "2007": 66,
+      "2008": 70,
+      "2009": 91,
+      "2010": 86,
+      "2011": 125,
+      "2012": 225,
+      "2013": 334,
+      "2014": 557,
+      "2015": 832,
+      "2016": 1692,
+      "2017": 2400,
+      "2018": 3729,
+      "2019": 5393,
+      "2020": 7125,
+      "2021": 8083,
+      "2022": 8971,
+      "2023": 13603,
+      "2024": 20689,
+      "2025": 23762,
+      "2026": 22589
+    },
+    "sample": null
+  },
+  "raw": {
+    "file": "data\\raw\\arxiv\\arxiv-metadata-oai-snapshot.json",
+    "bytes": 5610256780,
+    "records": 3205432,
+    "distinct_ids": 3205340,
+    "in_category": 121860,
+    "missing_in_category": {
+      "id": {
+        "missing": 0,
+        "rate": 0.0
+      },
+      "authors": {
+        "missing": 0,
+        "rate": 0.0
+      },
+      "title": {
+        "missing": 0,
+        "rate": 0.0
+      },
+      "comments": {
+        "missing": 44135,
+        "rate": 0.3622
+      },
+      "journal-ref": {
+        "missing": 112658,
+        "rate": 0.9245
+      },
+      "doi": {
+        "missing": 112178,
+        "rate": 0.9205
+      },
+      "report-no": {
+        "missing": 121168,
+        "rate": 0.9943
+      },
+      "categories": {
+        "missing": 0,
+        "rate": 0.0
+      },
+      "license": {
+        "missing": 1508,
+        "rate": 0.0124
+      },
+      "abstract": {
+        "missing": 0,
+        "rate": 0.0
+      },
+      "versions": {
+        "missing": 0,
+        "rate": 0.0
+      },
+      "update_date": {
+        "missing": 0,
+        "rate": 0.0
+      },
+      "authors_parsed": {
+        "missing": 0,
+        "rate": 0.0
+      }
+    }
+  },
+  "documents": {
+    "path": "data\\processed\\documents",
+    "records": 121860,
+    "parquet_files": 33,
+    "parquet_bytes": 94957739,
+    "by_year": [
+      {
+        "year": 1994,
+        "records": 223,
+        "median_words": 91.0,
+        "p95_words": 202.79999999999995
+      },
+      {
+        "year": 1995,
+        "records": 225,
+        "median_words": 97.0,
+        "p95_words": 202.39999999999995
+      },
+      {
+        "year": 1996,
+        "records": 202,
+        "median_words": 101.5,
+        "p95_words": 197.89999999999998
+      },
+      {
+        "year": 1997,
+        "records": 164,
+        "median_words": 106.5,
+        "p95_words": 218.54999999999998
+      },
+      {
+        "year": 1998,
+        "records": 113,
+        "median_words": 113.0,
+        "p95_words": 221.2
+      },
+      {
+        "year": 1999,
+        "records": 58,
+        "median_words": 95.0,
+        "p95_words": 227.0
+      },
+      {
+        "year": 2000,
+        "records": 122,
+        "median_words": 99.5,
+        "p95_words": 205.79999999999995
+      },
+      {
+        "year": 2001,
+        "records": 79,
+        "median_words": 95.0,
+        "p95_words": 177.0
+      },
+      {
+        "year": 2002,
+        "records": 66,
+        "median_words": 98.5,
+        "p95_words": 204.5
+      },
+      {
+        "year": 2003,
+        "records": 55,
+        "median_words": 115.0,
+        "p95_words": 206.2
+      },
+      {
+        "year": 2004,
+        "records": 54,
+        "median_words": 103.0,
+        "p95_words": 220.34999999999977
+      },
+      {
+        "year": 2005,
+        "records": 25,
+        "median_words": 116.0,
+        "p95_words": 231.0
+      },
+      {
+        "year": 2006,
+        "records": 52,
+        "median_words": 117.5,
+        "p95_words": 205.09999999999994
+      },
+      {
+        "year": 2007,
+        "records": 66,
+        "median_words": 93.5,
+        "p95_words": 180.5
+      },
+      {
+        "year": 2008,
+        "records": 70,
+        "median_words": 121.0,
+        "p95_words": 211.55
+      },
+      {
+        "year": 2009,
+        "records": 91,
+        "median_words": 114.0,
+        "p95_words": 228.5
+      },
+      {
+        "year": 2010,
+        "records": 86,
+        "median_words": 132.0,
+        "p95_words": 245.75
+      },
+      {
+        "year": 2011,
+        "records": 125,
+        "median_words": 132.0,
+        "p95_words": 250.79999999999998
+      },
+      {
+        "year": 2012,
+        "records": 225,
+        "median_words": 130.0,
+        "p95_words": 238.59999999999997
+      },
+      {
+        "year": 2013,
+        "records": 334,
+        "median_words": 131.5,
+        "p95_words": 234.39999999999986
+      },
+      {
+        "year": 2014,
+        "records": 557,
+        "median_words": 134.0,
+        "p95_words": 243.5999999999998
+      },
+      {
+        "year": 2015,
+        "records": 832,
+        "median_words": 140.0,
+        "p95_words": 243.0
+      },
+      {
+        "year": 2016,
+        "records": 1692,
+        "median_words": 133.0,
+        "p95_words": 235.0
+      },
+      {
+        "year": 2017,
+        "records": 2400,
+        "median_words": 134.0,
+        "p95_words": 228.0
+      },
+      {
+        "year": 2018,
+        "records": 3729,
+        "median_words": 138.0,
+        "p95_words": 226.5999999999999
+      },
+      {
+        "year": 2019,
+        "records": 5393,
+        "median_words": 145.0,
+        "p95_words": 229.0
+      },
+      {
+        "year": 2020,
+        "records": 7125,
+        "median_words": 151.0,
+        "p95_words": 238.0
+      },
+      {
+        "year": 2021,
+        "records": 8083,
+        "median_words": 155.0,
+        "p95_words": 239.0
+      },
+      {
+        "year": 2022,
+        "records": 8971,
+        "median_words": 159.0,
+        "p95_words": 243.0
+      },
+      {
+        "year": 2023,
+        "records": 13603,
+        "median_words": 164.0,
+        "p95_words": 247.0
+      },
+      {
+        "year": 2024,
+        "records": 20689,
+        "median_words": 168.0,
+        "p95_words": 247.0
+      },
+      {
+        "year": 2025,
+        "records": 23762,
+        "median_words": 169.0,
+        "p95_words": 243.0
+      },
+      {
+        "year": 2026,
+        "records": 22589,
+        "median_words": 180.0,
+        "p95_words": 255.0
+      }
+    ],
+    "categories_listed": [
+      {
+        "category": "cs.CL",
+        "records": 121860
+      },
+      {
+        "category": "cs.AI",
+        "records": 43898
+      },
+      {
+        "category": "cs.LG",
+        "records": 31143
+      },
+      {
+        "category": "cs.CV",
+        "records": 8303
+      },
+      {
+        "category": "cs.IR",
+        "records": 7362
+      },
+      {
+        "category": "eess.AS",
+        "records": 5767
+      },
+      {
+        "category": "cs.SD",
+        "records": 5285
+      },
+      {
+        "category": "cs.CY",
+        "records": 3984
+      },
+      {
+        "category": "cs.HC",
+        "records": 3166
+      },
+      {
+        "category": "stat.ML",
+        "records": 2690
+      },
+      {
+        "category": "cs.CR",
+        "records": 2249
+      },
+      {
+        "category": "cs.SI",
+        "records": 1943
+      },
+      {
+        "category": "cs.SE",
+        "records": 1680
+      },
+      {
+        "category": "cs.MM",
+        "records": 1083
+      },
+      {
+        "category": "cs.MA",
+        "records": 1014
+      }
+    ],
+    "primary_category": [
+      {
+        "category": "cs.CL",
+        "records": 89561
+      },
+      {
+        "category": "cs.LG",
+        "records": 7879
+      },
+      {
+        "category": "cs.AI",
+        "records": 5759
+      },
+      {
+        "category": "cs.CV",
+        "records": 4647
+      },
+      {
+        "category": "cs.IR",
+        "records": 2545
+      },
+      {
+        "category": "eess.AS",
+        "records": 1734
+      },
+      {
+        "category": "cs.SD",
+        "records": 1383
+      },
+      {
+        "category": "cs.CR",
+        "records": 1111
+      },
+      {
+        "category": "cs.CY",
+        "records": 978
+      },
+      {
+        "category": "cs.SE",
+        "records": 928
+      },
+      {
+        "category": "cmp-lg",
+        "records": 894
+      },
+      {
+        "category": "cs.HC",
+        "records": 854
+      },
+      {
+        "category": "cs.SI",
+        "records": 552
+      },
+      {
+        "category": "cs.RO",
+        "records": 393
+      },
+      {
+        "category": "cs.DL",
+        "records": 233
+      },
+      {
+        "category": "cs.DB",
+        "records": 208
+      },
+      {
+        "category": "stat.ML",
+        "records": 195
+      },
+      {
+        "category": "cs.MA",
+        "records": 183
+      },
+      {
+        "category": "cs.MM",
+        "records": 149
+      },
+      {
+        "category": "physics.soc-ph",
+        "records": 125
+      },
+      {
+        "category": "cs.NE",
+        "records": 110
+      },
+      {
+        "category": "q-bio.NC",
+        "records": 104
+      },
+      {
+        "category": "cs.PL",
+        "records": 95
+      },
+      {
+        "category": "cs.DC",
+        "records": 93
+      },
+      {
+        "category": "cs.LO",
+        "records": 89
+      },
+      {
+        "category": "cs.FL",
+        "records": 66
+      },
+      {
+        "category": "quant-ph",
+        "records": 55
+      },
+      {
+        "category": "cs.AR",
+        "records": 54
+      },
+      {
+        "category": "cs.CE",
+        "records": 54
+      },
+      {
+        "category": "q-bio.QM",
+        "records": 54
+      },
+      {
+        "category": "cs.IT",
+        "records": 42
+      },
+      {
+        "category": "q-fin.ST",
+        "records": 40
+      },
+      {
+        "category": "econ.GN",
+        "records": 38
+      },
+      {
+        "category": "cs.DS",
+        "records": 36
+      },
+      {
+        "category": "cs.NI",
+        "records": 35
+      },
+      {
+        "category": "eess.IV",
+        "records": 32
+      },
+      {
+        "category": "stat.AP",
+        "records": 31
+      },
+      {
+        "category": "eess.SP",
+        "records": 29
+      },
+      {
+        "category": "q-bio.BM",
+        "records": 28
+      },
+      {
+        "category": "stat.ME",
+        "records": 28
+      },
+      {
+        "category": "q-bio.GN",
+        "records": 26
+      },
+      {
+        "category": "cs.GR",
+        "records": 24
+      },
+      {
+        "category": "cs.CC",
+        "records": 23
+      },
+      {
+        "category": "math.LO",
+        "records": 23
+      },
+      {
+        "category": "q-fin.CP",
+        "records": 20
+      },
+      {
+        "category": "cond-mat.mtrl-sci",
+        "records": 19
+      },
+      {
+        "category": "cs.GT",
+        "records": 19
+      },
+      {
+        "category": "cond-mat.stat-mech",
+        "records": 15
+      },
+      {
+        "category": "eess.SY",
+        "records": 15
+      },
+      {
+        "category": "astro-ph.IM",
+        "records": 14
+      },
+      {
+        "category": "cond-mat.dis-nn",
+        "records": 12
+      },
+      {
+        "category": "econ.EM",
+        "records": 11
+      },
+      {
+        "category": "math.CT",
+        "records": 11
+      },
+      {
+        "category": "physics.data-an",
+        "records": 11
+      },
+      {
+        "category": "q-bio.PE",
+        "records": 10
+      },
+      {
+        "category": "q-fin.GN",
+        "records": 10
+      },
+      {
+        "category": "physics.chem-ph",
+        "records": 9
+      },
+      {
+        "category": "q-fin.RM",
+        "records": 9
+      },
+      {
+        "category": "cs.DM",
+        "records": 8
+      },
+      {
+        "category": "cs.ET",
+        "records": 8
+      },
+      {
+        "category": "math.CO",
+        "records": 8
+      },
+      {
+        "category": "physics.med-ph",
+        "records": 8
+      },
+      {
+        "category": "q-bio.OT",
+        "records": 8
+      },
+      {
+        "category": "q-fin.TR",
+        "records": 8
+      },
+      {
+        "category": "cs.PF",
+        "records": 7
+      },
+      {
+        "category": "math.HO",
+        "records": 7
+      },
+      {
+        "category": "math.OC",
+        "records": 7
+      },
+      {
+        "category": "cs.MS",
+        "records": 5
+      },
+      {
+        "category": "cs.OS",
+        "records": 5
+      },
+      {
+        "category": "math.DS",
+        "records": 5
+      },
+      {
+        "category": "q-fin.PM",
+        "records": 5
+      },
+      {
+        "category": "cs.GL",
+        "records": 4
+      },
+      {
+        "category": "cs.OH",
+        "records": 4
+      },
+      {
+        "category": "econ.TH",
+        "records": 4
+      },
+      {
+        "category": "math.ST",
+        "records": 4
+      },
+      {
+        "category": "physics.ed-ph",
+        "records": 4
+      },
+      {
+        "category": "cond-mat.soft",
+        "records": 3
+      },
+      {
+        "category": "hep-ph",
+        "records": 3
+      },
+      {
+        "category": "math.GR",
+        "records": 3
+      },
+      {
+        "category": "physics.comp-ph",
+        "records": 3
+      },
+      {
+        "category": "physics.optics",
+        "records": 3
+      },
+      {
+        "category": "q-bio.MN",
+        "records": 3
+      },
+      {
+        "category": "hep-ex",
+        "records": 2
+      },
+      {
+        "category": "hep-th",
+        "records": 2
+      },
+      {
+        "category": "physics.app-ph",
+        "records": 2
+      },
+      {
+        "category": "physics.flu-dyn",
+        "records": 2
+      },
+      {
+        "category": "physics.gen-ph",
+        "records": 2
+      },
+      {
+        "category": "physics.pop-ph",
+        "records": 2
+      },
+      {
+        "category": "cs.SC",
+        "records": 1
+      },
+      {
+        "category": "math-ph",
+        "records": 1
+      },
+      {
+        "category": "math.AT",
+        "records": 1
+      },
+      {
+        "category": "math.NA",
+        "records": 1
+      },
+      {
+        "category": "math.PR",
+        "records": 1
+      },
+      {
+        "category": "nlin.AO",
+        "records": 1
+      },
+      {
+        "category": "nlin.CD",
+        "records": 1
+      },
+      {
+        "category": "nlin.CG",
+        "records": 1
+      },
+      {
+        "category": "nlin.PS",
+        "records": 1
+      },
+      {
+        "category": "physics.acc-ph",
+        "records": 1
+      },
+      {
+        "category": "physics.hist-ph",
+        "records": 1
+      },
+      {
+        "category": "q-bio.CB",
+        "records": 1
+      },
+      {
+        "category": "q-bio.TO",
+        "records": 1
+      },
+      {
+        "category": "q-fin.PR",
+        "records": 1
+      },
+      {
+        "category": "stat.CO",
+        "records": 1
+      },
+      {
+        "category": "stat.OT",
+        "records": 1
+      }
+    ],
+    "cross_listed": 32299,
+    "abstract_words": {
+      "min": 7,
+      "p5": 93.0,
+      "p25": 135.0,
+      "p50": 164.0,
+      "p75": 195.0,
+      "p95": 246.0,
+      "p99": 274.0,
+      "max": 491,
+      "mean": 165.8
+    },
+    "abstract_chars": {
+      "min": 34,
+      "p5": 653.0,
+      "p25": 969.0,
+      "p50": 1186.0,
+      "p75": 1417.0,
+      "p95": 1789.0,
+      "p99": 1908.0,
+      "max": 3256,
+      "mean": 1195.1
+    },
+    "title_chars": {
+      "min": 6,
+      "p5": 43.0,
+      "p25": 63.0,
+      "p50": 78.0,
+      "p75": 94.0,
+      "p95": 118.0,
+      "p99": 138.0,
+      "max": 241,
+      "mean": 79.2
+    },
+    "authors_per_paper": {
+      "min": 1,
+      "p5": 1.0,
+      "p25": 3.0,
+      "p50": 4.0,
+      "p75": 6.0,
+      "p95": 11.0,
+      "p99": 19.0,
+      "max": 3435,
+      "mean": 5.2
+    },
+    "abstracts_over_words": {
+      "256": 3625,
+      "384": 4,
+      "512": 0
+    },
+    "missing_after_cleaning": {
+      "authors_empty": 0,
+      "updated_at_null": 0
+    }
+  },
+  "wikipedia": {
+    "pages": 1169,
+    "pages_without_text": 17,
+    "words": {
+      "min": 6,
+      "p5": 98.0,
+      "p25": 244.0,
+      "p50": 499.0,
+      "p75": 1037.0,
+      "p95": 5489.799999999997,
+      "p99": 16580.439999999995,
+      "max": 112054,
+      "mean": 1524.8
+    },
+    "by_depth": [
+      {
+        "depth": 0,
+        "pages": 232,
+        "median_words": 626.0
+      },
+      {
+        "depth": 1,
+        "pages": 546,
+        "median_words": 489.5
+      },
+      {
+        "depth": 2,
+        "pages": 391,
+        "median_words": 451.0
+      }
+    ],
+    "categories": [
+      {
+        "category": "Category:Natural language processing",
+        "depth": 0,
+        "pages": 232
+      },
+      {
+        "category": "Category:Natural language processing researchers",
+        "depth": 1,
+        "pages": 143
+      },
+      {
+        "category": "Category:Machine translation",
+        "depth": 1,
+        "pages": 68
+      },
+      {
+        "category": "Category:Natural language processing software",
+        "depth": 1,
+        "pages": 66
+      },
+      {
+        "category": "Category:Speech recognition",
+        "depth": 1,
+        "pages": 60
+      },
+      {
+        "category": "Category:Finite-state machines",
+        "depth": 1,
+        "pages": 51
+      },
+      {
+        "category": "Category:Optical character recognition",
+        "depth": 1,
+        "pages": 39
+      },
+      {
+        "category": "Category:Corpus linguistics",
+        "depth": 1,
+        "pages": 38
+      },
+      {
+        "category": "Category:Statistical natural language processing",
+        "depth": 1,
+        "pages": 28
+      },
+      {
+        "category": "Category:Natural language processing stubs",
+        "depth": 1,
+        "pages": 19
+      },
+      {
+        "category": "Category:Tasks of natural language processing",
+        "depth": 1,
+        "pages": 18
+      },
+      {
+        "category": "Category:Natural language generation",
+        "depth": 1,
+        "pages": 16
+      },
+      {
+        "category": "Category:Large language models",
+        "depth": 2,
+        "pages": 87
+      },
+      {
+        "category": "Category:Chatbots",
+        "depth": 2,
+        "pages": 64
+      },
+      {
+        "category": "Category:Corpora",
+        "depth": 2,
+        "pages": 39
+      },
+      {
+        "category": "Category:Speech recognition software",
+        "depth": 2,
+        "pages": 32
+      },
+      {
+        "category": "Category:Corpus linguists",
+        "depth": 2,
+        "pages": 27
+      },
+      {
+        "category": "Category:Virtual assistants",
+        "depth": 2,
+        "pages": 23
+      },
+      {
+        "category": "Category:Corpus linguistics stubs",
+        "depth": 2,
+        "pages": 21
+      },
+      {
+        "category": "Category:Automatic number plate recognition",
+        "depth": 2,
+        "pages": 12
+      },
+      {
+        "category": "Category:Natural language parsing",
+        "depth": 2,
+        "pages": 11
+      },
+      {
+        "category": "Category:Optical character recognition software",
+        "depth": 2,
+        "pages": 11
+      },
+      {
+        "category": "Category:Devices capable of speech recognition",
+        "depth": 2,
+        "pages": 10
+      },
+      {
+        "category": "Category:Language modeling",
+        "depth": 2,
+        "pages": 8
+      },
+      {
+        "category": "Category:Natural language processing toolkits",
+        "depth": 2,
+        "pages": 8
+      },
+      {
+        "category": "Category:Concordances (publishing)",
+        "depth": 2,
+        "pages": 5
+      },
+      {
+        "category": "Category:English corpora",
+        "depth": 2,
+        "pages": 5
+      },
+      {
+        "category": "Category:Machine translation researchers",
+        "depth": 2,
+        "pages": 5
+      },
+      {
+        "category": "Category:Machine translation software",
+        "depth": 2,
+        "pages": 5
+      },
+      {
+        "category": "Category:Word-sense disambiguation",
+        "depth": 2,
+        "pages": 4
+      },
+      {
+        "category": "Category:Corpus linguistics journals",
+        "depth": 2,
+        "pages": 3
+      },
+      {
+        "category": "Category:Evaluation of machine translation",
+        "depth": 2,
+        "pages": 3
+      },
+      {
+        "category": "Category:Persian corpora",
+        "depth": 2,
+        "pages": 3
+      },
+      {
+        "category": "Category:Google Translate",
+        "depth": 2,
+        "pages": 2
+      },
+      {
+        "category": "Category:OCR typefaces",
+        "depth": 2,
+        "pages": 2
+      },
+      {
+        "category": "Category:Small language models",
+        "depth": 2,
+        "pages": 1
+      }
+    ]
+  }
+}
