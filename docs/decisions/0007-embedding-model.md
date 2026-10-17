@@ -1,6 +1,6 @@
-# 0007. Embedding model: TBD (bge-small-en-v1.5 or bge-base-en-v1.5)
+# 0007. Embedding model: bge-base-en-v1.5 with the query instruction
 
-- Status: proposed (draft: the recall table is filled from the Kaggle run of `pipelines/scripts/compare_embeddings.py`)
+- Status: proposed (table B from 21 answerable golden items; re-run when the set has 30)
 - Date: 2026-10-17
 - Deciders: FAO (author), DAT (reviewer), LDN (harness and golden set)
 
@@ -32,22 +32,44 @@ Both match the ADR 0003 estimates (about 14 and 41 min). Raw float32 vectors in 
 
 **B. Retrieval quality: golden set, exact search.** `pipelines/scripts/compare_embeddings.py` embeds the golden questions with each model, ranks all 121,926 chunk vectors of table A by dot product (exact cosine search over the whole index, so the result does not depend on Qdrant settings), and scores the rankings with LDN's harness (`scitech_eval`, canned retriever; recall@k and MRR by `doc_id`, answerable English dev items only, unanswerable items excluded). Each model runs with and without the query instruction. "Standalone queries" uses the rewritten query of the follow-up items (the agent sends that one); every other item keeps its question.
 
-TBD: paste `summary.md` from the Kaggle run (notebook, date, golden-set commit and item count).
+Run: Kaggle notebook "ADR 0007 comparison", Version 1, 2026-10-17, CPU only (Accelerator None), this script at `56196dd`, sentence-transformers as installed by `pip` that day (version not recorded). Golden set: LDN's batch on #56 at `f0015d1`, 23 items, of which 21 answerable English dev items are scored (2 unanswerable excluded); 25 query texts: the 23 questions and the standalone rewrites of the 2 follow-up items. Index: the 121,926 vectors of table A for each model.
+
+| Model | Query instruction | recall@1 | recall@5 (95% CI) | recall@10 | MRR | recall@5, standalone queries |
+|---|---|---:|---:|---:|---:|---:|
+| `BAAI/bge-base-en-v1.5` | yes | 0.381 | **0.405** (0.214-0.595) | 0.500 | **0.458** | 0.452 |
+| `BAAI/bge-base-en-v1.5` | no | 0.238 | 0.333 (0.143-0.524) | 0.476 | 0.312 | 0.381 |
+| `BAAI/bge-small-en-v1.5` | yes | 0.214 | 0.310 (0.119-0.524) | 0.333 | 0.290 | 0.405 |
+| `BAAI/bge-small-en-v1.5` | no | 0.214 | 0.310 (0.119-0.524) | 0.333 | 0.290 | 0.357 |
+
+Recall is per question (the share of its relevant documents found), averaged over the 21 items; the 95% interval is the harness's bootstrap. Items missed at 5 with the instruction: bge-base 11 (gs-001, 002, 003, 004, 007, 008, 012, 014, 015, 018, 019), bge-small 14 (the same 11 plus gs-005, gs-020 and gs-021). For bge-small the instruction left every question-as-asked metric unchanged and only moved the standalone queries (0.357 to 0.405); for bge-base it helped on every column.
 
 **C. Chunks longer than the model's input.** Same script: every chunk text tokenized with the model's tokenizer (special tokens included) and compared with `max_seq_length`. Longer chunks were cut when embedded, so their end is not in the vector.
 
-TBD: paste the token table from the same run.
+| Model | max_seq_length | Chunks over | Documents over | Max tokens | p99 | Median |
+|---|---:|---:|---:|---:|---:|---:|
+| `BAAI/bge-base-en-v1.5` | 512 | 82 of 121,926 (0.067%) | 81 | 780 | 429 | 250 |
+| `BAAI/bge-small-en-v1.5` | 512 | 82 of 121,926 (0.067%) | 81 | 780 | 429 | 250 |
+
+Both models use the same tokenizer, so the counts are identical. 82 chunks lose their last tokens (`CHUNK_MAX_WORDS` 320 words is usually under 512 tokens, median 250, but not for text with many symbols or numbers).
 
 ## Decision
-TBD after table B. Rule set before the run, so the numbers do not pick the rule:
+**`BAAI/bge-base-en-v1.5`, with the query instruction `Represent this sentence for searching relevant passages: ` on queries and no passage prefix. `CHUNK_MAX_WORDS` stays at 320.**
+
+By the rule below, written before the run:
+- Recall@5 with the instruction: bge-base 0.405, bge-small 0.310. Over 21 items that is 8.5 against 6.5 (0.405 x 21 and 0.310 x 21), a difference of 2.0, so the "at least 2 questions" bar is met (exactly, not by a margin). MRR is higher too (0.458 against 0.290), and bge-base is ahead on every other column of table B.
+- The instruction helps bge-base on every metric (recall@5 0.333 to 0.405, MRR 0.312 to 0.458), so the query side uses it.
+- Table C: 82 chunks (0.067%) are over 512 tokens, under the 0.1% threshold, so they stay as embedded and no re-chunking is needed.
+- The evidence is weak: 21 items, and the 95% intervals of the two models overlap almost completely. The rule exists so that this does not become a judgement call; bge-base costs twice the memory and about 3 times the CPU time per query (table A), which is affordable at this corpus size.
+
+Rule set before the run, so the numbers do not pick the rule:
 - **`bge-base-en-v1.5`** only if its recall@5 (questions as asked, with the query instruction) is higher than bge-small's by at least 2 questions of the answerable set, and its MRR is not lower.
 - Otherwise **`bge-small-en-v1.5`**: half the index memory and about 3 times faster query encoding on a CPU (inferred from the throughput ratio in table A), with quality we cannot tell apart on 30 questions.
 - The query side uses the instruction above unless table B shows the run without it scoring higher for the chosen model. Passages get no prefix (`passage_prefix` is empty in `_embed_state.json`, as the model card says).
 - If table C shows chunks over the limit, lower `CHUNK_MAX_WORDS`, re-run `chunk` and re-embed the chosen model before the load (W3-D3-FAO-1), unless they are under 0.1% of chunks; then they stay and the number is recorded here.
 
 ## Consequences
-- `EMBEDDING_MODEL` is set to the chosen model in every environment. The vectors of both models already exist (table A), so the load on D09 needs no new GPU run unless table C asks for re-chunking.
-- The query side must apply the same instruction as table B. The dense retriever (W3-D2-DAT-1) reads it from configuration, next to `EMBEDDING_MODEL`; adding that variable to `.env.example` is DAT's call in that task.
+- `EMBEDDING_MODEL=BAAI/bge-base-en-v1.5` in every environment. Its vectors already exist (table A, 385 MB), so the load on D09 needs no new GPU run.
+- The query side must apply the instruction of table B. The dense retriever (W3-D2-DAT-1) reads it from configuration, next to `EMBEDDING_MODEL`; adding that variable to `.env.example` is DAT's call in that task.
 - The model is English-only. Per `evaluation/PLAN.md` (issue #7), the Vietnamese question group is dropped, because no multilingual model was part of the D08 run. Revisit only if a multilingual model is embedded later.
-- Recall@5 on 30 questions is preliminary. W3-D4-LDN-1 (dense vs BM25 vs hybrid) and the 45- and 60-item golden sets re-measure the chosen model; if recall there is far below table B, revisit this ADR.
+- Re-run table B when the golden set has 30 items (same notebook, a new version); if bge-base then misses the rule, this ADR switches to bge-small before the load. Recall on 21-30 questions is preliminary. W3-D4-LDN-1 (dense vs BM25 vs hybrid) and the 45- and 60-item golden sets re-measure the chosen model; if recall there is far below table B, revisit this ADR.
 - Revisit if the chunk size changes (`CHUNK_MAX_WORDS`), since table C depends on it.
