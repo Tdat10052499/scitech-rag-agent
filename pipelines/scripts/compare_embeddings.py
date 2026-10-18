@@ -136,7 +136,8 @@ def score(
     prefix: str = "",
 ) -> dict[str, Any]:
     """Score one ranking with the harness, as asked (`question`) and rewritten for follow-ups.
-    The run setup fields (`retriever_type` ... `notes`) are recorded by harness schema 2 (#66)."""
+    The run setup fields (`retriever_type` ... `notes`) will be recorded once #66 (harness
+    schema 2) is merged; the harness on main ignores them."""
     import yaml
 
     from scitech_eval.runner import run_from_config
