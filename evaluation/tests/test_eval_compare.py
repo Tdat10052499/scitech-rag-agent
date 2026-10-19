@@ -132,6 +132,15 @@ def test_blank_setup_values_in_the_yaml_file_get_the_defaults(tmp_path):
     assert config["embedding_model"] is None
 
 
+def test_blank_bootstrap_means_the_defaults_and_a_wrong_type_is_rejected(tmp_path):
+    # "bootstrap:" with nothing under it used to fail later with 'NoneType' has no attribute 'get'.
+    result = _run_a(tmp_path, bootstrap=None)
+    assert result["config"]["bootstrap"] == {}
+    assert result["metrics"]["recall@1"]["mean"] == pytest.approx(0.3)
+    with pytest.raises(ValueError, match="'bootstrap' must be a mapping"):
+        _config(tmp_path, bootstrap=5)
+
+
 def test_timings_come_from_the_clock(tmp_path):
     ticks = iter(i * 0.25 for i in range(100))  # every read of the clock advances by 0.25 s
     config = _config(tmp_path)

@@ -55,7 +55,8 @@ def load_config(path: Path) -> dict:
         if config.get(key) is None:
             config[key] = default
     config.setdefault("embedding_model", None)  # model id for dense and hybrid; none for BM25
-    config.setdefault("bootstrap", {})
+    if config.get("bootstrap") is None:  # "bootstrap:" with nothing under it
+        config["bootstrap"] = {}
     ks = config["ks"]
     if not ks or not all(isinstance(k, int) and k > 0 for k in ks):
         raise ValueError(f"{path}: 'ks' must be positive integers")
@@ -68,6 +69,8 @@ def load_config(path: Path) -> dict:
             raise ValueError(f"{path}: '{key}' must be a string")
     if config["embedding_model"] is not None and not isinstance(config["embedding_model"], str):
         raise ValueError(f"{path}: 'embedding_model' must be a string or empty")
+    if not isinstance(config["bootstrap"], dict):
+        raise ValueError(f"{path}: 'bootstrap' must be a mapping (resamples, seed)")
     return config
 
 
