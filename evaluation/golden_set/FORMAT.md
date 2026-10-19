@@ -51,7 +51,13 @@ Items live in `golden.jsonl`: one JSON object per line, UTF-8, no trailing comma
 
 ## Checking a file
 
-Before opening a PR that changes `golden.jsonl`, run the checker (added with the harness in W2-D4; until then, parse each line with `python -m json.tool` and check the rules above by hand):
+Before opening a PR that changes `golden.jsonl`, run the checker from the repository root. The package is not installed, so set `PYTHONPATH` first (PowerShell: `$env:PYTHONPATH = "evaluation/src"`; bash: `export PYTHONPATH=evaluation/src`):
+
+```
+python -m scitech_eval check-golden evaluation/golden_set/golden.jsonl --corpus <corpus.jsonl> --id-field doc_id
+```
+
+`--corpus` is a JSONL file with one record per document (for example FAO's sample); `--id-field` names the field that holds the doc id (default `doc_id`). Without `--corpus`, the doc id check is skipped. The records in `pipelines/tests/fixtures/sample.jsonl` name the id field `id`, so for that file use `--corpus pipelines/tests/fixtures/sample.jsonl --id-field id`. To check against the full cleaned corpus, use `python -m scitech_pipelines validate --golden evaluation/golden_set/golden.jsonl` (needs `data/processed/documents`; set `PYTHONPATH=pipelines/src` first). The checker prints each problem on its own line, then one summary line, and exits with 0 when the file is valid, 1 when it found problems and 2 when a file cannot be read. It checks:
 
 - every line is valid JSON and has all required fields;
 - `id` values are unique, `type` and `split` use allowed values;
