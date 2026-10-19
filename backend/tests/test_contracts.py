@@ -151,3 +151,16 @@ def test_source_enum_matches_chunk_schema(openapi: dict[str, Any]) -> None:
 @pytest.mark.parametrize("name", ["chunk.schema.json", "api.openapi.yaml", "llm-client.md"])
 def test_contract_files_are_marked_frozen(name: str) -> None:
     assert "Frozen on 2026-10-15" in (CONTRACTS / name).read_text(encoding="utf-8")
+
+
+def test_backend_version_matches_contract(openapi: dict[str, Any]) -> None:
+    from app.main import create_app
+
+    assert create_app(cors_origins=[]).version == openapi["info"]["version"]
+
+
+def test_error_only_stream_is_allowed(openapi: dict[str, Any]) -> None:
+    # Issue #36 (0.2.1): `sources` is first only when present; an early failure is one `error`.
+    text = openapi["paths"]["/chat"]["post"]["responses"]["200"]["description"]
+    assert "at most once, and when present always the first event" in text
+    assert "single `error` event and nothing else" in text

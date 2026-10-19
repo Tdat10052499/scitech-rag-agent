@@ -54,7 +54,7 @@ Extra sources:
 |---|---|---|---|---|
 | arXiv, Kaggle snapshot `Cornell-University/arxiv` | Core corpus, bulk load | `kaggle datasets download` (log in with `kaggle auth login`) | 5.61 GB in, 121,860 records out | `CC0-1.0` for title and abstract. The snapshot `license` field is the e-print licence, not the metadata licence |
 | arXiv OAI-PMH, set `cs:cs:CL` | Incremental ingestion (W5, ADR 0008) | `from=` date, 1 request per 3 s | about 460 records per week | `CC0-1.0` |
-| Wikipedia (English) | Background explanations of NLP/LLM concepts | MediaWiki API, pages under `Category:Natural language processing` and subcategories | Estimate, not measured: hundreds to a few thousand pages. Measured by the category crawl in W2-D1-FAO-1 | `CC BY-SA 4.0`; the UI links the article |
+| Wikipedia (English) | Background explanations of NLP/LLM concepts | MediaWiki API, pages under `Category:Natural language processing` and subcategories | Estimate at decision time: hundreds to a few thousand pages. Measured by the crawl in W2-D1-FAO-1: 1,186 pages listed, 1,169 with text. Cut from v1.0, see Consequences | `CC BY-SA 4.0`; the UI links the article |
 | OpenAlex | Optional enrichment (citations, topics), not a text source | REST API by DOI `10.48550/arXiv.<id>` with `select=` | One request per paper if used | CC0 1.0 |
 
 **Big-data scale, in numbers:**
@@ -77,4 +77,5 @@ Extra sources:
 - Known risk: if the OAI-PMH set `cs:cs:CL` returns only primary `cs.CL`, incremental ingestion would miss the 20-28% of new papers that are cross-lists. ADR 0008 then harvests the `cs` set and filters by `categories` instead.
 - Pre-2018 papers (7,916 records, 6.5%) may rank for queries where newer work is more relevant. If the evaluation shows this, add a date-aware ranking feature or a filter instead of dropping them from the index.
 - If time is short, cut OpenAlex first (it adds no text), then Wikipedia. arXiv `cs.CL` alone meets the success criteria.
+- **Update 2026-10-17 (DAT, on #34): Wikipedia is cut from the v1.0 index.** No task in Weeks 3-8 processes it. The data profile (#47, section 8) shows off-topic categories at depth 1-2, for example Finite-state machines (51 pages) and Natural language processing researchers (143), and the schedule is compressed (ADR 0010). The index holds arXiv `cs.CL` only. The raw download from W2-D1-FAO-1 (1,169 pages) stays as it is, so Wikipedia can come back after v1.0 through the chunker (`source: wikipedia`, `CC BY-SA 4.0`).
 - Revisit this ADR if the GPU becomes unavailable for a night. Then the start year becomes the lever (since 2022: 30 min with `bge-base`, 10 min with `bge-small`, estimate).

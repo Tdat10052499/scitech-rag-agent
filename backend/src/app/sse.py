@@ -1,7 +1,8 @@
 """Turn agent events into server-sent events exactly as the frozen contract describes.
 
-Every `data:` line is JSON (so newlines in tokens cannot break the framing), `sources` comes first,
-and exactly one `done` or `error` ends the stream.
+Every `data:` line is JSON (so newlines in tokens cannot break the framing), `sources` comes first
+when present (a request that fails before the sources is a single `error` event, #36), and exactly
+one `done` or `error` ends the stream.
 """
 
 from __future__ import annotations

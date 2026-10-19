@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 
-An interactive web app where an AI agent answers science and technology questions using retrieval over a large-scale corpus, and suggests relevant follow-up questions. The corpus is scoped to **large language models and NLP** research (arXiv `cs.CL` plus Wikipedia background; see the [project brief](docs/00-project-brief.md)).
+An interactive web app where an AI agent answers science and technology questions using retrieval over a large-scale corpus, and suggests relevant follow-up questions. The corpus is scoped to **large language models and NLP** research (arXiv `cs.CL`; see the [project brief](docs/00-project-brief.md)).
 
 > Status: course project. Work runs 2026-10-13 to 2026-11-06 (release `v1.0`); the product is presented on 2026-11-10. Plan: [docs/04-roadmap.md](docs/04-roadmap.md) and [docs/plan/](docs/plan/README.md).
 
@@ -59,10 +59,11 @@ cd scitech-rag-agent
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1          # if blocked: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 Copy-Item .env.example .env           # fill in real values; never commit .env
-python -m pip install -r requirements-dev.txt -r backend/requirements.txt   # make setup
+python -m pip install -r requirements-dev.txt -r backend/requirements.txt -r agent/requirements.txt   # make setup
 pre-commit install                    # make setup (git hooks)
 ruff check .                          # make lint
 python -m pytest                      # make test
+$env:PYTHONPATH = "agent/src"         # the backend imports the agent package
 python -m uvicorn app.main:app --app-dir backend/src --reload --port 8000   # make run
 ```
 
