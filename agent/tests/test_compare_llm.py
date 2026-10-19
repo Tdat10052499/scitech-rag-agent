@@ -216,3 +216,8 @@ def test_read_documents_from_partitioned_parquet(tmp_path: Path):
         "d1": {"title": "t1", "abstract": "a1"},
         "d3": {"title": "t3", "abstract": "a3"},
     }
+
+
+def test_missing_documents_path_says_what_to_do(tmp_path: Path):
+    with pytest.raises(FileNotFoundError, match="contexts.jsonl"):
+        cl.read_documents(tmp_path / "nowhere", {"d1"})

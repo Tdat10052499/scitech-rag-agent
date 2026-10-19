@@ -95,6 +95,11 @@ def read_documents(path: Path, doc_ids: set[str], id_field: str = "doc_id") -> d
     """`doc_id` -> {title, abstract} for the wanted ids, from the cleaned Parquet documents
     (a folder or file) or from a JSONL file such as FAO's sample."""
     path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path}: no cleaned documents here. Use FAO's `clean` output (Parquet folder) or a "
+            "JSONL file, or ask FAO for contexts.jsonl (runbook section 7)."
+        )
     found: dict[str, dict] = {}
     if path.suffix == ".jsonl":
         for line in path.read_text(encoding="utf-8").splitlines():
