@@ -121,3 +121,10 @@ Script: `notebooks/llm-serving/compare_llm.py`; method in `docs/decisions/0006-l
    ```
 4. **Blind sheets**: `python notebooks/llm-serving/compare_llm.py blind` writes `ratings-LDN.csv` (relevance and grounded), `ratings-DAT.csv` (relevance only), `RATING.md` (the scale) and `key.json`. Send each rater their sheet only; nobody opens `key.json` before both sheets are back.
 5. **Summary**: `python notebooks/llm-serving/compare_llm.py summarise` prints the ADR results table, the agreement out of 30 with the differing pairs, and what the decision rule picks (`--slow qwen2.5:7b`: the 7B wins only outright, never a tie).
+
+### 7.1 The D06 run (2026-10-19)
+One Kaggle session (2 × T4), laptop on Windows calling through the tunnel; results and decision in ADR 0006.
+- 30 answers, 0 failed. Warm-up calls took 93.2 s (`qwen2.5:3b`, first load of the session), 40.1 s (`llama3.2:3b`) and 7.0 s (`qwen2.5:7b`), so the first call of a session is far above `LLM_TIMEOUT=60`; warm up before a demo or a run.
+- Scored calls, medians over 10 items: TTFT 0.71 / 0.75 / 0.82 s, total 1.8 / 1.5 / 2.4 s, decode 79.7 / 86.3 / 38.6 tok/s (`qwen2.5:3b` / `llama3.2:3b` / `qwen2.5:7b`). Decode rates are close to section 4 for the 7B and higher for the 3B models; answers were short (6-272 completion tokens), so totals are not comparable with the 200-token numbers of section 4.
+- Not recorded: `ollama --version` and `ollama show <tag>`; step 2 above must be done before the session is stopped.
+- Windows notes: use `python -m pip` (Application Control may block `pip.exe`), and set `$env:PYTHONPATH = "agent/src"` in PowerShell.
