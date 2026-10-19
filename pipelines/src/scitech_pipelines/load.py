@@ -114,21 +114,9 @@ def index_snapshot(collection: str, model: str, chunked_at: str | None) -> str:
     return f"{collection}/{model.split('/')[-1]}/{(chunked_at or 'unknown').split('+')[0]}"
 
 
-def load_index(
-    chunks: Path,
-    vectors: Path,
-    store: VectorStore,
-    out: Path,
-    *,
-    batch_size: int = DEFAULT_BATCH_SIZE,
-    force: bool = False,
-    log: Log = print,
-) -> dict[str, Any]:
-    """Upsert every vector of `vectors` with its chunk from `chunks` into `store`, then check
-    the count and write `<out>/_load_manifest.json`. `force` ignores the resume state."""
-    if batch_size < 1:
-        raise ValueError(f"batch_size must be >= 1, got {batch_size}")
-    started = time.monotonic()
+def check_inputs(chunks: Path, vectors: Path) -> dict[str, Any]:
+    """Check that `vectors` is a finished embed run of exactly the chunks in `chunks`; return
+    the parts, model, dimension, expected point count and timestamps."""
     chunk_manifest = _read_json(chunks / CHUNK_MANIFEST)
     embed_state = _read_json(vectors / EMBED_STATE)
     embed_manifest = _read_json(vectors / EMBED_MANIFEST)  # only a finished embed run is loaded
@@ -150,13 +138,55 @@ def load_index(
             f"{vectors}: {len(parts)} parts, the embed manifest lists "
             f"{embed_manifest['counts']['parts']}"
         )
-    model, dimension = embed_state["model"], embed_state["dimension"]
+    return {
+        "parts": parts,
+        "model": embed_state["model"],
+        "dimension": embed_state["dimension"],
+        "expected": expected,
+        "chunked_at": chunk_manifest.get("chunked_at"),
+        "embedded_at": embed_manifest.get("embedded_at"),
+    }
+
+
+def upsert_part(
+    part: Path, chunks: Path, dimension: int, store: VectorStore, batch_size: int
+) -> int:
+    """Upsert the points of one vector part in batches; return how many."""
+    rows, part_vectors = _read_part(part, chunks, dimension)
+    for start in range(0, len(rows), batch_size):
+        batch = zip(
+            rows[start : start + batch_size],
+            part_vectors[start : start + batch_size],
+            strict=True,
+        )
+        store.upsert([to_point(r, v) for r, v in batch])
+    return len(rows)
+
+
+def load_index(
+    chunks: Path,
+    vectors: Path,
+    store: VectorStore,
+    out: Path,
+    *,
+    batch_size: int = DEFAULT_BATCH_SIZE,
+    force: bool = False,
+    log: Log = print,
+) -> dict[str, Any]:
+    """Upsert every vector of `vectors` with its chunk from `chunks` into `store`, then check
+    the count and write `<out>/_load_manifest.json`. `force` ignores the resume state."""
+    if batch_size < 1:
+        raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+    started = time.monotonic()
+    inputs = check_inputs(chunks, vectors)
+    parts, model, dimension = inputs["parts"], inputs["model"], inputs["dimension"]
+    expected = inputs["expected"]
     settings = {
         "collection": store.collection,
         "model": model,
         "dimension": dimension,
-        "chunked_at": chunk_manifest.get("chunked_at"),
-        "embedded_at": embed_manifest.get("embedded_at"),
+        "chunked_at": inputs["chunked_at"],
+        "embedded_at": inputs["embedded_at"],
         "parts": [p.name for p in parts],
     }
 
@@ -179,18 +209,11 @@ def load_index(
         if part.name in done:
             continue
         t = time.monotonic()
-        rows, part_vectors = _read_part(part, chunks, dimension)
-        for start in range(0, len(rows), batch_size):
-            batch = zip(
-                rows[start : start + batch_size],
-                part_vectors[start : start + batch_size],
-                strict=True,
-            )
-            store.upsert([to_point(r, v) for r, v in batch])
-        loaded += len(rows)
+        n = upsert_part(part, chunks, dimension, store, batch_size)
+        loaded += n
         state["parts_done"].append(part.name)
         state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
-        log(f"load: part {i}/{len(parts)}, {len(rows):,} points in {time.monotonic() - t:.1f} s")
+        log(f"load: part {i}/{len(parts)}, {n:,} points in {time.monotonic() - t:.1f} s")
 
     points = store.count()
     if points != expected:
