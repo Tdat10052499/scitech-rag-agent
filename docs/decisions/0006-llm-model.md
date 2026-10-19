@@ -92,7 +92,7 @@ What the table shows, and what it does not:
 - **gs-007** ("name two approaches"): both qwen models answered only `[1] [2]` (6-7 tokens), with no text; `llama3.2:3b` named both approaches. These are the two relevance 1 ratings. LDN rated both "grounded: yes" because they make no claim, so the ungrounded column does not count them.
 - **Not English** counts the same two answers: they have no letters, so the heuristic fails them. No answer was in another language.
 - **Answers with no `[n]` at all:** `llama3.2:3b` 4 of 10 (gs-003, 008, 009, 010), `qwen2.5:3b` 1 (gs-004), `qwen2.5:7b` 0.
-- **Ungrounded:** `qwen2.5:3b` on gs-004 (an example not in the abstracts) and `llama3.2:3b` on gs-003 (opens with "The evidence is insufficient." although the abstract gives the figures), from LDN's notes.
+- **Ungrounded:** `qwen2.5:3b` on gs-004 (an example not in the abstracts) and `llama3.2:3b` on gs-003 (opens with "The evidence is insufficient." although the abstract gives the figures), from LDN's notes. Grounded has one rater and only these 2 of 30 answers are "no", so the "fewer ungrounded answers" step of the tie-break rests on two single-rater judgements (LDN on #58). Here it did not decide anything (1 vs 1 between the 3B models).
 - **Speed:** the total-time gap between the 3B models (1.5 s vs 1.8 s) comes partly from answer length: `llama3.2:3b` wrote 682 completion tokens over the 10 items, `qwen2.5:3b` 952 (inferred from the token counts; not tested separately).
 
 ## Decision
