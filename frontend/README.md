@@ -8,7 +8,8 @@ events arrive (`src/api.ts` reads the stream with `fetch`): sources, streamed te
 chips, and the error and "not enough evidence" states. One `session_id` per conversation; the
 "New conversation" button starts a new one. Sources are shown without the score until the range
 of real retrieval scores is known (W3). Not done yet: the sources panel details, clickable
-citations that jump to a passage, and tests (W2-D5-LDN-1, W3-W4).
+citations that jump to a passage (W3-W4). Tests: the SSE client (`src/api.ts`) has automated tests
+(W2-D5-LDN-1); the screens are checked by hand.
 
 ## Run (Windows, macOS, Linux)
 
@@ -25,7 +26,9 @@ npm ci            # install exactly what package-lock.json says
 npm run dev       # http://localhost:5173 (API calls are proxied to the backend)
 ```
 
-Other commands: `npm run typecheck`, `npm run build` (output in `dist/`, git-ignored).
+Other commands: `npm run typecheck`, `npm test` (tests of the SSE client; Node's built-in test
+runner, no extra package, needs Node 22.6 or newer), `npm run build` (output in `dist/`,
+git-ignored).
 
 To use a backend on another address: `VITE_BACKEND_URL=http://host:8000 npm run dev`
 (PowerShell: `$env:VITE_BACKEND_URL="http://host:8000"; npm run dev`).
