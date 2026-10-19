@@ -109,6 +109,29 @@ def test_setup_fields_have_defaults_and_are_validated(tmp_path):
         _config(tmp_path, embedding_model=["a"])
 
 
+def test_blank_setup_values_in_the_yaml_file_get_the_defaults(tmp_path):
+    # "notes:" with nothing after it is loaded as None; it must mean "not given", not stop the run.
+    path = tmp_path / "blank.yaml"
+    path.write_text(
+        "name: blank\n"
+        f"golden_path: {DATA / 'toy_golden.jsonl'}\n"
+        "retriever:\n"
+        "  factory: scitech_eval.retrievers:canned\n"
+        "retriever_type:\n"
+        "index_snapshot:\n"
+        "dataset_snapshot:\n"
+        "notes:\n"
+        "embedding_model:\n",
+        encoding="utf-8",
+    )
+    config = load_config(path)
+    assert config["retriever_type"] == "unspecified"
+    assert config["index_snapshot"] == "unspecified"
+    assert config["dataset_snapshot"] == "unspecified"
+    assert config["notes"] == ""
+    assert config["embedding_model"] is None
+
+
 def test_timings_come_from_the_clock(tmp_path):
     ticks = iter(i * 0.25 for i in range(100))  # every read of the clock advances by 0.25 s
     config = _config(tmp_path)

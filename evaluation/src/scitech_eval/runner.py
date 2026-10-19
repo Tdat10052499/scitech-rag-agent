@@ -42,13 +42,19 @@ def load_config(path: Path) -> dict:
     config.setdefault("language", "en")  # Vietnamese items are reported separately
     config.setdefault("query", "question")  # question | standalone_query (follow-up items)
     config.setdefault("ks", [1, 5, 10])
-    config.setdefault("dataset_snapshot", "unspecified")
-    config.setdefault(
-        "retriever_type", "unspecified"
-    )  # label for reports: dense, bm25, hybrid, ...
+    # Run setup labels. A key that is present but blank in the YAML file ("notes:") loads as None,
+    # so it gets the default too (setdefault would keep the None and the run would stop below).
+    # retriever_type: label for reports (dense, bm25, hybrid, ...); index_snapshot: id of the
+    # loaded index (FAO's manifest); dataset_snapshot: id of the corpus manifest.
+    for key, default in (
+        ("dataset_snapshot", "unspecified"),
+        ("retriever_type", "unspecified"),
+        ("index_snapshot", "unspecified"),
+        ("notes", ""),
+    ):
+        if config.get(key) is None:
+            config[key] = default
     config.setdefault("embedding_model", None)  # model id for dense and hybrid; none for BM25
-    config.setdefault("index_snapshot", "unspecified")  # id of the loaded index (FAO's manifest)
-    config.setdefault("notes", "")
     config.setdefault("bootstrap", {})
     ks = config["ks"]
     if not ks or not all(isinstance(k, int) and k > 0 for k in ks):
