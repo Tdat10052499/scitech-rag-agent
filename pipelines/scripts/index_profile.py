@@ -23,7 +23,7 @@ Usage (repository root, Qdrant up, PYTHONPATH=agent/src:pipelines/src):
         --retriever "hybrid=scitech_agent.retrieval.hybrid:from_env" \
         --filter '{"categories": "cs.LG"}' \
         --filter '{"published_at": {"gte": "2023-01-01", "lte": "2023-12-31"}}' \
-        --collection scitech --size bm25=data/index/bm25 \
+        --collection scitech_chunks --size bm25=data/index/bm25 \
         --out data/reports/index_profile.json
 The factory names above are placeholders until W3-D1/D2/D3/D4-DAT-1 are merged.
 Dependencies: pyarrow (pipelines/requirements.txt); `docker` on PATH for disk and RAM.
@@ -371,7 +371,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--qdrant-url", default=os.environ.get("QDRANT_URL", "http://localhost:6333")
     )
-    parser.add_argument("--collection", help="Qdrant collection to describe (and measure on disk)")
+    parser.add_argument(
+        "--collection",
+        default=os.environ.get("QDRANT_COLLECTION"),
+        help="Qdrant collection to describe and measure on disk (default: QDRANT_COLLECTION)",
+    )
     parser.add_argument("--no-docker", action="store_true", help="skip disk and RAM via docker")
     parser.add_argument(
         "--size", action="append", default=[], help="label=path of another index to measure"

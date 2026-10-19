@@ -155,7 +155,8 @@ def test_parse_retriever():
             index_profile.parse_retriever(bad)
 
 
-def test_command_line_end_to_end(tmp_path, capsys):
+def test_command_line_end_to_end(tmp_path, capsys, monkeypatch):
+    monkeypatch.delenv("QDRANT_COLLECTION", raising=False)
     golden = tmp_path / "golden.jsonl"
     golden.write_text(json.dumps({"id": "gs-001", "question": "language models"}) + "\n")
     chunks = tmp_path / "chunks"
@@ -190,7 +191,8 @@ def test_command_line_end_to_end(tmp_path, capsys):
     assert "| fake |" in printed and "| bm25 on disk | 0.0 MiB |" in printed
 
 
-def test_command_line_fails_when_a_filter_is_broken(tmp_path):
+def test_command_line_fails_when_a_filter_is_broken(tmp_path, monkeypatch):
+    monkeypatch.delenv("QDRANT_COLLECTION", raising=False)
     golden = tmp_path / "golden.jsonl"
     golden.write_text(json.dumps({"id": "gs-001", "question": "language models"}) + "\n")
     pq.write_table(pa.table({"title": ["Paper 1"]}), tmp_path / "chunks.parquet")
