@@ -1,6 +1,6 @@
 # 0008. Incremental ingestion: daily OAI-PMH harvest with a date watermark
 
-- Status: proposed (draft). The OAI-PMH set is settled by the live check of 2026-10-17 (below)
+- Status: proposed. The OAI-PMH set is settled by the live check of 2026-10-17, and one real day went through fetch, clean, validate and chunk on 2026-10-19 (both below)
 - Date: 2026-10-17 (drafted early; task W3-D4-FAO-1 is scheduled for D13, 2026-10-27)
 - Deciders: FAO (author), DAT (reviewer)
 
@@ -35,7 +35,7 @@ Scheduling:
 2. **Set `cs:cs:CL`.** The rule written before the live check was: use `cs:cs:CL` if it contains cross-lists and has every `cs.CL` id that `cs` has. It does (table below): the same 304 ids as `cs` filtered on `cs.CL`, 99 of them cross-lists, in one request instead of two. ADR 0003's known risk (a set of primary `cs.CL` only) does not hold. `--category cs.CL` stays on as a guard.
 3. **Process** the new file with the existing commands, each with its own output directory (`clean` replaces its `--out`, and `chunk` refuses an `--out` with other files):
    - `clean --input <file>.jsonl --out data/processed/incremental/<until>/documents`: the same Spark code as the bulk load, so normalisation exists once. It needs Java 17+: WSL2 on FAO's laptop or a Kaggle CPU notebook, not Windows. The simplest setup runs every step in WSL2.
-   - `chunk`, then `embed` with the model of the index (`EMBEDDING_MODEL`, ADR 0007) on CPU. The live check harvested 304 records for one day (above the 90 estimated from the 2025 total; see the table). At the 0.9 records/s measured for `bge-base-en-v1.5` (the model of ADR 0007) on a Colab CPU, 304 chunks take about 6 min (estimate: about one chunk per record, as in the bulk run). No GPU is needed.
+   - `chunk`, then `embed` with the model of the index (`EMBEDDING_MODEL`, ADR 0007) on CPU. The live check harvested 304 records for one day (above the 90 estimated from the 2025 total; see the table). `bge-small-en-v1.5` (the model of ADR 0007) embedded 2.8 records/s on a Colab CPU (`docs/03-data-sources.md`), so 304 chunks take about 2 min (estimate; the live day of 2026-10-19 gave exactly one chunk per record). No GPU is needed.
    - `load` (W3-D3-FAO-1) into the same collection.
 4. **Watermark**: `data/state/incremental.json` (git-ignored) with the last loaded `until` day, the set and category, the fetch manifest path and the point count after the load. It is written only after `load` succeeds and its count check passes (W5-D2-FAO-1); a failure at any step leaves it, so the next run repeats the same range. The first value is the date of the Kaggle snapshot of the bulk index (2026-10-10 for version 307). A run after missed days harvests all of them in one range.
 5. **Idempotency**: `load` upserts by `chunk_id` (`<doc_id>#<chunk_index>`, stable), so re-running a range replaces points instead of adding them. A record's datestamp also changes when an old paper gets a new version (or its metadata is edited), so it is harvested again with its latest title and abstract and replaces the old chunks. `published_at` stays the v1 date (`created`) and `updated_at` becomes the new version's date. If the new abstract has fewer chunks, the old higher-numbered chunks would remain, so `load` must first delete the points of every `doc_id` it reloads (W5-D2-FAO-1).
@@ -71,9 +71,37 @@ No deleted records on that day. The two files have the same size and the same id
 
 The day's volume, 304 records, is about 3 times the 90 per day estimated from the 2025 total. A datestamp day is a metadata-change day, not an announcement day, so it also holds the 15 new versions of old papers, and 2026 volume may be higher than 2025 (not measured). It stays small for every step.
 
+## Live day: one real day through fetch, clean, validate and chunk (run 2026-10-19)
+Run in a Kaggle CPU notebook ("ADR 0008 live day", Java 21, PySpark 4.0.4), branch at `742fd8e`, for the datestamp day 2026-10-16 (a Friday after snapshot 307 of 2026-10-10). The notebook ran these commands with `--data-dir /kaggle/working/data`:
+
+```
+incremental-fetch --from 2026-10-16 --until 2026-10-16 --set cs:cs:CL --category cs.CL --out data/raw/arxiv-oai/2026-10-16.jsonl
+clean    --input data/raw/arxiv-oai/2026-10-16.jsonl --out data/processed/incremental/2026-10-16/documents --sample-size 0
+validate --input data/processed/incremental/2026-10-16/documents
+chunk    --input data/processed/incremental/2026-10-16/documents --out data/processed/incremental/2026-10-16/chunks
+```
+
+It then compared the cleaned ids with the bulk documents of snapshot 307 (Kaggle dataset `scitech-cscl-v307`) in DuckDB.
+
+| Step | Result | Time |
+|---|---|---:|
+| `incremental-fetch` | 276 records harvested in 1 page / 1 request, 0 deleted, 276 kept with `cs.CL`; 576,700 bytes | 0.4 s |
+| `clean` | 276 in, 276 out; DuckDB agrees; 0 dropped (no abstract, title or date), 0 duplicates | 13.0 s (24.1 s with Spark start-up) |
+| `validate` | all 13 checks PASS, including the count against the clean manifest | 0.3 s |
+| `chunk` | 276 documents -> 276 chunks; words per chunk median 199, p95 276, max 318 (under 320) | 0.1 s |
+
+| The 276 cleaned records | Count |
+|---|---:|
+| First version (`published_at`) in 2026 | 272 |
+| First version in 2023, 2024 or 2025 | 1, 2, 1 |
+| Already in the bulk index (snapshot 307) | 89 (32%) |
+| New to the index | 187 |
+
+A third of the day's records are papers the index already has. Being in snapshot 307, their first version is older than 2026-10-10, and they were harvested again because they got a new version or a metadata change on 2026-10-16; at least 85 of the 89 are 2026 papers. That is the case of point 5: their chunks must replace the old ones, so the delete-then-upsert per `doc_id` in W5-D2-FAO-1 is needed on most days, not only in rare cases. `embed` and `load` were not run: `load` is W3-D3-FAO-1 (D09), and the end-to-end run with the watermark is W5-D4-FAO-1 (D14).
+
 ## Consequences
-- One code path: fetched records go through the bulk `clean`. The tests check that hand-written OAI-PMH pages fetched by the prototype pass `clean` (Spark and DuckDB) with the expected rows.
-- Each day costs one or two requests and a few hundred records and chunks (304 on the checked day), and one Spark start-up (about 15 s, ADR 0005) that is large next to the data. Accepted, to keep one code path.
+- One code path: fetched records go through the bulk `clean`. The tests check that hand-written OAI-PMH pages fetched by the prototype pass `clean` (Spark and DuckDB) with the expected rows, and the live day above did the same with 276 real records.
+- Each day costs one or two requests and a few hundred records and chunks (304 and 276 on the two checked days), and one Spark start-up (about 15 s, ADR 0005) that is large next to the data. Accepted, to keep one code path.
 - The daily run needs a machine with Java 17+ (WSL2 or Kaggle), so the schedule lives there, not in Windows alone.
 - The pipeline now depends on arXiv's OAI-PMH service and its XML. Parsing matches local element names, so a namespace change does not break it; a missing title, abstract or date shows up in `clean`'s drop counts.
 - Deleted records (`<header status="deleted">`) are counted in the fetch manifest but stay in the index until the next full rebuild. A paper whose `cs.CL` category is removed also stays until then. Both are rare and accepted for v1.0.
