@@ -86,6 +86,8 @@ Run on 2026-10-19, 06:34-06:38 UTC, in one Kaggle session (2 × T4), through the
 | `llama3.2:3b` (not recorded) | 2.80 / 2.40 | 0 / 2 / 8 | 1 | 11 of 20 | 0 | 0 | 0.75 | 1.5 | 86.3 |
 | `qwen2.5:7b` (not recorded) | 2.60 / 2.40 | 1 / 2 / 7 | 0 | 15 of 21 | 0 | 1 | 0.82 | 2.4 | 38.6 |
 
+Rating aids (from LDN's D06 journal, #73): LDN rated in a local HTML copy of the sheet that highlights numbers and names not found in the pasted abstracts, as a hint for `grounded`; every rating is LDN's own, and LDN revised a few rows (A09, A20, A24, A28) before sending the sheet and before seeing DAT's. DAT rated through a text view of the same sheet, without hints.
+
 Relevance agreement (DAT vs LDN): **18 of 30** equal. In 11 of the 12 differences LDN rated 3 and DAT 2 (A21, gs-002 `qwen2.5:7b`, is the other way round), so the disagreement is mostly a shift at the 2/3 boundary rather than scatter. Both raters gave 1 to the same two answers. The 12 pairs are listed in the `summarise` output.
 
 What the table shows, and what it does not:
