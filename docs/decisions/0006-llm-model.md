@@ -56,12 +56,14 @@ Fallback (for a lost GPU session or a demo without Kaggle):
 |---|---|---|
 | Relevance | Rated by hand against the question and the `reference_answer` (which guides the rating but is not the only valid answer), worded as "answer relevance" in `evaluation/PLAN.md` section 4.2, so it can be compared with the W7 numbers | 1 = does not address the question, 2 = partly (for example, answers only one part of a two-part question such as gs-001), 3 = fully |
 | Grounded | Rated by hand against the pasted abstracts. Kept apart from relevance, as faithfulness is in `evaluation/PLAN.md` section 4.2, because 3B models often add claims from memory (prior-knowledge threat, section 7) | Yes = every factual claim is in the pasted abstracts; no = at least one is not |
-| Citation adherence | Counted automatically: sentences with at least one `[n]`, and invalid markers (a number outside 1..number of sources) | Share of factual sentences cited; count of invalid markers |
-| Language | Answer in the language of the question (all 10 are English) | Yes / no |
+| Citation adherence | Counted automatically: sentences with at least one `[n]`, and invalid markers (a number outside 1..number of sources). The script cannot tell factual sentences from others, so a sentence that only says the evidence is insufficient counts as uncited | Sentences cited of all sentences; count of invalid markers |
+| Language | Answer in the language of the question (all 10 are English). Checked by a heuristic (at least 90% of the letters are ASCII), so a raters' note overrides it | Count of answers not in English |
 | Speed | TTFT, total time and completion tokens from the streamed call, as in `bench_llm.py` | Seconds; tokens/s |
 
+**Tooling:** `notebooks/llm-serving/compare_llm.py` builds the contexts, runs the calls, writes the blind rating sheets and computes the results table and the decision rule; steps in `docs/runbooks/llm-serving.md`, section 7.
+
 **Blind rating:**
-- The 30 answers are shuffled, and the model names are replaced by codes before rating.
+- The 30 answers are shuffled with a fixed seed, and the model names are replaced by codes (A01-A30) before rating. The key stays closed until both sheets are back.
 - LDN rates all 30 on both columns, on D06 after the run.
 - DAT rates all 30 on relevance only. Grounded is rated by LDN alone, because DAT built the agent and does not annotate faithfulness (`evaluation/PLAN.md` section 9, decision 6); a single rater for grounded is a limitation of this ADR.
 - Relevance agreement is reported as the number of equal ratings out of 30; where the two ratings differ, both are shown. Each rater's means are reported separately.
@@ -78,11 +80,11 @@ Fallback (for a lost GPU session or a demo without Kaggle):
 ## Results
 Run on **TBD** (Kaggle session, Ollama version **TBD**, tunnel). Golden set: commit **TBD**, sha256 of `golden.jsonl` **TBD**. Raw answers and ratings: **TBD** (path outside git or in `evaluation/runs/`, as LDN prefers).
 
-| Model (tag, quantisation) | Mean relevance LDN / DAT (1-3) | Relevance 1 / 2 / 3 (LDN) | Ungrounded answers (LDN, of 10) | Factual sentences cited | Invalid `[n]` | TTFT median s | Total median s | tok/s median |
-|---|---|---|---|---|---|---|---|---|
-| `qwen2.5:3b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| `llama3.2:3b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| `qwen2.5:7b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| Model (tag, quantisation) | Mean relevance LDN / DAT (1-3) | Relevance 1 / 2 / 3 (LDN) | Ungrounded answers (LDN, of 10) | Sentences cited | Invalid `[n]` | Not English | TTFT median s | Total median s | tok/s median |
+|---|---|---|---|---|---|---|---|---|---|
+| `qwen2.5:3b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| `llama3.2:3b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| `qwen2.5:7b` (TBD) | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
 
 Relevance agreement (DAT vs LDN): **TBD** of 30 equal.
 

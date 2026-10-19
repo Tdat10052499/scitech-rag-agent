@@ -105,3 +105,19 @@ Kaggle shows a weekly GPU quota of 30 h; after the two spike sessions on 2026-10
 - The quick tunnel is **unauthenticated**: anyone with the URL can use the server (including pulling or deleting models). Keep sessions short and the URL private; for longer use, put an authenticating proxy or a named Cloudflare tunnel with access control in front (not done in this spike).
 - Kaggle sessions are time-limited and stop when idle; the endpoint can disappear at any time. The LLM client must time out and report a clear error (`llm-client.md`).
 - Moving to a local GPU later only changes `LLM_BASE_URL`; do not switch before feature freeze (D16) so W7 experiments use one setup.
+
+## 7. Model comparison for ADR 0006 (W2-D4-DAT-1)
+Script: `notebooks/llm-serving/compare_llm.py`; method in `docs/decisions/0006-llm-model.md`. Output goes to `data/adr0006/` (git-ignored); the tunnel URL is never written to it.
+1. **Contexts** (any machine with the cleaned documents, no GPU): the title and abstract of each item's `relevant_doc_ids`, plus the sha256 of `golden.jsonl` and the commit in `contexts_meta.json`. Merge #56 first if it is to be used (it rewords gs-001, 003, 005, 007).
+   ```bash
+   PYTHONPATH=agent/src python notebooks/llm-serving/compare_llm.py contexts --documents data/processed/documents
+   ```
+   A JSONL file also works (`--documents sample.jsonl --id-field id` for the snapshot format).
+2. **Server**: section 1, then pull the three tags in the notebook (`ollama pull qwen2.5:3b`, `llama3.2:3b`, `qwen2.5:7b`) and record `ollama --version` and `ollama show <tag>` (quantisation) for the ADR. `OLLAMA_KEEP_ALIVE=-1` keeps all three loaded, so the rotated order does not reload a model between calls.
+3. **Run** (from the laptop through the tunnel, as the product calls it): one warm-up call per model (in `warmups.jsonl`, not scored), then 10 items × 3 models with the order rotated per item; `temperature=0`, `max_tokens=512`, no retries. The command exits with 1 if any call failed; re-run it in a new session rather than mixing sessions.
+   ```bash
+   export LLM_BASE_URL=https://<random>.trycloudflare.com/v1
+   PYTHONPATH=agent/src python notebooks/llm-serving/compare_llm.py run --models qwen2.5:3b,llama3.2:3b,qwen2.5:7b
+   ```
+4. **Blind sheets**: `python notebooks/llm-serving/compare_llm.py blind` writes `ratings-LDN.csv` (relevance and grounded), `ratings-DAT.csv` (relevance only), `RATING.md` (the scale) and `key.json`. Send each rater their sheet only; nobody opens `key.json` before both sheets are back.
+5. **Summary**: `python notebooks/llm-serving/compare_llm.py summarise` prints the ADR results table, the agreement out of 30 with the differing pairs, and what the decision rule picks (`--slow qwen2.5:7b`: the 7B wins only outright, never a tie).
