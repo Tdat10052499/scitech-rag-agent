@@ -15,6 +15,16 @@ const ERROR_CODES: readonly string[] = ["llm_unavailable", "retrieval_failed", "
 /** The request or the connection failed outside the agent: network down, HTTP error, cut stream. */
 export class ChatTransportError extends Error {}
 
+/**
+ * Make every line ending "\n" ("\r\n", "\n" and a lone "\r" are all line ends in SSE). A "\r" at the
+ * very end of the text may be the first half of a "\r\n" whose second half is in the next chunk,
+ * so it is kept as it is until more text arrives or the stream has ended (`final`).
+ */
+function normalizeNewlines(text: string, final: boolean): string {
+  const out = text.replace(/\r\n|\r(?!$)/g, "\n");
+  return final ? out.replace(/\r$/, "\n") : out;
+}
+
 /** One SSE block ("event: x" and "data: ..." lines) as event name and data text. */
 function parseBlock(block: string): { name: string; data: string } | null {
   let name = "message";
@@ -104,7 +114,7 @@ export async function* streamChat(
   try {
     for (;;) {
       const { done, value } = await reader.read();
-      buffer += decoder.decode(value, { stream: !done }).replace(/\r\n?/g, "\n");
+      buffer = normalizeNewlines(buffer + decoder.decode(value, { stream: !done }), done);
       let end: number;
       while ((end = buffer.indexOf("\n\n")) !== -1) {
         const parsed = parseBlock(buffer.slice(0, end));
