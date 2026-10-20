@@ -281,6 +281,13 @@ def add_load_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--force", action="store_true", help="Ignore the resume state and load every part again."
     )
+    parser.add_argument(
+        "--fraction",
+        type=float,
+        default=None,
+        help="Load only this share of the documents, a fixed nested subset by doc_id hash "
+        "(scaling measurements; use its own --collection and --out).",
+    )
 
 
 def _day(value: str) -> date:
@@ -512,6 +519,7 @@ def run_load(args: argparse.Namespace) -> int:
             args.out or data_dir / "processed" / "index",
             batch_size=args.batch_size,
             force=args.force,
+            fraction=args.fraction,
         )
     return 0
 

@@ -10,12 +10,19 @@ collection) fails instead of mixing them. At the end the store must hold exactly
 chunk. `<out>/_load_manifest.json` records counts, times and `index_snapshot`, the id that
 evaluation runs cite (`index_snapshot` in their config).
 
+`fraction` loads a fixed subset of the documents instead (scaling measurements, W6-D2-FAO-1):
+a document is kept when the hash of its `doc_id` falls below `fraction`, with all its chunks.
+The subset does not depend on the order of the data, spreads over all years, and is nested
+(the 10% subset is inside the 50% one), so each size can go to its own collection from the
+same vectors without embedding again.
+
 The store itself (create the collection, upsert, count) is DAT's module (W3-D1-DAT-1); this
 module only needs the three methods of `VectorStore`.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 import uuid
@@ -104,13 +111,41 @@ def _read_part(part: Path, chunks: Path, dimension: int) -> tuple[list[dict[str,
     return rows, vectors
 
 
+def in_subset(doc_id: str, fraction: float | None) -> bool:
+    """Whether `doc_id` belongs to the subset of size `fraction` (None: everything)."""
+    if fraction is None:
+        return True
+    digest = hashlib.sha256(doc_id.encode("utf-8")).digest()
+    return int.from_bytes(digest[:8], "big") / 2**64 < fraction
+
+
+def _check_fraction(fraction: float | None) -> float | None:
+    if fraction is None or fraction == 1:
+        return None
+    if not 0 < fraction < 1:
+        raise ValueError(f"fraction must be in (0, 1], got {fraction}")
+    return fraction
+
+
+def _subset_count(chunks: Path, fraction: float) -> int:
+    """Number of chunks whose document is in the subset."""
+    import pyarrow.parquet as pq
+
+    doc_ids = pq.read_table(chunks / CHUNK_FILE, columns=["doc_id"]).column("doc_id")
+    return sum(in_subset(d, fraction) for d in doc_ids.to_pylist())
+
+
 def to_point(row: dict[str, Any], vector: Any) -> Point:
     payload = {k: v for k, v in row.items() if v is not None and v != []}
     return Point(point_id(row["chunk_id"]), vector.tolist(), payload)
 
 
 def index_snapshot(
-    collection: str, model: str, chunked_at: str | None, embedded_at: str | None
+    collection: str,
+    model: str,
+    chunked_at: str | None,
+    embedded_at: str | None,
+    fraction: float | None = None,
 ) -> str:
     """Readable id of a loaded index, e.g.
     `scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37`.
@@ -119,10 +154,11 @@ def index_snapshot(
     def stamp(value: str | None) -> str:
         return (value or "unknown").split("+")[0]
 
-    return (
+    snapshot = (
         f"{collection}/{model.split('/')[-1]}/"
         f"chunked-{stamp(chunked_at)}/embedded-{stamp(embedded_at)}"
     )
+    return f"{snapshot}/subset-{fraction:g}" if fraction is not None else snapshot
 
 
 def load_index(
@@ -133,12 +169,15 @@ def load_index(
     *,
     batch_size: int = DEFAULT_BATCH_SIZE,
     force: bool = False,
+    fraction: float | None = None,
     log: Log = print,
 ) -> dict[str, Any]:
     """Upsert every vector of `vectors` with its chunk from `chunks` into `store`, then check
-    the count and write `<out>/_load_manifest.json`. `force` ignores the resume state."""
+    the count and write `<out>/_load_manifest.json`. `force` ignores the resume state;
+    `fraction` loads only the documents of that subset (`in_subset`)."""
     if batch_size < 1:
         raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+    fraction = _check_fraction(fraction)
     started = time.monotonic()
     chunk_manifest = _read_json(chunks / CHUNK_MANIFEST)
     embed_state = _read_json(vectors / EMBED_STATE)
@@ -170,6 +209,9 @@ def load_index(
         "embedded_at": embed_manifest.get("embedded_at"),
         "parts": [p.name for p in parts],
     }
+    if fraction is not None:  # only then, so resume states of full loads stay valid
+        settings["fraction"] = fraction
+        expected = _subset_count(chunks, fraction)
 
     out.mkdir(parents=True, exist_ok=True)
     state_path = out / LOAD_STATE
@@ -191,6 +233,9 @@ def load_index(
             continue
         t = time.monotonic()
         rows, part_vectors = _read_part(part, chunks, dimension)
+        if fraction is not None:
+            keep = [i for i, r in enumerate(rows) if in_subset(r["doc_id"], fraction)]
+            rows, part_vectors = [rows[i] for i in keep], part_vectors[keep]
         for start in range(0, len(rows), batch_size):
             batch = zip(
                 rows[start : start + batch_size],
@@ -207,12 +252,13 @@ def load_index(
     if points != expected:
         raise RuntimeError(
             f"load check failed: {store.collection} holds {points} points, expected {expected} "
-            "(one per chunk). Points from an older load? Recreate the collection and use --force"
+            "(one per chunk of the subset loaded). Points from an older load? Recreate the "
+            "collection and use --force"
         )
     manifest = {
         "step": "load",
         "index_snapshot": index_snapshot(
-            store.collection, model, settings["chunked_at"], settings["embedded_at"]
+            store.collection, model, settings["chunked_at"], settings["embedded_at"], fraction
         ),
         "collection": store.collection,
         "loaded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -223,6 +269,7 @@ def load_index(
         "chunked_at": settings["chunked_at"],
         "embedded_at": settings["embedded_at"],
         "batch_size": batch_size,
+        "fraction": fraction,
         "counts": {
             "points": points,
             "parts": len(parts),
