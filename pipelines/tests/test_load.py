@@ -5,7 +5,13 @@ import pytest
 
 from scitech_pipelines.chunk import chunk_documents
 from scitech_pipelines.embed import embed_chunks
-from scitech_pipelines.load import LOAD_MANIFEST, LOAD_STATE, load_index, point_id
+from scitech_pipelines.load import (
+    LOAD_MANIFEST,
+    LOAD_STATE,
+    index_snapshot,
+    load_index,
+    point_id,
+)
 
 duckdb = pytest.importorskip("duckdb")
 np = pytest.importorskip("numpy")
@@ -73,8 +79,18 @@ def test_every_chunk_is_one_point_with_its_vector_and_payload(data, tmp_path: Pa
         assert payload["chunk_id"] == chunk_id
         assert payload["embedding_model"] == model == "fake/model-a"
         jsonschema.validate(payload, schema)  # no nulls, no extra fields
-    assert manifest["index_snapshot"].startswith("test_chunks/model-a/")
+    assert manifest["index_snapshot"].startswith("test_chunks/model-a/chunked-")
+    assert "/embedded-" in manifest["index_snapshot"]
     assert json.loads((tmp_path / "index" / LOAD_MANIFEST).read_text()) == manifest
+
+
+def test_index_snapshot_tells_embed_runs_apart():
+    chunked = "2026-10-17T05:19:12+00:00"
+    first = index_snapshot("c", "BAAI/bge-small-en-v1.5", chunked, "2026-10-17T06:40:37+00:00")
+    assert first == ("c/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37")
+    # the same model on the same chunks, embedded again: another id
+    assert first != index_snapshot("c", "BAAI/bge-small-en-v1.5", chunked, "2026-10-21T08:00:00")
+    assert index_snapshot("c", "m", None, None) == "c/m/chunked-unknown/embedded-unknown"
 
 
 def test_point_id_is_stable_and_unique():
