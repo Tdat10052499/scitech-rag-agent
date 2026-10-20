@@ -4,6 +4,8 @@ type Props = {
   sources: Source[];
   insufficientEvidence: boolean;
   activeIndex: number | null; // 0-based index of the source whose [n] was clicked
+  pending: boolean; // the request is sent but `sources` has not arrived yet
+  failed: boolean; // the stream ended with an error
 };
 
 function meta(s: Source): string {
@@ -14,14 +16,19 @@ function meta(s: Source): string {
   return parts.join(" · ");
 }
 
-export default function SourcesPanel({ sources, insufficientEvidence, activeIndex }: Props) {
+function emptyText({ insufficientEvidence, pending, failed }: Pick<Props, "insufficientEvidence" | "pending" | "failed">) {
+  if (pending) return "Looking for sources...";
+  if (failed) return "No sources: the request failed before any source was found.";
+  if (insufficientEvidence) return "No source passed the evidence check for this question.";
+  return "No sources for this answer.";
+}
+
+export default function SourcesPanel({ sources, insufficientEvidence, activeIndex, pending, failed }: Props) {
   return (
     <aside className="sources" aria-label="Sources">
       <h2>Sources</h2>
       {sources.length === 0 ? (
-        <p className="sources-empty">
-          {insufficientEvidence ? "No source passed the evidence check for this question." : "No sources for this answer."}
-        </p>
+        <p className="sources-empty">{emptyText({ insufficientEvidence, pending, failed })}</p>
       ) : (
         <ol className="source-list">
           {sources.map((s, i) => (
@@ -39,12 +46,8 @@ export default function SourcesPanel({ sources, insufficientEvidence, activeInde
                 )}
                 {meta(s) && <p className="source-meta">{meta(s)}</p>}
                 {s.snippet && <p className="source-snippet">{s.snippet}</p>}
-                <p className="source-score">
-                  <span className="score-bar" aria-hidden="true">
-                    <span style={{ width: `${Math.round(Math.min(Math.max(s.score, 0), 1) * 100)}%` }} />
-                  </span>
-                  score {s.score.toFixed(2)}
-                </p>
+                {/* The score bar is hidden until the range of real retrieval scores is known (a bar
+                    assumes 0 to 1). `s.score` is still part of the data; W3 decides how to show it. */}
               </div>
             </li>
           ))}

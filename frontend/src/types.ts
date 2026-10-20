@@ -12,6 +12,14 @@ export type Source = {
   categories?: string[];
 };
 
+// Error codes of the `error` event (contract 0.2.1, schema `Error`).
+export type ErrorCode = "llm_unavailable" | "retrieval_failed" | "timeout" | "internal";
+
+export type ChatError = {
+  code?: ErrorCode; // absent for failures that never reached the agent (network, HTTP status)
+  message: string;
+};
+
 export type UserMessage = { id: string; role: "user"; text: string };
 
 export type AssistantMessage = {
@@ -21,6 +29,9 @@ export type AssistantMessage = {
   sources: Source[];
   followups: string[]; // the UI shows at most 4
   insufficientEvidence: boolean;
+  // searching: request sent, no event yet; answering: sources arrived; done / error: stream ended.
+  status: "searching" | "answering" | "done" | "error";
+  error?: ChatError; // set when status is "error"; the text received so far is kept
 };
 
 export type Message = UserMessage | AssistantMessage;

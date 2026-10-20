@@ -1,2 +1,4 @@
 # Runtime dependencies of agent/.
 httpx>=0.27  # LLM client: OpenAI-compatible Chat Completions over HTTP (W2-D1-DAT-1)
+numpy>=1.26  # BM25 index arrays (W3-D3-DAT-1); already installed for pipelines/
+pyarrow>=15  # reads chunks.parquet and stores the BM25 index's chunk fields (W3-D3-DAT-1)
