@@ -2,7 +2,7 @@
 
 How to rebuild the corpus, step by step. The options of every command are in `AGENTS.md` (this folder) and in `python -m scitech_pipelines <step> --help`; the reasons behind the choices are in ADR 0003 (corpus), ADR 0005 (engine) and ADR 0007 (embedding model).
 
-The `load` into Qdrant came with W3-D3-FAO-1 (#67); its time below is from a full-scale rehearsal of it on Kaggle. The one-command `run-all` (W4-D2-FAO-1) does not exist yet; this file gets its command, time and disk use when it is merged.
+The `load` into Qdrant came with W3-D3-FAO-1 (#67); its time below is from a full-scale rehearsal of it on Kaggle. The one-command `run-all` (W4-D2-FAO-1) is in review (#92); its time below is from its first run on Kaggle.
 
 ## What runs where
 
@@ -80,6 +80,22 @@ os.environ.update(QDRANT_URL="http://localhost:6333", QDRANT_COLLECTION="scitech
 ```
 
 The collection lives only as long as the notebook session. Don't use *Save Version* with Qdrant's storage under `/kaggle/working`: it would be kept as notebook output.
+
+## One command: `run-all` (#92)
+`run-all` runs download -> clean -> validate -> chunk -> embed -> load with the paths above. Each step's output is also written to `<data-dir>/logs/run-all-<UTC time>/`, and `run-all.json` there has the seconds and exit code per step. `--from` / `--to` run part of the chain, for example `--to chunk` where Java is and `--from embed` in a GPU notebook. `--snapshot <file>` skips the download. Options: `pipelines/AGENTS.md`.
+
+```bash
+PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines run-all --model "$EMBEDDING_MODEL"            # full corpus
+PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines run-all --limit 2000 --device cpu --model "$EMBEDDING_MODEL"  # small run
+```
+
+`--limit N` keeps the first N `cs.CL` records of the snapshot, then works in `<data-dir>/limit-<N>/` and the collection `<QDRANT_COLLECTION>_limit_<N>`, so it never touches the full data or index. Measured on 2026-10-20 in a Kaggle CPU notebook (Java 21, Qdrant 1.19.2 binary, the snapshot as input, `bge-small-en-v1.5` on CPU), `--limit 2000`:
+
+| sample | clean | validate | chunk | embed (CPU) | load | total |
+|---:|---:|---:|---:|---:|---:|---:|
+| 38.2 s | 28.4 s | 0.4 s | 0.4 s | 329.7 s (7.0 chunks/s) | 3.0 s | **400.1 s** |
+
+2,000 records -> 2,000 documents (all `validate` checks PASS) -> 2,002 chunks -> 2,002 vectors -> 2,002 points. `embed` takes most of the time on a CPU; with a GPU, the same run takes about a minute plus the model download. The download step is not in this time: Kaggle serves only the whole 1.86 GB snapshot (150 s on FAO's laptop, table above).
 
 ## Small run (weak machine, or to try the steps)
 The 20 records of `pipelines/tests/fixtures/sample.jsonl` (in git) go through every step in seconds. Measured on a Linux VM (4 CPUs): `clean` 22 s including Spark start-up, `validate` 0.3 s, `chunk` 0.2 s; 20 documents, 20 chunks, under 200 KB.
