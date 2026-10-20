@@ -46,15 +46,33 @@ class Retriever(Protocol):
 
 
 def matches(chunk: ScoredChunk, filters: Filters | None) -> bool:
-    """True if `chunk` has every filtered value; a list field (categories) must contain it."""
+    """True if `chunk` has every filtered value; a list field (categories) must contain it.
+    A `{"gte", "lte", "gt", "lt"}` mapping is a range compared as strings (ISO dates sort
+    correctly), as in the vector store (`scitech_agent.store`)."""
     for name, wanted in (filters or {}).items():
         value = getattr(chunk, name, None)
-        if isinstance(value, (tuple, list)):
+        if isinstance(wanted, Mapping):
+            if value is None or not _in_range(str(value), wanted):
+                return False
+        elif isinstance(value, (tuple, list)):
             if wanted not in value:
                 return False
         elif value != wanted:
             return False
     return True
+
+
+def _in_range(value: str, bounds: Mapping[str, Any]) -> bool:
+    checks = {
+        "gte": lambda b: value >= b,
+        "lte": lambda b: value <= b,
+        "gt": lambda b: value > b,
+        "lt": lambda b: value < b,
+    }
+    unknown = set(bounds) - set(checks)
+    if unknown or not bounds:
+        raise ValueError(f"a range takes gte, lte, gt or lt, got {sorted(bounds)}")
+    return all(checks[op](str(b)) for op, b in bounds.items())
 
 
 _WORD = re.compile(r"[a-z0-9]+")

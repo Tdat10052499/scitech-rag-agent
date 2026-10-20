@@ -7,6 +7,10 @@ language: en          # Vietnamese items are reported separately
 query: question       # question (as asked) or standalone_query (rewrite used for follow_up items)
 ks: [1, 5, 10]
 dataset_snapshot: toy
+retriever_type: canned    # label used by `compare`: dense, bm25, hybrid, ...
+embedding_model:          # model id for dense and hybrid runs; empty for BM25
+index_snapshot: toy       # id of the loaded index (from FAO's manifest)
+notes: Replays stored rankings; used by the tests.
 bootstrap:
   resamples: 1000
   seed: 0

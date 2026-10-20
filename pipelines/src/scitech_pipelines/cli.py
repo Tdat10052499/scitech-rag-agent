@@ -2,7 +2,8 @@
 
 Each sub-command is implemented by its own task (download: W2-D1-FAO-1, clean: W2-D2-FAO-1,
 validate: W2-D4-FAO-1, profile: W2-D3-FAO-1, chunk: W3-D1-FAO-1, embed: W3-D2-FAO-1,
-load: W3-D3-FAO-1); the others are stubs for now.
+load: W3-D3-FAO-1, through the Qdrant store of W3-D1-DAT-1; incremental-fetch: W3-D4-FAO-1
+prototype for ADR 0008).
 Paths and settings come from arguments, with environment variables as defaults.
 """
 
@@ -11,6 +12,7 @@ from __future__ import annotations
 import argparse
 import os
 from collections.abc import Sequence
+from datetime import date
 from pathlib import Path
 
 STEPS: dict[str, str] = {
@@ -21,6 +23,7 @@ STEPS: dict[str, str] = {
     "chunk": "Split cleaned documents into chunks (docs/contracts/chunk.schema.json).",
     "embed": "Compute an embedding for every chunk (resumable).",
     "load": "Load chunks and embeddings into the vector store.",
+    "incremental-fetch": "Fetch new arXiv records by date through OAI-PMH (snapshot format).",
 }
 SOURCES = ("arxiv", "wikipedia")
 
@@ -243,11 +246,115 @@ def add_embed_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--force", action="store_true", help="Delete the output and start again.")
 
 
+def add_load_arguments(parser: argparse.ArgumentParser) -> None:
+    from scitech_pipelines.load import DEFAULT_BATCH_SIZE
+
+    parser.add_argument(
+        "--chunks",
+        type=Path,
+        default=None,
+        help="Chunks directory (default: <data-dir>/processed/chunks).",
+    )
+    parser.add_argument(
+        "--vectors",
+        type=Path,
+        default=None,
+        help="Vectors of a finished embed run (default: <data-dir>/processed/embeddings).",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Load state and manifest directory (default: <data-dir>/processed/index).",
+    )
+    parser.add_argument(
+        "--collection",
+        default=None,
+        help="Qdrant collection (default: env QDRANT_COLLECTION, else scitech_chunks).",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help=f"Points per upsert request (default {DEFAULT_BATCH_SIZE}).",
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Ignore the resume state and load every part again."
+    )
+
+
+def _day(value: str) -> date:
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a YYYY-MM-DD date: {value!r}") from None
+
+
+def _pause(value: str) -> float:
+    from scitech_pipelines.incremental import MIN_PAUSE
+
+    seconds = float(value)
+    if seconds < MIN_PAUSE:
+        raise argparse.ArgumentTypeError(f"at least {MIN_PAUSE:g} s (arXiv rate limit)")
+    return seconds
+
+
+def add_incremental_arguments(parser: argparse.ArgumentParser) -> None:
+    from scitech_pipelines.clean import DEFAULT_CATEGORY
+    from scitech_pipelines.incremental import DEFAULT_BASE_URL, DEFAULT_SET, MIN_PAUSE
+
+    parser.add_argument(
+        "--from",
+        dest="from_date",
+        type=_day,
+        required=True,
+        metavar="YYYY-MM-DD",
+        help="First datestamp, inclusive.",
+    )
+    parser.add_argument(
+        "--until",
+        type=_day,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="Last datestamp, inclusive (default: open).",
+    )
+    parser.add_argument(
+        "--set",
+        dest="set_spec",
+        metavar="SET",
+        default=DEFAULT_SET,
+        help=f"OAI-PMH set, e.g. cs or cs:cs:CL (default {DEFAULT_SET}; ADR 0008).",
+    )
+    parser.add_argument(
+        "--category",
+        default=DEFAULT_CATEGORY,
+        help="Keep records whose categories contain this one ('' keeps all; ADR 0003).",
+    )
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="JSON Lines output (default: <data-dir>/raw/arxiv-oai/<set>_<from>_<until>.jsonl).",
+    )
+    parser.add_argument(
+        "--base-url",
+        default=DEFAULT_BASE_URL,
+        help=f"OAI-PMH endpoint (default {DEFAULT_BASE_URL}).",
+    )
+    parser.add_argument(
+        "--pause",
+        type=_pause,
+        default=MIN_PAUSE,
+        help=f"Seconds between requests, at least {MIN_PAUSE:g} (arXiv rate limit).",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with one sub-command per pipeline step."""
     parser = argparse.ArgumentParser(
         prog="scitech_pipelines",
-        description="Data pipeline: download, clean, validate, profile, chunk, embed, load.",
+        description="Data pipeline: download, clean, validate, profile, chunk, embed, load, "
+        "incremental-fetch.",
     )
     parser.add_argument(
         "--data-dir",
@@ -269,6 +376,10 @@ def build_parser() -> argparse.ArgumentParser:
             add_chunk_arguments(sub)
         elif name == "embed":
             add_embed_arguments(sub)
+        elif name == "load":
+            add_load_arguments(sub)
+        elif name == "incremental-fetch":
+            add_incremental_arguments(sub)
     return parser
 
 
@@ -383,6 +494,48 @@ def run_embed(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_load(args: argparse.Namespace) -> int:
+    from dataclasses import replace
+
+    from scitech_agent.store import QdrantStore, StoreConfig
+    from scitech_pipelines.load import load_index
+
+    data_dir = Path(args.data_dir)
+    config = StoreConfig.from_env()  # QDRANT_URL, QDRANT_COLLECTION
+    if args.collection:
+        config = replace(config, collection=args.collection)
+    with QdrantStore(config) as store:
+        load_index(
+            args.chunks or data_dir / "processed" / "chunks",
+            args.vectors or data_dir / "processed" / "embeddings",
+            store,
+            args.out or data_dir / "processed" / "index",
+            batch_size=args.batch_size,
+            force=args.force,
+        )
+    return 0
+
+
+def run_incremental_fetch(args: argparse.Namespace) -> int:
+    from scitech_pipelines.incremental import fetch_incremental
+
+    out = args.out
+    if out is None:
+        # ":" is not allowed in Windows file names (set cs:cs:CL).
+        name = f"{args.set_spec or 'all'}_{args.from_date}_{args.until or 'open'}.jsonl"
+        out = Path(args.data_dir) / "raw" / "arxiv-oai" / name.replace(":", "-")
+    fetch_incremental(
+        out,
+        from_date=args.from_date,
+        until=args.until,
+        set_spec=args.set_spec,
+        category=args.category,
+        base_url=args.base_url,
+        pause=args.pause,
+    )
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return the process exit code."""
     args = build_parser().parse_args(argv)
@@ -398,5 +551,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_chunk(args)
     if args.command == "embed":
         return run_embed(args)
-    print(f"{args.command}: not implemented")
-    return 0
+    if args.command == "load":
+        return run_load(args)
+    if args.command == "incremental-fetch":
+        return run_incremental_fetch(args)
+    raise ValueError(f"no handler for command {args.command!r}")

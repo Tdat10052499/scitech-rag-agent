@@ -5,8 +5,11 @@ from __future__ import annotations
 import hashlib
 import importlib
 import json
+import statistics
 import subprocess
+import time
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,11 +19,13 @@ from scitech_eval.golden import GoldenItem, load_golden
 from scitech_eval.metrics import MRR_DEPTH, bootstrap_ci, mean, recall_at_k, reciprocal_rank
 from scitech_eval.retrievers import Retriever
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 QUERY_MODES = ("question", "standalone_query")
 NOTE = (
     "Relevance labels are incomplete (pooling, PLAN.md section 7); recall and MRR are "
-    "conservative. Unanswerable items are excluded. One run per condition."
+    "conservative. Unanswerable items are excluded. One run per condition. Timings are the "
+    "wall-clock time of retriever.search on the machine that ran it, not a latency benchmark "
+    "(PLAN.md section 4.4)."
 )
 
 
@@ -37,8 +42,21 @@ def load_config(path: Path) -> dict:
     config.setdefault("language", "en")  # Vietnamese items are reported separately
     config.setdefault("query", "question")  # question | standalone_query (follow-up items)
     config.setdefault("ks", [1, 5, 10])
-    config.setdefault("dataset_snapshot", "unspecified")
-    config.setdefault("bootstrap", {})
+    # Run setup labels. A key that is present but blank in the YAML file ("notes:") loads as None,
+    # so it gets the default too (setdefault would keep the None and the run would stop below).
+    # retriever_type: label for reports (dense, bm25, hybrid, ...); index_snapshot: id of the
+    # loaded index (FAO's manifest); dataset_snapshot: id of the corpus manifest.
+    for key, default in (
+        ("dataset_snapshot", "unspecified"),
+        ("retriever_type", "unspecified"),
+        ("index_snapshot", "unspecified"),
+        ("notes", ""),
+    ):
+        if config.get(key) is None:
+            config[key] = default
+    config.setdefault("embedding_model", None)  # model id for dense and hybrid; none for BM25
+    if config.get("bootstrap") is None:  # "bootstrap:" with nothing under it
+        config["bootstrap"] = {}
     ks = config["ks"]
     if not ks or not all(isinstance(k, int) and k > 0 for k in ks):
         raise ValueError(f"{path}: 'ks' must be positive integers")
@@ -46,6 +64,13 @@ def load_config(path: Path) -> dict:
         raise ValueError(f"{path}: 'query' must be one of {', '.join(QUERY_MODES)}")
     if config["split"] not in ("dev", "test", "all"):
         raise ValueError(f"{path}: 'split' must be dev, test or all")
+    for key in ("retriever_type", "index_snapshot", "notes"):
+        if not isinstance(config[key], str):
+            raise ValueError(f"{path}: '{key}' must be a string")
+    if config["embedding_model"] is not None and not isinstance(config["embedding_model"], str):
+        raise ValueError(f"{path}: 'embedding_model' must be a string or empty")
+    if not isinstance(config["bootstrap"], dict):
+        raise ValueError(f"{path}: 'bootstrap' must be a mapping (resamples, seed)")
     return config
 
 
@@ -84,8 +109,17 @@ def query_for(item: GoldenItem, mode: str) -> str:
     return item.question
 
 
-def run_retrieval(config: dict, items: list[GoldenItem], retriever: Retriever) -> dict:
-    """Score `retriever` on the answerable `items` selected by the config."""
+def run_retrieval(
+    config: dict,
+    items: list[GoldenItem],
+    retriever: Retriever,
+    clock: Callable[[], float] = time.perf_counter,
+) -> dict:
+    """Score `retriever` on the answerable `items` selected by the config.
+
+    `clock` returns seconds; tests pass a fake one. It is read once at the start, twice around each
+    search and once at the end.
+    """
     ks = sorted(set(config["ks"]))
     depth = max(max(ks), MRR_DEPTH)
     resamples = config["bootstrap"].get("resamples", 1000)
@@ -101,9 +135,12 @@ def run_retrieval(config: dict, items: list[GoldenItem], retriever: Retriever) -
         raise ValueError("no answerable golden items match the split and language in the config")
 
     per_question = []
+    run_started = clock()
     for item in answerable:
         query = query_for(item, config["query"])
+        search_started = clock()
         hits = retriever.search(query, depth)
+        search_seconds = clock() - search_started
         doc_ids = [h.doc_id for h in hits]
         relevant = set(item.relevant_doc_ids)
         per_question.append(
@@ -111,6 +148,7 @@ def run_retrieval(config: dict, items: list[GoldenItem], retriever: Retriever) -
                 "id": item.id,
                 "type": item.type,
                 "query": query,
+                "search_seconds": round(search_seconds, 6),
                 "relevant_doc_ids": list(item.relevant_doc_ids),
                 "retrieved": [{"chunk_id": h.chunk_id, "doc_id": h.doc_id} for h in hits],
                 "recall": {str(k): recall_at_k(relevant, doc_ids, k) for k in ks},
@@ -134,6 +172,16 @@ def run_retrieval(config: dict, items: list[GoldenItem], retriever: Retriever) -
         for t, rows in sorted(by_type.items())
     }
 
+    searches = [r["search_seconds"] for r in per_question]
+    timings = {
+        "run_seconds": round(clock() - run_started, 6),
+        "search_seconds": {
+            "total": round(sum(searches), 6),
+            "median": round(statistics.median(searches), 6),
+            "max": round(max(searches), 6),
+        },
+    }
+
     golden_path = Path(config["golden_path"])
     return {
         "schema_version": SCHEMA_VERSION,
@@ -142,6 +190,11 @@ def run_retrieval(config: dict, items: list[GoldenItem], retriever: Retriever) -
         "timestamp": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         "git_commit": git_commit(),
         "dataset_snapshot": config["dataset_snapshot"],
+        "retriever_type": config["retriever_type"],
+        "embedding_model": config["embedding_model"],
+        "index_snapshot": config["index_snapshot"],
+        "notes": config["notes"],
+        "timings": timings,
         "golden": {
             "path": str(golden_path),
             "sha256": hashlib.sha256(golden_path.read_bytes()).hexdigest(),
