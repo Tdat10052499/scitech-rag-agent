@@ -70,7 +70,7 @@ The counts must chain, for snapshot 307:
 | `processed/index/_load_manifest.json` | `counts.points` | 121,926 |
 
 - `validate --golden evaluation/golden_set/golden.jsonl` checks the documents and that every golden `relevant_doc_ids` exists. `run-all` runs it on full runs.
-- `pipelines/scripts/golden_coverage.py --chunks data/processed/chunks --qdrant` checks the same ids against the chunks and the loaded collection (#69). On 2026-10-20 every id of gs-031 to gs-045 was in the chunks.
+- `pipelines/scripts/golden_coverage.py --chunks data/processed/chunks --qdrant` checks the same ids against the chunks and the loaded collection (#69). On 2026-10-20 all 57 ids of gs-001 to gs-047 (golden set of #88) were in the chunks.
 - `_load_manifest.json` holds `index_snapshot`, the id that evaluation runs cite.
 - A quick look at the store: `PYTHONPATH=agent/src python -c "from scitech_agent.store import QdrantStore; s = QdrantStore.from_env(); print(s.count())"`.
 
