@@ -50,7 +50,7 @@ On a near tie the rule prefers hybrid, because it covers both failure modes seen
 - `RETRIEVAL_TOP_K` stays **5**, unless the chosen retriever's recall@10 is higher than its recall@5 by **at least 3 questions**. Then use 10, and W4-D4-LDN-1 checks faithfulness with 10 chunks before the final runs.
 - The bar is higher than for the retriever (3, not 2) because a larger k has a cost the golden set does not measure (prompt length, answer latency, faithfulness on long context). *(Proposal; to be confirmed in review.)*
 
-**`RETRIEVAL_MIN_SCORE`.** Not set by this ADR. Its scale depends on the retriever (cosine, BM25 or RRF, at most about 0.033 for hybrid), so it stays 0.0 and the "insufficient evidence" decision is left to the evidence check (W4).
+**`RETRIEVAL_MIN_SCORE`.** Not set by this ADR. Its scale depends on the retriever (cosine, BM25 or RRF, at most about 0.033 for hybrid), so it stays 0.0. Until W5 the "insufficient evidence" path depends on the answer prompt (W4-D1-DAT-1) and then the evidence check (W5-D3-DAT-1), not on a score threshold.
 
 ## Measurements
 *(D09: fill in from `evaluation/reports/retrieval-v1.md` and `pipelines/reports/index_profile.md`.)*
