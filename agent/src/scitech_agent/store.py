@@ -16,7 +16,7 @@ client SDK to install and tests can use `httpx.MockTransport`. The image version
 
 This is the `VectorStore` that the loader (W3-D3-FAO-1) needs, and the backend of the dense
 retriever (W3-D2-DAT-1). Every failure raises `StoreError`, a `RetrievalError`, so the agent
-reports it as `retrieval_failed`.
+reports it as `retrieval_failed`. `InMemoryStore` is a fake with the same methods for tests.
 
 Filters are the same as for every `Retriever`: `{"field": value}` keeps points whose field equals
 the value or, for a list field such as `categories`, contains it; `{"field": {"gte": a, "lte": b}}`
@@ -25,6 +25,7 @@ is an inclusive range (`gt`/`lt` for exclusive), e.g. on `published_at` with ISO
 
 from __future__ import annotations
 
+import math
 import os
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -32,7 +33,7 @@ from typing import Any, Protocol
 
 import httpx
 
-from scitech_agent.retrieval import Filters, RetrievalError, ScoredChunk
+from scitech_agent.retrieval import Filters, RetrievalError, ScoredChunk, matches
 
 DISTANCE = "Cosine"
 DEFAULT_BATCH_SIZE = 256
@@ -275,3 +276,56 @@ class QdrantStore:
         except (KeyError, TypeError) as exc:
             raise StoreError("Qdrant query returned no points list") from exc
         return [to_scored_chunk(hit.get("payload") or {}, hit["score"]) for hit in hits]
+
+
+class InMemoryStore:
+    """Fake store for tests with the methods of `QdrantStore`: exact cosine search over the
+    points in memory, filtered with `retrieval.matches` (the same rules as the Qdrant filter)."""
+
+    def __init__(self, collection: str = "test") -> None:
+        self.collection = collection
+        self.dimension: int | None = None
+        self.points: dict[str | int, tuple[list[float], dict[str, Any]]] = {}
+        self.searches: list[tuple[list[float], int, Filters | None]] = []
+
+    def ensure_collection(self, dimension: int) -> bool:
+        if self.dimension is not None and self.dimension != dimension:
+            raise StoreError(f"collection {self.collection} has {self.dimension} dimensions")
+        created, self.dimension = self.dimension is None, dimension
+        return created
+
+    def upsert(self, points: Iterable[PointLike], *, batch_size: int = DEFAULT_BATCH_SIZE) -> int:
+        total = 0
+        for p in points:
+            vector = [float(x) for x in p.vector]
+            if len(vector) != self.dimension:
+                raise StoreError(f"point {p.id!r} has {len(vector)} dimensions")
+            self.points[p.id] = (vector, dict(p.payload))
+            total += 1
+        return total
+
+    def count(self, filters: Filters | None = None) -> int:
+        return len([c for c in self._chunks(0.0) if matches(c, filters)])
+
+    def _chunks(self, score: float) -> list[ScoredChunk]:
+        return [to_scored_chunk(payload, score) for _, payload in self.points.values()]
+
+    def search(
+        self, vector: Sequence[float], k: int, filters: Filters | None = None
+    ) -> list[ScoredChunk]:
+        if k <= 0:
+            raise ValueError(f"k must be positive, got {k}")
+        query = [float(x) for x in vector]
+        if len(query) != self.dimension:
+            raise StoreError(f"query has {len(query)} dimensions, expected {self.dimension}")
+        self.searches.append((query, k, filters))
+        norm = math.sqrt(sum(x * x for x in query)) or 1.0
+        hits = []
+        for stored, payload in self.points.values():
+            stored_norm = math.sqrt(sum(x * x for x in stored)) or 1.0
+            score = sum(a * b for a, b in zip(query, stored, strict=True)) / (norm * stored_norm)
+            chunk = to_scored_chunk(payload, round(score, 6))
+            if matches(chunk, filters):
+                hits.append(chunk)
+        hits.sort(key=lambda c: (-c.score, c.chunk_id))
+        return hits[:k]

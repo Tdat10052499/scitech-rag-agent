@@ -1,0 +1,4 @@
+# Extra dependency of the dense retriever's query embedding (W3-D2-DAT-1), only where the backend
+# runs with the real index. Not installed by CI or `make setup`: tests use `FakeEmbedder`.
+-r requirements.txt
+sentence-transformers>=3.0
