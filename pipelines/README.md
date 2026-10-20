@@ -2,7 +2,7 @@
 
 How to rebuild the corpus, step by step. The options of every command are in `AGENTS.md` (this folder) and in `python -m scitech_pipelines <step> --help`; the reasons behind the choices are in ADR 0003 (corpus), ADR 0005 (engine) and ADR 0007 (embedding model).
 
-The `load` into Qdrant comes with W3-D3-FAO-1 (#67, in review); its time below is from a full-scale rehearsal of that branch. The one-command `run-all` (W4-D2-FAO-1) does not exist yet; this file gets its command, time and disk use when it is merged.
+The `load` into Qdrant came with W3-D3-FAO-1 (#67); its time below is from a full-scale rehearsal of it on Kaggle. The one-command `run-all` (W4-D2-FAO-1) does not exist yet; this file gets its command, time and disk use when it is merged.
 
 ## What runs where
 
