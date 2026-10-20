@@ -92,3 +92,15 @@ def test_demo_agent_ignores_retrieval_settings_from_env(monkeypatch) -> None:
     monkeypatch.setenv("RETRIEVAL_TOP_K", "1")
     events = list(demo_agent().run("s", "What is attention?"))
     assert len(events[0].chunks) == len(DEMO_CHUNKS)
+
+
+def test_matches_supports_ranges_like_the_vector_store():
+    chunk = ScoredChunk(
+        "d#0", "d", 0.0, "T", "x", source="arxiv", chunk_index=0, published_at="2023-03-15"
+    )
+    assert matches(chunk, {"published_at": {"gte": "2023-01-01", "lte": "2023-12-31"}})
+    assert not matches(chunk, {"published_at": {"gt": "2023-03-15"}})
+    assert matches(chunk, {"published_at": {"lt": "2023-03-16"}})
+    assert not matches(CHUNKS[0], {"published_at": {"gte": "2000-01-01"}})  # no date
+    with pytest.raises(ValueError):
+        matches(chunk, {"published_at": {"after": "2023"}})
