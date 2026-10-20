@@ -57,7 +57,7 @@ python -m scitech_pipelines run-all --limit 2000 --device cpu --model "$EMBEDDIN
 - `--limit N` keeps the first N `cs.CL` records of the snapshot. Everything after the download goes to `<data-dir>/limit-<N>/` and into the collection `<QDRANT_COLLECTION>_limit_<N>`, so the full data and the full index are never touched.
 - The download is still the full 1.86 GB zip, because Kaggle only serves the whole snapshot. With a snapshot already on disk, add `--snapshot <path>` to skip it.
 - Without any download: the records of `pipelines/tests/fixtures/sample.jsonl` (in git), for example `--snapshot pipelines/tests/fixtures/sample.jsonl --limit 10`. Up to `chunk` (`--to chunk`), this took 16.9 s on a Linux VM (4 CPUs), mostly Spark's start-up.
-- Time for `--limit 2000` end to end: *not measured yet* (W4-D2-FAO-1 records it in the README).
+- Time for `--limit 2000`, from the snapshot on disk to loaded points: **400.1 s** in a Kaggle CPU notebook on 2026-10-20 (sample 38.2 s, clean 28.4 s, validate 0.4 s, chunk 0.4 s, embed on CPU 329.7 s at 7.0 chunks/s, load 3.0 s). That gave 2,000 documents, 2,002 chunks and 2,002 points. Per-step table: `pipelines/README.md`.
 
 ## 4. Verify a build
 The counts must chain, for snapshot 307:
