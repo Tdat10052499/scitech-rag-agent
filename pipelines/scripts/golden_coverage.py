@@ -7,7 +7,8 @@ document lost by chunking or loading is found before a retrieval run scores it a
 For every golden item it lists the ids that are missing, in a form that can be pasted into an
 issue for the golden-set author. Exit code 0 when nothing is missing, 1 otherwise.
 
-Usage (repository root):
+Usage (repository root; the script imports `scitech_pipelines`, so set PYTHONPATH first):
+    export PYTHONPATH=pipelines/src         # PowerShell: $env:PYTHONPATH = "pipelines/src"
     python pipelines/scripts/golden_coverage.py --chunks data/processed/chunks --qdrant
     python pipelines/scripts/golden_coverage.py --golden evaluation/golden_set/golden.jsonl \
         --qdrant --qdrant-url http://localhost:6333 --collection scitech_chunks
