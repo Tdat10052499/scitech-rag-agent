@@ -95,7 +95,7 @@ PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines run-all --limit 2
 |---:|---:|---:|---:|---:|---:|---:|
 | 38.2 s | 28.4 s | 0.4 s | 0.4 s | 329.7 s (7.0 chunks/s) | 3.0 s | **400.1 s** |
 
-2,000 records -> 2,000 documents (all `validate` checks PASS) -> 2,002 chunks -> 2,002 vectors -> 2,002 points. `embed` takes most of the time on a CPU; with a GPU, the same run takes about a minute plus the model download. The download step is not in this time: Kaggle serves only the whole 1.86 GB snapshot (150 s on FAO's laptop, table above).
+2,000 records -> 2,000 documents (all `validate` checks PASS) -> 2,002 chunks -> 2,002 vectors -> 2,002 points. `embed` takes most of the time on a CPU. On a T4 it would take about 15 s (estimate from the full run's 141 chunks/s, not measured for this run). The download step is not in this time: Kaggle serves only the whole 1.86 GB snapshot (150 s on FAO's laptop, table above).
 
 ## Small run (weak machine, or to try the steps)
 The 20 records of `pipelines/tests/fixtures/sample.jsonl` (in git) go through every step in seconds. Measured on a Linux VM (4 CPUs): `clean` 22 s including Spark start-up, `validate` 0.3 s, `chunk` 0.2 s; 20 documents, 20 chunks, under 200 KB.
