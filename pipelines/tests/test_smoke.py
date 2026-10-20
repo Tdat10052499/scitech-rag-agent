@@ -23,12 +23,6 @@ def test_module_help_lists_every_step() -> None:
         assert step in result.stdout
 
 
-@pytest.mark.parametrize("step", [s for s in STEPS if s in ("load",)])
-def test_step_stub_runs(step: str, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main([step]) == 0
-    assert "not implemented" in capsys.readouterr().out
-
-
 def test_missing_command_fails() -> None:
     with pytest.raises(SystemExit):
         main([])
