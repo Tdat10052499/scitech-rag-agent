@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "test": "node --experimental-strip-types --test src/api.test.ts",
+    "test": "node --experimental-strip-types --test src/api.test.ts src/markdown.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

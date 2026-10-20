@@ -61,3 +61,46 @@
 .message .text + .notice.error {
   margin-top: 0.6rem;
 }
+
+/* W3-D2-LDN-1: the answer text as Markdown (paragraphs, lists, bold, italic, code). */
+.text.md {
+  white-space: normal; /* line breaks come from the Markdown blocks, not from the raw text */
+}
+
+.md > * {
+  margin: 0;
+}
+
+.md > * + * {
+  margin-top: 0.55rem; /* after the rule above, so it wins at equal specificity */
+}
+
+.md ul,
+.md ol {
+  padding-left: 1.4rem;
+}
+
+.md li + li {
+  margin-top: 0.25rem;
+}
+
+.md code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: var(--user-bg);
+  font-size: 0.9em;
+}
+
+.md pre {
+  padding: 0.5rem 0.7rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--user-bg);
+  white-space: pre;
+}
+
+.md pre code {
+  padding: 0;
+  background: none;
+}
