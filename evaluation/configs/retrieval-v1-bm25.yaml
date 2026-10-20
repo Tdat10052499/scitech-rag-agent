@@ -1,0 +1,24 @@
+# W3-D4-LDN-1: bm25 run for evaluation/reports/retrieval-v1.md. Paths are relative to the repository root.
+# The three retrieval-v1-*.yaml files differ only in name, retriever_type, embedding_model, notes
+# and retriever params; the golden file, split, ks and snapshots must stay identical.
+# Needs: PYTHONPATH with evaluation/src and agent/src; the agent's environment (see .env.example):
+#   QDRANT_URL and QDRANT_COLLECTION (dense, hybrid), DATA_DIR or BM25_INDEX_DIR (bm25, hybrid).
+# Run: see "Retrieval comparison v1" in evaluation/AGENTS.md
+name: retrieval-v1-bm25
+golden_path: evaluation/golden_set/golden.jsonl
+split: dev
+language: en
+query: question
+ks: [1, 5, 10]
+dataset_snapshot: kaggle-arxiv-v307-cs.CL-2026-10-10
+retriever_type: bm25
+embedding_model: 
+index_snapshot: chunks-2026-10-17T05:19:12Z-121926
+notes: bm25 on the answerable dev items (ADR 0009 table B); same index snapshot as the other two runs.
+bootstrap:
+  resamples: 1000
+  seed: 0
+retriever:
+  factory: scitech_eval.retrievers:agent_retriever
+  params:
+    retriever: bm25
