@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import Markdown from "./AnswerMarkdown";
 import type { Message } from "./types";
 import { MAX_FOLLOWUPS } from "./types";
 
@@ -10,22 +11,6 @@ type Props = {
   onFollowup: (text: string) => void;
   status: string; // one-line progress or result of the latest answer, announced to screen readers
 };
-
-// Turns "[n]" markers into buttons when n points to an existing source; other text stays plain.
-function withCitations(text: string, sourceCount: number, onCite: (index: number) => void) {
-  return text.split(/(\[\d+\])/).map((part, i) => {
-    const m = /^\[(\d+)\]$/.exec(part);
-    const n = m ? Number(m[1]) : 0;
-    if (m && n >= 1 && n <= sourceCount) {
-      return (
-        <button key={i} type="button" className="cite" onClick={() => onCite(n - 1)} aria-label={`Source ${n}`}>
-          [{n}]
-        </button>
-      );
-    }
-    return part;
-  });
-}
 
 const EXAMPLES = [
   "What is retrieval-augmented generation?",
@@ -74,7 +59,11 @@ export default function MessageList({ messages, selectedId, onSelect, onCite, on
               </button>
             </p>
             {m.insufficientEvidence && <p className="notice">Not enough evidence in the corpus</p>}
-            {m.text !== "" && <p className="text">{withCitations(m.text, m.sources.length, (i) => onCite(m.id, i))}</p>}
+            {m.text !== "" && (
+              <div className="text md">
+                <Markdown text={m.text} sourceCount={m.sources.length} onCite={(i) => onCite(m.id, i)} />
+              </div>
+            )}
             {m.status === "searching" && <p className="pending">Searching the corpus...</p>}
             {m.status === "error" && m.error && (
               <p className="notice error">
