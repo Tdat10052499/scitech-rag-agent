@@ -109,9 +109,20 @@ def to_point(row: dict[str, Any], vector: Any) -> Point:
     return Point(point_id(row["chunk_id"]), vector.tolist(), payload)
 
 
-def index_snapshot(collection: str, model: str, chunked_at: str | None) -> str:
-    """Readable id of a loaded index, e.g. `scitech_chunks/bge-base-en-v1.5/2026-10-16T19:20:01`."""
-    return f"{collection}/{model.split('/')[-1]}/{(chunked_at or 'unknown').split('+')[0]}"
+def index_snapshot(
+    collection: str, model: str, chunked_at: str | None, embedded_at: str | None
+) -> str:
+    """Readable id of a loaded index, e.g.
+    `scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37`.
+    `embedded_at` tells two embed runs of the same model on the same chunks apart."""
+
+    def stamp(value: str | None) -> str:
+        return (value or "unknown").split("+")[0]
+
+    return (
+        f"{collection}/{model.split('/')[-1]}/"
+        f"chunked-{stamp(chunked_at)}/embedded-{stamp(embedded_at)}"
+    )
 
 
 def load_index(
@@ -200,7 +211,9 @@ def load_index(
         )
     manifest = {
         "step": "load",
-        "index_snapshot": index_snapshot(store.collection, model, settings["chunked_at"]),
+        "index_snapshot": index_snapshot(
+            store.collection, model, settings["chunked_at"], settings["embedded_at"]
+        ),
         "collection": store.collection,
         "loaded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "chunks": str(chunks),
