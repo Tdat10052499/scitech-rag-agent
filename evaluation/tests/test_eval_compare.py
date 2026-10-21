@@ -352,3 +352,9 @@ def test_retrieval_v1_configs_agree_except_for_the_retriever(kind):
     assert config["retriever"]["params"]["retriever"] == kind
     assert "unspecified" not in (config["index_snapshot"], config["dataset_snapshot"])
     assert bool(config["embedding_model"]) == (kind != "bm25")
+    params = config["retriever"]["params"]
+    # settings that change the ranking must be in params, or they are missing from the run file
+    assert (params.get("QDRANT_SEARCH_EXACT") == "true") == (kind != "bm25")
+    assert ({"RRF_K", "HYBRID_DENSE_TOP_K", "HYBRID_KEYWORD_TOP_K"} <= set(params)) == (
+        kind == "hybrid"
+    )
