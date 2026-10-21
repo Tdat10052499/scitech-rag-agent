@@ -2,7 +2,7 @@
 
 How to rebuild the corpus, step by step. The options of every command are in `AGENTS.md` (this folder) and in `python -m scitech_pipelines <step> --help`; the reasons behind the choices are in ADR 0003 (corpus), ADR 0005 (engine) and ADR 0007 (embedding model).
 
-The `load` into Qdrant came with W3-D3-FAO-1 (#67); its time below is from a full-scale rehearsal of it on Kaggle. The one-command `run-all` (W4-D2-FAO-1) is in review (#92); its time below is from its first run on Kaggle.
+The `load` into Qdrant came with W3-D3-FAO-1 (#67); its times below are from a full-scale rehearsal on Kaggle and the real D09 load on FAO's laptop (2026-10-21, #91). The one-command `run-all` (W4-D2-FAO-1, #92) is merged; its time below is from its first run on Kaggle.
 
 ## What runs where
 
@@ -14,7 +14,8 @@ The `load` into Qdrant came with W3-D3-FAO-1 (#67); its time below is from a ful
 | 4. profile (optional) | `profile --clean-peak-mb <MB>` | `pipelines/reports/data_profile.md` and `.json` | where the raw snapshot is (DuckDB) | 22.4 s on FAO's laptop | none |
 | 5. chunk | `chunk` | `data/processed/chunks/chunks.parquet` + `_chunk_manifest.json` | anywhere (DuckDB) | 14.1 s on Kaggle, 18.4 s on FAO's laptop | 101 MB |
 | 6. embed | `embed --model <EMBEDDING_MODEL>` | `data/processed/embeddings/part-*.parquet` + `_embed_manifest.json` | GPU notebook (Kaggle T4); CPU only for small runs | T4: 14.4 min (`bge-small-en-v1.5`), 43.8 min (`bge-base-en-v1.5`) | 198 MB (small), 385 MB (base) |
-| 7. load | `load` | Qdrant collection `QDRANT_COLLECTION` + `data/processed/index/_load_manifest.json` | where Qdrant runs (`make up`, or the release binary on Kaggle) | 106.3 s for 121,926 bge-small vectors on a Kaggle CPU notebook, Qdrant 1.19.2 (4-17 s per part) | Qdrant storage: not measured yet (index profile, W3-D5-FAO-1) |
+| 7. load | `load` | Qdrant collection `QDRANT_COLLECTION` + `data/processed/index/_load_manifest.json` | where Qdrant runs (`make up`, or the release binary on Kaggle) | 135.2 s for 121,926 bge-small vectors on FAO's laptop, Docker Qdrant 1.19.2 (7.6-11.2 s per part); 106.3 s on a Kaggle CPU notebook, Qdrant 1.19.2 binary | Qdrant storage 609.9 MiB (`pipelines/reports/index_profile.md`) |
+| 8. BM25 index | `PYTHONPATH=agent/src python -m scitech_agent.retrieval.keyword build` | `data/index/bm25/` | anywhere; needed by the default retriever (hybrid) | 36.7 s on FAO's laptop, 15.8-20.3 s on DAT's | 177.2 MB |
 
 Full corpus: arXiv `cs.CL`, Kaggle snapshot version 307: 3,205,432 records in, 121,860 documents, 121,926 chunks (2026-10-16/17 runs; journal `docs/journal/FAO/W2.md`). On a CPU, embedding the full corpus would take about 12 h with bge-small and 38 h with bge-base (estimate from 2.8 and 0.9 records/s on a Colab CPU, `docs/03-data-sources.md`), so use a GPU.
 
@@ -89,7 +90,7 @@ PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines run-all --model "
 PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines run-all --limit 2000 --device cpu --model "$EMBEDDING_MODEL"  # small run
 ```
 
-`--limit N` keeps the first N `cs.CL` records of the snapshot, then works in `<data-dir>/limit-<N>/` and the collection `<QDRANT_COLLECTION>_limit_<N>`, so it never touches the full data or index. Measured on 2026-10-20 in a Kaggle CPU notebook (Java 21, Qdrant 1.19.2 binary, the snapshot as input, `bge-small-en-v1.5` on CPU), `--limit 2000`:
+`--limit N` keeps the first N `cs.CL` records of the snapshot, then works in `<data-dir>/limit-<N>/` and the collection `<QDRANT_COLLECTION>_limit_<N>`, so it never touches the full data or index. Those N records are the first in snapshot order, which are mostly the oldest papers, and none of the golden documents is among them: a small run is a smoke test of the steps only. Never evaluate on it or report retrieval numbers from it. Measured on 2026-10-20 in a Kaggle CPU notebook (Java 21, Qdrant 1.19.2 binary, the snapshot as input, `bge-small-en-v1.5` on CPU), `--limit 2000`:
 
 | sample | clean | validate | chunk | embed (CPU) | load | total |
 |---:|---:|---:|---:|---:|---:|---:|
