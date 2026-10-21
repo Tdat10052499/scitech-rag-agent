@@ -25,7 +25,8 @@ reports it as `retrieval_failed`. `InMemoryStore` is a fake with the same method
 
 Filters are the same as for every `Retriever`: `{"field": value}` keeps points whose field equals
 the value or, for a list field such as `categories`, contains it; `{"field": {"gte": a, "lte": b}}`
-is an inclusive range (`gt`/`lt` for exclusive), e.g. on `published_at` with ISO dates.
+is an inclusive range (`gt`/`lt` for exclusive), e.g. on `published_at` with ISO dates
+(`retrieval.check_range` refuses other bounds; `retrieval.year_range` builds whole years).
 """
 
 from __future__ import annotations
@@ -38,7 +39,7 @@ from typing import Any, Protocol
 
 import httpx
 
-from scitech_agent.retrieval import Filters, RetrievalError, ScoredChunk, matches
+from scitech_agent.retrieval import Filters, RetrievalError, ScoredChunk, check_range, matches
 
 DISTANCE = "Cosine"
 DEFAULT_BATCH_SIZE = 256
@@ -50,7 +51,6 @@ PAYLOAD_INDEXES = {
     "doc_id": "keyword",
     "published_at": "datetime",
 }
-RANGE_KEYS = frozenset({"gte", "lte", "gt", "lt"})
 # Payload fields that `ScoredChunk` needs (required in chunk.schema.json).
 REQUIRED_FIELDS = ("chunk_id", "doc_id", "title", "text", "source", "chunk_index")
 
@@ -116,11 +116,7 @@ def to_qdrant_filter(filters: Filters | None) -> dict[str, Any] | None:
     must = []
     for name, wanted in filters.items():
         if isinstance(wanted, Mapping):
-            unknown = set(wanted) - RANGE_KEYS
-            if unknown or not wanted:
-                raise ValueError(
-                    f"filter {name!r}: a range takes gte, lte, gt or lt, got {sorted(wanted)}"
-                )
+            check_range(name, wanted)  # before Qdrant answers a bad bound with HTTP 400
             must.append({"key": name, "range": dict(wanted)})
         elif isinstance(wanted, (str, int, bool)):
             must.append({"key": name, "match": {"value": wanted}})
