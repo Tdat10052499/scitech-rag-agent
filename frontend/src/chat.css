@@ -1,0 +1,106 @@
+/* W2-D2-LDN-1: header actions, empty state, progress and error states of the connected chat screen. */
+.header-actions {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.new-chat {
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.new-chat:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.empty {
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+}
+
+.empty p {
+  margin: 0;
+}
+
+.pending {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.chat-status {
+  margin: 0;
+  min-height: 1.5em;
+  font-size: 0.85rem;
+  color: var(--muted);
+  scroll-margin-bottom: 5rem; /* leave room for the sticky composer */
+}
+
+.message.failed {
+  border-color: var(--bad);
+}
+
+.notice.error {
+  display: block;
+  margin: 0.5rem 0 0;
+  border-radius: 8px;
+  border-color: var(--bad);
+  background: transparent;
+  color: var(--bad);
+  font-weight: 500;
+}
+
+.message .text + .notice.error {
+  margin-top: 0.6rem;
+}
+
+/* W3-D2-LDN-1: the answer text as Markdown (paragraphs, lists, bold, italic, code). */
+.text.md {
+  white-space: normal; /* line breaks come from the Markdown blocks, not from the raw text */
+}
+
+.md > * {
+  margin: 0;
+}
+
+.md > * + * {
+  margin-top: 0.55rem; /* after the rule above, so it wins at equal specificity */
+}
+
+.md ul,
+.md ol {
+  padding-left: 1.4rem;
+}
+
+.md li + li {
+  margin-top: 0.25rem;
+}
+
+.md code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: var(--user-bg);
+  font-size: 0.9em;
+}
+
+.md pre {
+  padding: 0.5rem 0.7rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--user-bg);
+  white-space: pre;
+}
+
+.md pre code {
+  padding: 0;
+  background: none;
+}
