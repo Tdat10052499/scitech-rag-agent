@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import Markdown from "./Markdown";
+import Markdown from "./AnswerMarkdown";
 import type { Message } from "./types";
 import { MAX_FOLLOWUPS } from "./types";
 
