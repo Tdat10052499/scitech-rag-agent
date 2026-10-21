@@ -2,7 +2,8 @@
 
 `QdrantStore` talks to Qdrant's REST API with `httpx` (already an agent dependency), so there is no
 client SDK to install and tests can use `httpx.MockTransport`. The image version is pinned in
-`docker-compose.yml`. Configuration: `QDRANT_URL` and `QDRANT_COLLECTION` (`.env.example`).
+`docker-compose.yml`. Configuration: `QDRANT_URL`, `QDRANT_COLLECTION` and `QDRANT_SEARCH_EXACT`
+(`.env.example`).
 
 - `ensure_collection(dimension)`: creates the collection (cosine distance) if it is missing, fails
   if it exists with another dimension or distance, then makes sure the payload indexes exist:
@@ -12,7 +13,11 @@ client SDK to install and tests can use `httpx.MockTransport`. The image version
   anything with `id`, `vector` and `payload` (`Point` here, or the loader's own type). Payload
   fields follow `docs/contracts/chunk.schema.json`.
 - `count()`: exact number of points. `search(vector, k, filters)`: the `k` nearest points as
-  `ScoredChunk`s, best first; the score is Qdrant's cosine similarity.
+  `ScoredChunk`s, best first; the score is Qdrant's cosine similarity. By default the search is
+  exact (`"params": {"exact": true}`, a full scan instead of the HNSW graph): at the default HNSW
+  settings Qdrant missed one of the 30 dev questions that exact search finds, so dense numbers
+  through the store did not match ADR 0007 (#87). At 121,926 x 384 a full scan costs about 10 ms
+  more per query (FAO's measurement on #87). `QDRANT_SEARCH_EXACT=false` switches back to HNSW.
 
 This is the `VectorStore` that the loader (W3-D3-FAO-1) needs, and the backend of the dense
 retriever (W3-D2-DAT-1). Every failure raises `StoreError`, a `RetrievalError`, so the agent
@@ -59,15 +64,36 @@ class StoreConfig:
     url: str = "http://localhost:6333"
     collection: str = "scitech_chunks"
     timeout: float = 30.0  # seconds per request
+    exact: bool = True  # exact search instead of HNSW (#87); see the module docstring
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> StoreConfig:
-        """Read `QDRANT_URL` and `QDRANT_COLLECTION` (empty: the defaults above)."""
+        """Read `QDRANT_URL`, `QDRANT_COLLECTION` and `QDRANT_SEARCH_EXACT` (empty: the defaults
+        above)."""
         env = os.environ if env is None else env
         return cls(
             url=(env.get("QDRANT_URL") or cls.url).rstrip("/"),
             collection=env.get("QDRANT_COLLECTION") or cls.collection,
+            exact=env_flag(env, "QDRANT_SEARCH_EXACT", cls.exact),
         )
+
+
+TRUE_WORDS = frozenset({"1", "true", "yes", "on"})
+FALSE_WORDS = frozenset({"0", "false", "no", "off"})
+
+
+def env_flag(env: Mapping[str, str], name: str, default: bool) -> bool:
+    """A yes/no setting: true/false, 1/0, yes/no, on/off (any case); empty or unset: `default`.
+    Anything else raises `ValueError`, so a typo fails at start-up instead of silently using the
+    default."""
+    raw = (env.get(name) or "").strip().lower()
+    if not raw:
+        return default
+    if raw in TRUE_WORDS:
+        return True
+    if raw in FALSE_WORDS:
+        return False
+    raise ValueError(f"{name} must be true or false (also 1/0, yes/no, on/off), got {raw!r}")
 
 
 class PointLike(Protocol):
@@ -266,6 +292,8 @@ class QdrantStore:
         qdrant_filter = to_qdrant_filter(filters)
         if qdrant_filter:
             body["filter"] = qdrant_filter
+        if self.config.exact:
+            body["params"] = {"exact": True}
         data = self._request("POST", self._path("/points/query"), json=body)
         try:
             hits = data["result"]["points"]

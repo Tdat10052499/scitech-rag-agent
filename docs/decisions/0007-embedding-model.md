@@ -1,6 +1,6 @@
 # 0007. Embedding model: bge-small-en-v1.5 with the query instruction
 
-- Status: proposed (table B from the 30 answerable golden items of #56; DAT to review)
+- Status: accepted (2026-10-20, DAT's review on #59; table B from the 30 answerable golden items of #56)
 - Date: 2026-10-17
 - Deciders: FAO (author), DAT (reviewer), LDN (harness and golden set)
 

@@ -94,6 +94,24 @@ def test_create_upsert_count_search_with_filters(store):
     assert store.search(unit(0, 0, 1), k=1)[0].categories == ("x",)
 
 
+def test_exact_and_hnsw_search_both_answer(store):
+    """Qdrant accepts `params.exact` (default) and the plain HNSW query; on a tiny collection
+    both find the same nearest points."""
+    store.ensure_collection(3)
+    store.upsert(
+        [
+            Point(str(uuid.uuid4()), unit(1, 0, 0), chunk("a", 0, ["cs.CL"], "2022-05-01")),
+            Point(str(uuid.uuid4()), unit(0, 1, 0), chunk("b", 0, ["cs.CL"], "2023-05-01")),
+        ]
+    )
+    assert store.config.exact is True
+    exact = [h.chunk_id for h in store.search(unit(1, 0.1, 0), k=2)]
+    hnsw_store = QdrantStore(StoreConfig(url=URL, collection=store.collection, exact=False))
+    with hnsw_store:
+        approximate = [h.chunk_id for h in hnsw_store.search(unit(1, 0.1, 0), k=2)]
+    assert exact == approximate == ["a#0", "b#0"]
+
+
 def test_existing_collection_with_another_dimension_is_refused(store):
     store.ensure_collection(3)
     with pytest.raises(StoreError, match="expected 4"):
