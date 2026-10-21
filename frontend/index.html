@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SciTech RAG Agent</title>
+    <script>
+      // Apply the stored theme before the first paint, so there is no flash (src/ui/theme.ts).
+      try {
+        var t = localStorage.getItem("scitech-theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
