@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { Source } from "./types";
 
 type Props = {
@@ -24,6 +25,11 @@ function emptyText({ insufficientEvidence, pending, failed }: Pick<Props, "insuf
 }
 
 export default function SourcesPanel({ sources, insufficientEvidence, activeIndex, pending, failed }: Props) {
+  // A click on [n] in the answer brings source n into view (the list is below the answer on narrow screens).
+  const active = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (activeIndex !== null) active.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [activeIndex]);
   return (
     <aside className="sources" aria-label="Sources">
       <h2>Sources</h2>
@@ -32,7 +38,7 @@ export default function SourcesPanel({ sources, insufficientEvidence, activeInde
       ) : (
         <ol className="source-list">
           {sources.map((s, i) => (
-            <li key={s.chunk_id} className={`source${activeIndex === i ? " active" : ""}`}>
+            <li key={s.chunk_id} ref={activeIndex === i ? active : undefined} className={`source${activeIndex === i ? " active" : ""}`}>
               <span className="source-number" aria-hidden="true">
                 {i + 1}
               </span>
@@ -46,8 +52,9 @@ export default function SourcesPanel({ sources, insufficientEvidence, activeInde
                 )}
                 {meta(s) && <p className="source-meta">{meta(s)}</p>}
                 {s.snippet && <p className="source-snippet">{s.snippet}</p>}
-                {/* The score bar is hidden until the range of real retrieval scores is known (a bar
-                    assumes 0 to 1). `s.score` is still part of the data; W3 decides how to show it. */}
+                {/* The score is not shown: it has no common scale (cosine for dense, unbounded for BM25,
+                    rank-based for hybrid), `RETRIEVAL_MIN_SCORE` is not calibrated yet, and readers take
+                    it for confidence. `s.score` stays in the data; sources are listed in rank order. */}
               </div>
             </li>
           ))}
