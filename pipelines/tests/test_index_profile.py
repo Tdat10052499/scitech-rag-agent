@@ -119,7 +119,9 @@ def test_time_queries_warms_up_then_times_every_query():
         ({"categories": "cs.LG"}, True),
         ({"categories": "cs.CV"}, False),
         ({"published_at": {"gte": "2023-01-01", "lte": "2023-12-31"}}, True),
+        ({"published_at": {"gte": "2023-01-01", "lt": "2024-01-01"}}, True),
         ({"published_at": {"gte": "2024-01-01"}}, False),
+        ({"published_at": {"gte": "2023-02-10T00:00:00Z"}}, True),  # a date is midnight UTC
         ({"source": "arxiv", "categories": "cs.CL"}, True),
         ({"source": "wikipedia"}, False),
     ],
@@ -150,9 +152,35 @@ def test_parse_retriever():
         "pkg.mod:make",
         {"path": "x"},
     )
+    assert index_profile.parse_retriever("hybrid") == (
+        "hybrid",
+        "scitech_agent.retrieval.hybrid:retriever_from_env",
+        {"env": {"RETRIEVER": "hybrid"}},
+    )
     for bad in ("pkg.mod:make", "dense=pkg.mod:make {not json}", "dense=pkg.mod:make [1]"):
         with pytest.raises(argparse.ArgumentTypeError):
             index_profile.parse_retriever(bad)
+
+
+def test_build_retriever_adds_env_to_the_process_environment(monkeypatch):
+    monkeypatch.setenv("QDRANT_COLLECTION", "scitech_chunks")
+    env = index_profile.build_retriever(
+        "test_index_profile:echo_env", {"env": {"RETRIEVER": "bm25"}}
+    )
+    assert env["RETRIEVER"] == "bm25" and env["QDRANT_COLLECTION"] == "scitech_chunks"
+
+
+def test_agent_retriever_by_name(tmp_path, monkeypatch):
+    from scitech_agent.retrieval.keyword import KeywordRetriever
+
+    monkeypatch.setattr(KeywordRetriever, "load", classmethod(lambda cls, path: ("bm25", path)))
+    monkeypatch.setenv("BM25_INDEX_DIR", str(tmp_path))
+    name, spec, params = index_profile.parse_retriever("bm25")
+    assert index_profile.build_retriever(spec, params) == ("bm25", tmp_path)
+
+
+def echo_env(env):
+    return env
 
 
 def test_command_line_end_to_end(tmp_path, capsys, monkeypatch):
@@ -189,6 +217,27 @@ def test_command_line_end_to_end(tmp_path, capsys, monkeypatch):
     assert any("missing" in p for p in profile["problems"])
     printed = capsys.readouterr().out
     assert "| fake |" in printed and "| bm25 on disk | 0.0 MiB |" in printed
+
+
+def test_command_line_measures_several_retrievers_one_at_a_time(tmp_path, monkeypatch):
+    monkeypatch.delenv("QDRANT_COLLECTION", raising=False)
+    golden = tmp_path / "golden.jsonl"
+    golden.write_text(json.dumps({"id": "gs-001", "question": "language models"}) + "\n")
+    pq.write_table(pa.table({"title": [c.title for c in CHUNKS]}), tmp_path / "chunks.parquet")
+    out = tmp_path / "profile.json"
+    code = index_profile.main(
+        [
+            "--retriever", "a=test_index_profile:fake_retriever",
+            "--retriever", "b=test_index_profile:fake_retriever",
+            "--golden", str(golden), "--chunks", str(tmp_path / "chunks.parquet"),
+            "--filter", '{"published_at": {"gte": "2023-01-01", "lt": "2024-01-01"}}',
+            "--warmup", "0", "--out", str(out),
+        ]
+    )  # fmt: skip
+    assert code == 0
+    profile = json.loads(out.read_text())
+    assert list(profile["latency"]) == ["a", "b"] and list(profile["filters"]) == ["a", "b"]
+    assert profile["filters"]["b"][0]["hits"] > 0
 
 
 def test_command_line_fails_when_a_filter_is_broken(tmp_path, monkeypatch):

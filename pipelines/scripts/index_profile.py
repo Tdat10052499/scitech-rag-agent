@@ -9,23 +9,29 @@ Measures what `pipelines/reports/index_profile.md` reports:
 - the size on disk of any other index folder (for example `data/index/bm25`).
 
 Retrievers are built like the evaluation harness does it: `name=module:factory` plus an optional
-JSON object of keyword arguments, so this script works with whatever DAT's store and retrievers
-expose on D09 without changing.
+JSON object of keyword arguments. A bare `dense`, `bm25` or `hybrid` is the agent's own retriever
+(`scitech_agent.retrieval.hybrid:retriever_from_env` with `RETRIEVER` set to that name), configured
+by the same environment variables as the backend. An `"env"` object in the params is added to the
+environment the factory reads. Retrievers are built and measured one at a time, so only one BM25
+index is in memory at once.
 
 Queries: every golden question (and the standalone query of follow-up items), then chunk titles
 sampled with a fixed seed until there are `--n-queries`. The titles make the set larger than the
 golden set; latency does not need relevance labels.
 
-Usage (repository root, Qdrant up, PYTHONPATH=agent/src:pipelines/src):
+Filters use the retrievers' own format and are checked with `scitech_agent.retrieval.matches`,
+the rule every retriever follows (#99); a whole year is `retrieval.year_range(2023, 2023)`, i.e.
+`{"published_at": {"gte": "2023-01-01", "lt": "2024-01-01"}}`.
+
+Usage (repository root, Qdrant up and loaded, the BM25 index built,
+PYTHONPATH=agent/src:pipelines/src, and the variables of `.env.example`: QDRANT_URL,
+QDRANT_COLLECTION, EMBEDDING_MODEL, EMBEDDING_QUERY_PREFIX, BM25_INDEX_DIR):
     python pipelines/scripts/index_profile.py \
-        --retriever "dense=scitech_agent.retrieval.dense:from_env" \
-        --retriever "bm25=scitech_agent.retrieval.keyword:from_env" \
-        --retriever "hybrid=scitech_agent.retrieval.hybrid:from_env" \
+        --retriever dense --retriever bm25 --retriever hybrid \
         --filter '{"categories": "cs.LG"}' \
-        --filter '{"published_at": {"gte": "2023-01-01", "lte": "2023-12-31"}}' \
+        --filter '{"published_at": {"gte": "2023-01-01", "lt": "2024-01-01"}}' \
         --collection scitech_chunks --size bm25=data/index/bm25 \
         --out data/reports/index_profile.json
-The factory names above are placeholders until W3-D1/D2/D3/D4-DAT-1 are merged.
 Dependencies: pyarrow (pipelines/requirements.txt); `docker` on PATH for disk and RAM.
 """
 
@@ -49,6 +55,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+AGENT_RETRIEVERS = ("dense", "bm25", "hybrid")
+AGENT_FACTORY = "scitech_agent.retrieval.hybrid:retriever_from_env"
 DEFAULT_N_QUERIES = 100
 DEFAULT_WARMUP = 5
 FILTER_QUERIES = 5
@@ -128,26 +136,13 @@ def time_queries(
 
 
 def satisfies(hit: Any, filters: Mapping[str, Any]) -> bool:
-    """True if `hit` meets every filter.
+    """True if `hit` meets every filter, by the rule all retrievers share
+    (`scitech_agent.retrieval.matches`): a list field (categories) must contain the value, a
+    `{"gte", "lte", "gt", "lt"}` object is a range on numbers or ISO dates, anything else must be
+    equal."""
+    from scitech_agent.retrieval import matches
 
-    A list field (categories) must contain the value; a {"gte", "lte"} object is an inclusive
-    range compared as strings (ISO dates compare correctly); anything else must be equal.
-    """
-    for name, wanted in filters.items():
-        value = getattr(hit, name, None)
-        if isinstance(wanted, Mapping):
-            if value is None:
-                return False
-            if "gte" in wanted and str(value) < str(wanted["gte"]):
-                return False
-            if "lte" in wanted and str(value) > str(wanted["lte"]):
-                return False
-        elif isinstance(value, (list, tuple)):
-            if wanted not in value:
-                return False
-        elif value != wanted:
-            return False
-    return True
+    return matches(hit, filters)
 
 
 def check_filter(
@@ -177,18 +172,28 @@ def check_filter(
 
 
 def build_retriever(spec: str, params: dict[str, Any] | None = None) -> Any:
-    """`module:factory` -> factory(**params), as `retriever.factory` in the evaluation configs."""
+    """`module:factory` -> factory(**params), as `retriever.factory` in the evaluation configs. An
+    `env` object in `params` is added to the process environment and passed as `env`."""
     module_name, _, attr = spec.partition(":")
     if not module_name or not attr:
         raise ValueError(f"retriever factory must be 'module:attribute', got {spec!r}")
-    return getattr(importlib.import_module(module_name), attr)(**(params or {}))
+    kwargs = dict(params or {})
+    if "env" in kwargs:
+        kwargs["env"] = {**os.environ, **kwargs["env"]}
+    return getattr(importlib.import_module(module_name), attr)(**kwargs)
 
 
 def parse_retriever(value: str) -> tuple[str, str, dict[str, Any]]:
-    """'name=module:factory' or 'name=module:factory {json params}'."""
+    """'dense', 'bm25' or 'hybrid' (the agent's retriever of that name), 'name=module:factory'
+    or 'name=module:factory {json params}'."""
+    if value.strip() in AGENT_RETRIEVERS:
+        name = value.strip()
+        return name, AGENT_FACTORY, {"env": {"RETRIEVER": name}}
     name, sep, rest = value.partition("=")
     if not sep or not name.strip():
-        raise argparse.ArgumentTypeError(f"expected name=module:factory, got {value!r}")
+        raise argparse.ArgumentTypeError(
+            f"expected {', '.join(AGENT_RETRIEVERS)} or name=module:factory, got {value!r}"
+        )
     spec, _, params = rest.strip().partition(" ")
     try:
         parsed = json.loads(params) if params.strip() else {}
@@ -360,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         required=True,
         type=parse_retriever,
-        help="name=module:factory [JSON params]; repeat for each retriever",
+        help="dense, bm25, hybrid or name=module:factory [JSON params]; repeat for each",
     )
     parser.add_argument("--golden", type=Path, default=Path("evaluation/golden_set/golden.jsonl"))
     parser.add_argument("--chunks", type=Path, default=Path("data/processed/chunks"))
@@ -385,17 +390,23 @@ def main(argv: list[str] | None = None) -> int:
 
     golden = golden_queries(args.golden)
     queries = build_queries(golden, chunk_titles(args.chunks), args.n_queries)
-    retrievers = {name: build_retriever(spec, params) for name, spec, params in args.retriever}
-
     started = datetime.now(timezone.utc)
-    result = profile_index(
-        retrievers,
-        queries,
-        n_golden=min(len(golden), len(queries)),
-        k=args.k,
-        warmup=args.warmup,
-        filters=args.filter,
-    )
+    result: dict[str, Any] = {}
+    for name, spec, params in args.retriever:  # one at a time: one model and index in memory
+        print(f"index_profile: measuring {name}", file=sys.stderr)
+        one = profile_index(
+            {name: build_retriever(spec, params)},
+            queries,
+            n_golden=min(len(golden), len(queries)),
+            k=args.k,
+            warmup=args.warmup,
+            filters=args.filter,
+        )
+        if not result:
+            result = one
+        else:
+            result["latency"].update(one["latency"])
+            result["filters"].update(one["filters"])
 
     problems: list[str] = []
     qdrant = docker = None
