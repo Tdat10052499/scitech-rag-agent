@@ -202,6 +202,11 @@ def main(argv: list[str] | None = None, run: Run = subprocess.run) -> int:
     def read(path: Path) -> dict[str, Any]:
         return json.loads(path.read_text(encoding="utf-8"))
 
+    full_index, full_bm25 = data / "processed" / "index", data / "index" / "bm25"
+    for needed in (chunks / CHUNK_MANIFEST, full_index / LOAD_MANIFEST, full_bm25 / BM25_MANIFEST):
+        if not needed.is_file():  # fail before the subsets are built, not after
+            parser.error(f"{needed} is missing: the full load and BM25 build come first")
+
     sizes = []  # (fraction, collection, load dir, bm25 dir, documents)
     for f in fractions:
         name = pct(f)
@@ -224,9 +229,7 @@ def main(argv: list[str] | None = None, run: Run = subprocess.run) -> int:
         documents = read(sub_chunks / CHUNK_MANIFEST)["counts"]["documents"]
         sizes.append((f, collection, index_dir, bm25_dir, documents))
     full_docs = read(chunks / CHUNK_MANIFEST)["counts"].get("documents")
-    sizes.append(
-        (1.0, args.collection, data / "processed" / "index", data / "index" / "bm25", full_docs)
-    )
+    sizes.append((1.0, args.collection, full_index, full_bm25, full_docs))
 
     rows = []
     for f, collection, index_dir, bm25_dir, documents in sizes:

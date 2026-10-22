@@ -163,6 +163,11 @@ def test_main_loads_builds_and_profiles_every_size(chunks: Path, tmp_path: Path,
     assert all(c[1].endswith("index_profile.py") for c, _ in calls) and len(calls) == 3
 
 
+def test_main_needs_the_full_load_first(chunks: Path, tmp_path: Path):
+    with pytest.raises(SystemExit):
+        scaling.main(["--data-dir", str(chunks.parents[1])], run=lambda *a, **k: 1 / 0)
+
+
 def test_main_refuses_a_fraction_of_one(tmp_path: Path):
     with pytest.raises(SystemExit):
         scaling.main(["--fraction", "1", "--out-dir", str(tmp_path)], run=lambda *a, **k: None)
