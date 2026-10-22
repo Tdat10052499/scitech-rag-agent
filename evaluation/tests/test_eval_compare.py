@@ -27,6 +27,8 @@ Differences B - A per question, with wins / losses / ties of B:
 """
 
 import json
+import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -35,7 +37,7 @@ import yaml
 from scitech_eval.__main__ import main
 from scitech_eval.compare import compare_runs, format_comparison, load_run
 from scitech_eval.golden import load_golden
-from scitech_eval.retrievers import CannedRetriever, canned
+from scitech_eval.retrievers import CannedRetriever, agent_retriever, canned
 from scitech_eval.runner import load_config, run_from_config, run_retrieval, write_run
 
 DATA = Path(__file__).parent / "data"
@@ -160,8 +162,11 @@ def test_real_clock_gives_non_negative_timings(tmp_path):
     assert all(r["search_seconds"] >= 0 for r in result["per_question"])
 
 
+SAME_DATA = {"index_snapshot": "idx-1", "dataset_snapshot": "ds-1"}
+
+
 def test_compare_numbers_match_hand_computation(tmp_path):
-    result = compare_runs([_run_a(tmp_path), _run_b(tmp_path)])
+    result = compare_runs([_run_a(tmp_path, **SAME_DATA), _run_b(tmp_path, **SAME_DATA)])
     means = {n: [v["mean"] for v in values] for n, values in result["metrics"].items()}
     assert means["recall@1"] == pytest.approx([0.3, 0.5])
     assert means["recall@5"] == pytest.approx([0.7, 0.9])
@@ -184,6 +189,35 @@ def test_compare_numbers_match_hand_computation(tmp_path):
         assert (m["wins"], m["losses"], m["ties"]) == (wins, losses, ties), name
         assert m["ci95"][0] <= m["mean_diff"] <= m["ci95"][1], name
     assert result["warnings"] == []
+
+    # recall rows also give the difference in questions (mean diff x 5); MRR has none
+    assert paired["metrics"]["recall@1"]["questions_diff"] == pytest.approx(1.0)
+    assert paired["metrics"]["recall@10"]["questions_diff"] == pytest.approx(0.5)
+    assert paired["metrics"]["mrr"]["questions_diff"] is None
+
+
+def test_compare_warns_when_the_index_or_dataset_snapshot_differs(tmp_path):
+    a = _run_a(tmp_path, **SAME_DATA)
+    b = _run_b(tmp_path, index_snapshot="idx-2", dataset_snapshot="ds-2")
+    text = " ".join(compare_runs([a, b])["warnings"])
+    assert "B has index_snapshot idx-2, A has idx-1" in text
+    assert "B has dataset_snapshot ds-2, A has ds-1" in text
+
+
+def test_compare_warns_about_each_run_that_left_a_snapshot_unspecified(tmp_path):
+    a = _run_a(tmp_path, dataset_snapshot="ds-1")
+    b = _run_b(tmp_path, **SAME_DATA)
+    warnings = compare_runs([a, b])["warnings"]
+    assert any(w.startswith("A did not record index_snapshot") for w in warnings)
+    assert not any(w.startswith("B did not record") for w in warnings)
+    assert any("B has index_snapshot idx-1, A has unspecified" in w for w in warnings)
+
+
+def test_report_shows_the_difference_in_questions(tmp_path):
+    text = format_comparison(compare_runs([_run_a(tmp_path), _run_b(tmp_path)]))
+    assert "questions" in text and "+1.0" in text and "+0.5" in text
+    rows = {line.split()[0]: line.split() for line in text.splitlines() if line.startswith("mrr")}
+    assert rows["mrr"][2] == "-"
 
 
 def test_compare_with_a_different_golden_file_pairs_the_shared_questions(tmp_path):
@@ -272,3 +306,55 @@ def test_shipped_example_config_records_its_setup(tmp_path, monkeypatch):
     assert run["embedding_model"] is None
     assert run["index_snapshot"] == "toy"
     assert run["notes"].startswith("Replays")
+
+
+def test_agent_retriever_passes_the_name_and_params_as_strings(monkeypatch):
+    seen = {}
+    module = types.ModuleType("scitech_agent.retrieval.hybrid")
+    module.retriever_from_env = lambda env: seen.update(env) or "retriever"
+    for name in ("scitech_agent", "scitech_agent.retrieval"):
+        monkeypatch.setitem(sys.modules, name, types.ModuleType(name))
+    monkeypatch.setitem(sys.modules, "scitech_agent.retrieval.hybrid", module)
+    monkeypatch.setenv("QDRANT_URL", "http://qdrant:6333")
+    monkeypatch.setenv("RRF_K", "10")
+
+    assert agent_retriever("hybrid", RRF_K=60, EMBEDDING_QUERY_PREFIX="Q:") == "retriever"
+    assert seen["RETRIEVER"] == "hybrid"
+    assert seen["RRF_K"] == "60"  # the param wins over the process environment
+    assert seen["EMBEDDING_QUERY_PREFIX"] == "Q:"
+    assert seen["QDRANT_URL"] == "http://qdrant:6333"  # the rest comes from the environment
+
+
+def test_agent_retriever_rejects_an_unknown_name():
+    with pytest.raises(ValueError, match="dense, bm25, hybrid"):
+        agent_retriever("tfidf")
+
+
+@pytest.mark.parametrize("kind", ["dense", "bm25", "hybrid"])
+def test_retrieval_v1_configs_agree_except_for_the_retriever(kind):
+    root = Path(__file__).resolve().parents[2]
+    config = load_config(root / f"evaluation/configs/retrieval-v1-{kind}.yaml")
+    hybrid = load_config(root / "evaluation/configs/retrieval-v1-hybrid.yaml")
+    for key in (
+        "golden_path",
+        "split",
+        "language",
+        "query",
+        "ks",
+        "dataset_snapshot",
+        "index_snapshot",
+        "bootstrap",
+    ):
+        assert config[key] == hybrid[key], key
+    assert config["name"] == f"retrieval-v1-{kind}"
+    assert config["retriever_type"] == kind
+    assert config["retriever"]["factory"] == "scitech_eval.retrievers:agent_retriever"
+    assert config["retriever"]["params"]["retriever"] == kind
+    assert "unspecified" not in (config["index_snapshot"], config["dataset_snapshot"])
+    assert bool(config["embedding_model"]) == (kind != "bm25")
+    params = config["retriever"]["params"]
+    # settings that change the ranking must be in params, or they are missing from the run file
+    assert (params.get("QDRANT_SEARCH_EXACT") == "true") == (kind != "bm25")
+    assert ({"RRF_K", "HYBRID_DENSE_TOP_K", "HYBRID_KEYWORD_TOP_K"} <= set(params)) == (
+        kind == "hybrid"
+    )
