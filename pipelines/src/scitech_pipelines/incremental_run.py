@@ -15,7 +15,9 @@ alone, and the store must end with exactly (points before - points deleted + chu
 
 The steps are passed in (`Steps`), so the order and the watermark rules are tested without
 Spark, a model or Qdrant; `default_steps` wires the real ones. The store needs one method more
-than `load` (`delete_doc_ids`); it comes with DAT's store module (W3-D1-DAT-1).
+than `load` (`delete_doc_ids`). DAT's store module (W3-D1-DAT-1) has no delete, so
+`QdrantReplaceStore` adds Qdrant's delete-by-filter on top of it, through the REST API at the
+store's own URL and collection; the store module itself is unchanged.
 """
 
 from __future__ import annotations
@@ -55,6 +57,61 @@ class ReplaceStore(VectorStore, Protocol):
     def delete_doc_ids(self, doc_ids: Sequence[str]) -> None:
         """Delete every point whose payload `doc_id` is in `doc_ids`. Raise on failure."""
         ...
+
+
+class QdrantReplaceStore:
+    """A `QdrantStore` (scitech_agent.store) plus `delete_doc_ids`, for `replace_documents`.
+
+    Collection, upsert and count go to the wrapped store. The delete is Qdrant's
+    `POST /collections/<collection>/points/delete` with a `doc_id` filter (`doc_id` has a payload
+    index, created by `ensure_collection`), sent with `wait=true` so the count that follows
+    already sees it."""
+
+    def __init__(self, store: Any, *, transport: Any = None) -> None:
+        import httpx
+
+        self.store = store
+        config = store.config
+        self._http = httpx.Client(base_url=config.url, timeout=config.timeout, transport=transport)
+
+    @property
+    def collection(self) -> str:
+        return self.store.collection
+
+    def ensure_collection(self, dimension: int) -> None:
+        self.store.ensure_collection(dimension)
+
+    def upsert(self, points: Sequence[Any]) -> None:
+        self.store.upsert(points)
+
+    def count(self) -> int:
+        return self.store.count()
+
+    def delete_doc_ids(self, doc_ids: Sequence[str]) -> None:
+        if not doc_ids:
+            return
+        import httpx
+
+        path = f"/collections/{self.collection}/points/delete?wait=true"
+        body = {"filter": {"must": [{"key": "doc_id", "match": {"any": list(doc_ids)}}]}}
+        try:
+            response = self._http.post(path, json=body)
+        except httpx.HTTPError as exc:
+            raise RuntimeError(f"Qdrant delete in {self.collection} failed: {exc}") from exc
+        if response.is_error:
+            raise RuntimeError(
+                f"Qdrant delete in {self.collection} failed with HTTP {response.status_code}: "
+                f"{response.text[:300]}"
+            )
+
+    def close(self) -> None:
+        self._http.close()
+
+    def __enter__(self) -> QdrantReplaceStore:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
 
 
 @dataclass(frozen=True)

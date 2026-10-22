@@ -8,6 +8,7 @@ from scitech_pipelines.chunk import chunk_documents
 from scitech_pipelines.embed import embed_chunks
 from scitech_pipelines.incremental_run import (
     STATE_FILE,
+    QdrantReplaceStore,
     Steps,
     default_steps,
     read_watermark,
@@ -22,7 +23,7 @@ pytest.importorskip("pyarrow")
 
 from test_chunk import doc, fixture_documents, write_documents  # noqa: E402
 from test_embed import FakeEncoder  # noqa: E402
-from test_load import FakeStore  # noqa: E402
+from test_load import FakeQdrant, FakeStore  # noqa: E402
 
 TODAY = date(2026, 10, 20)  # so "yesterday" is 2026-10-19
 SNAPSHOT_DAY = date(2026, 10, 10)
@@ -311,3 +312,139 @@ def test_default_steps_chunk_embed_and_replace(tmp_path: Path):
     manifest = steps.load(tmp_path / "chunks", tmp_path / "embeddings", tmp_path / "index")
     assert store.count() == manifest["counts"]["points"] == manifest["counts"]["points_loaded"]
     assert manifest["counts"]["documents"] == 3
+
+
+# --- QdrantReplaceStore and the incremental-run command ----------------------------------------
+
+
+class DeletingQdrant(FakeQdrant):
+    """FakeQdrant plus `POST /collections/<name>/points/delete` with a `doc_id` filter."""
+
+    def __init__(self):
+        super().__init__()
+        self.deletes: list[dict] = []
+
+    def __call__(self, request):
+        import httpx
+
+        parts = request.url.path.strip("/").split("/")
+        if request.method == "POST" and parts[2:] == ["points", "delete"]:
+            assert request.url.params["wait"] == "true"
+            body = json.loads(request.content)
+            self.deletes.append(body)
+            (condition,) = body["filter"]["must"]
+            assert condition["key"] == "doc_id"
+            wanted = set(condition["match"]["any"])
+            points = self.collections[parts[1]]["points"]
+            for pid in [p for p, point in points.items() if point["payload"]["doc_id"] in wanted]:
+                del points[pid]
+            return httpx.Response(200, json={"result": {"status": "completed"}})
+        return super().__call__(request)
+
+
+def test_qdrant_replace_store_replaces_papers_through_the_rest_api(tmp_path: Path):
+    httpx = pytest.importorskip("httpx")
+    from scitech_agent.store import QdrantStore, StoreConfig
+
+    qdrant = DeletingQdrant()
+    transport = httpx.MockTransport(qdrant)
+    docs = fixture_documents()
+    chunks, vectors = build(tmp_path, "bulk", docs)
+    with QdrantStore(StoreConfig(collection="live"), transport=transport) as store:
+        load_index(chunks, vectors, store, tmp_path / "bulk" / "index", **quiet)
+        points = qdrant.collections["live"]["points"]
+        old = [
+            p["payload"]["chunk_id"]
+            for p in points.values()
+            if p["payload"]["doc_id"] == docs[0]["doc_id"]
+        ]
+        assert len(old) > 1
+        before = len(points)
+        new_version = {
+            **docs[0],
+            "abstract": "A much shorter abstract.",
+            "updated_at": "2026-10-16",
+        }
+        day_chunks, day_vectors = build(tmp_path, "day", [new_version])
+
+        with QdrantReplaceStore(store, transport=transport) as replace_store:
+            assert replace_store.collection == "live"
+            manifest = replace_documents(
+                day_chunks, day_vectors, replace_store, tmp_path / "day" / "index", **quiet
+            )
+            replace_store.delete_doc_ids([])  # nothing to delete: no request
+
+    assert len(qdrant.deletes) == 1
+    assert qdrant.deletes[0]["filter"]["must"][0]["match"]["any"] == [docs[0]["doc_id"]]
+    left = sorted(
+        p["payload"]["chunk_id"]
+        for p in points.values()
+        if p["payload"]["doc_id"] == docs[0]["doc_id"]
+    )
+    assert left == [f"{docs[0]['doc_id']}#0"]
+    assert len(points) == manifest["counts"]["points"] == before - len(old) + 1
+    assert manifest["index_snapshot"].startswith("live/")
+
+
+def test_qdrant_replace_store_raises_when_the_delete_fails():
+    httpx = pytest.importorskip("httpx")
+    from scitech_agent.store import QdrantStore, StoreConfig
+
+    def refuse(request):
+        return httpx.Response(500, text="disk full")
+
+    transport = httpx.MockTransport(refuse)
+    with QdrantStore(StoreConfig(collection="live"), transport=transport) as store:
+        with QdrantReplaceStore(store, transport=transport) as replace_store:
+            with pytest.raises(RuntimeError, match="HTTP 500: disk full"):
+                replace_store.delete_doc_ids(["2404.00001"])
+
+
+def test_incremental_run_command_wires_store_model_and_watermark(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    pytest.importorskip("httpx")
+    import scitech_agent.store
+    import scitech_pipelines.embed
+    import scitech_pipelines.incremental_run
+    from scitech_pipelines.cli import main
+
+    seen: dict = {}
+
+    class Store(FakeStore):
+        def __init__(self, config):
+            super().__init__(config.collection)
+            self.config = config
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            seen["closed"] = True
+
+    def fake_run(data_dir, steps, **kwargs):
+        seen.update(data_dir=data_dir, steps=steps, **kwargs)
+        return {}
+
+    monkeypatch.setattr(scitech_agent.store, "QdrantStore", Store)
+    monkeypatch.setattr(
+        scitech_pipelines.embed,
+        "SentenceTransformerEncoder",
+        lambda name, device=None: seen.update(model=name, device=device) or FakeEncoder(),
+    )
+    monkeypatch.setattr(scitech_pipelines.incremental_run, "run_incremental", fake_run)
+    monkeypatch.setenv("QDRANT_COLLECTION", "from_env")
+    args = ["--data-dir", str(tmp_path), "incremental-run", "--model", "some/model"]
+    assert main([*args, "--start", "2026-10-10", "--collection", "live", "--device", "cpu"]) == 0
+    assert seen["data_dir"] == tmp_path and seen["start"] == SNAPSHOT_DAY
+    assert (seen["model"], seen["device"]) == ("some/model", "cpu")
+    assert (seen["set_spec"], seen["category"]) == ("cs:cs:CL", "cs.CL")
+    assert isinstance(seen["steps"], Steps) and seen["closed"]
+
+    assert main(args) == 0  # later runs: the watermark gives the first day
+    assert seen["start"] is None
+    monkeypatch.delenv("EMBEDDING_MODEL", raising=False)
+    with pytest.raises(ValueError, match="no embedding model"):
+        main(["--data-dir", str(tmp_path), "incremental-run"])
+    with pytest.raises(SystemExit):
+        main([*args, "--start", "10/10/2026"])
