@@ -166,6 +166,7 @@ def test_search_maps_payload_to_scored_chunks_in_order():
         "limit": 2,
         "with_payload": True,
         "filter": {"must": [{"key": "categories", "match": {"value": "cs.IR"}}]},
+        "params": {"exact": True},
     }
 
 
@@ -176,6 +177,46 @@ def test_search_without_filters_sends_no_filter_and_rejects_bad_k():
     assert "filter" not in fake.requests[0][2]
     with pytest.raises(ValueError):
         store.search([1.0], k=0)
+
+
+def test_search_is_exact_by_default_and_uses_hnsw_when_exact_is_off():
+    fake = FakeQdrant()
+    make_store(fake).search([1.0], k=1)
+    assert fake.requests[0][2]["params"] == {"exact": True}
+
+    fake = FakeQdrant()
+    config = StoreConfig(url="http://qdrant.test:6333", collection="test_chunks", exact=False)
+    QdrantStore(config, transport=httpx.MockTransport(fake)).search([1.0], k=1)
+    assert "params" not in fake.requests[0][2]
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (None, True),
+        ("", True),
+        ("  ", True),
+        ("true", True),
+        ("TRUE", True),
+        ("1", True),
+        ("yes", True),
+        ("on", True),
+        ("false", False),
+        ("False", False),
+        ("0", False),
+        ("no", False),
+        (" off ", False),
+    ],
+)
+def test_search_exact_setting_from_env(raw, expected):
+    env = {} if raw is None else {"QDRANT_SEARCH_EXACT": raw}
+    assert StoreConfig.from_env(env).exact is expected
+
+
+@pytest.mark.parametrize("raw", ["maybe", "ture", "2", "exact"])
+def test_search_exact_setting_rejects_other_values(raw):
+    with pytest.raises(ValueError, match="QDRANT_SEARCH_EXACT"):
+        StoreConfig.from_env({"QDRANT_SEARCH_EXACT": raw})
 
 
 def test_payload_without_a_required_field_is_an_error():

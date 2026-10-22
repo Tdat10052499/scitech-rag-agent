@@ -3,7 +3,7 @@
 Each sub-command is implemented by its own task (download: W2-D1-FAO-1, clean: W2-D2-FAO-1,
 validate: W2-D4-FAO-1, profile: W2-D3-FAO-1, chunk: W3-D1-FAO-1, embed: W3-D2-FAO-1,
 load: W3-D3-FAO-1, through the Qdrant store of W3-D1-DAT-1; incremental-fetch: W3-D4-FAO-1
-prototype for ADR 0008).
+prototype for ADR 0008; run-all: W4-D2-FAO-1).
 Paths and settings come from arguments, with environment variables as defaults.
 """
 
@@ -24,6 +24,7 @@ STEPS: dict[str, str] = {
     "embed": "Compute an embedding for every chunk (resumable).",
     "load": "Load chunks and embeddings into the vector store.",
     "incremental-fetch": "Fetch new arXiv records by date through OAI-PMH (snapshot format).",
+    "run-all": "Run download, clean, validate, chunk, embed and load in one go (--limit: small).",
 }
 SOURCES = ("arxiv", "wikipedia")
 
@@ -356,12 +357,67 @@ def add_incremental_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _positive(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"must be >= 1, got {number}")
+    return number
+
+
+def add_run_all_arguments(parser: argparse.ArgumentParser) -> None:
+    from scitech_pipelines.clean import DEFAULT_CATEGORY
+    from scitech_pipelines.run_all import DEFAULT_GOLDEN, STEP_NAMES
+
+    parser.add_argument(
+        "--limit",
+        type=_positive,
+        default=None,
+        help="Small run: only the first N records of the category, in <data-dir>/limit-<N>/ "
+        "and the collection <collection>_limit_<N>.",
+    )
+    parser.add_argument(
+        "--snapshot",
+        type=Path,
+        default=None,
+        help="An arXiv snapshot already on disk: skips the download.",
+    )
+    parser.add_argument(
+        "--model",
+        default=os.environ.get("EMBEDDING_MODEL"),
+        help="Embedding model (env EMBEDDING_MODEL, ADR 0007).",
+    )
+    parser.add_argument(
+        "--device", default=None, help="embed: cuda, cpu, ... (default: GPU if there is one)."
+    )
+    parser.add_argument(
+        "--collection",
+        default=None,
+        help="Qdrant collection (default: env QDRANT_COLLECTION, else scitech_chunks).",
+    )
+    parser.add_argument(
+        "--category", default=DEFAULT_CATEGORY, help="Sub-domain category (ADR 0003)."
+    )
+    parser.add_argument(
+        "--golden",
+        type=Path,
+        default=DEFAULT_GOLDEN,
+        help=f"Golden set checked by validate on a full run (default {DEFAULT_GOLDEN}; "
+        "skipped if the file is missing or with --limit).",
+    )
+    parser.add_argument(
+        "--from", dest="from_step", choices=STEP_NAMES, default=None, help="First step to run."
+    )
+    parser.add_argument(
+        "--to", dest="to_step", choices=STEP_NAMES, default=None, help="Last step to run."
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with one sub-command per pipeline step."""
     parser = argparse.ArgumentParser(
         prog="scitech_pipelines",
         description="Data pipeline: download, clean, validate, profile, chunk, embed, load, "
-        "incremental-fetch.",
+        "incremental-fetch, run-all.",
     )
     parser.add_argument(
         "--data-dir",
@@ -387,6 +443,8 @@ def build_parser() -> argparse.ArgumentParser:
             add_load_arguments(sub)
         elif name == "incremental-fetch":
             add_incremental_arguments(sub)
+        elif name == "run-all":
+            add_run_all_arguments(sub)
     return parser
 
 
@@ -544,6 +602,29 @@ def run_incremental_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_run_all(args: argparse.Namespace) -> int:
+    from scitech_pipelines.embed import check_model_name
+    from scitech_pipelines.run_all import plan_steps, run_all, select_steps
+
+    data_dir = Path(args.data_dir)
+    steps = plan_steps(
+        data_dir,
+        limit=args.limit,
+        snapshot=args.snapshot,
+        model=args.model,
+        device=args.device,
+        collection=args.collection,
+        category=args.category,
+        golden=args.golden if args.golden and args.golden.is_file() else None,
+    )
+    steps = select_steps(steps, args.from_step, args.to_step)
+    if any(s.name == "embed" for s in steps):
+        check_model_name(args.model)  # fail now, not after the download and the clean
+    return run_all(
+        data_dir, steps, limit=args.limit, snapshot=args.snapshot, category=args.category
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return the process exit code."""
     args = build_parser().parse_args(argv)
@@ -563,4 +644,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_load(args)
     if args.command == "incremental-fetch":
         return run_incremental_fetch(args)
+    if args.command == "run-all":
+        return run_run_all(args)
     raise ValueError(f"no handler for command {args.command!r}")
