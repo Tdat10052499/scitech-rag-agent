@@ -1,6 +1,6 @@
 # 0009. Default retrieval configuration
 
-- Status: draft (decision rule set on 2026-10-20, before the hybrid numbers exist; numbers come from W3-D4-LDN-1 on D09)
+- Status: accepted (2026-10-22, D09; decision rule set on 2026-10-20, before the hybrid numbers existed)
 - Date: 2026-10-20 (rule); D09 2026-10-22 (numbers and decision)
 - Deciders: DAT (author), LDN (numbers, `evaluation/reports/retrieval-v1.md`), FAO (index and latency, `pipelines/reports/index_profile.md`)
 
@@ -55,23 +55,55 @@ On a near tie the rule prefers hybrid, because it covers both failure modes seen
 **`RETRIEVAL_MIN_SCORE`.** Not set by this ADR. Its scale depends on the retriever (cosine, BM25 or RRF, at most about 0.033 for hybrid), so it stays 0.0. Until W5 the "insufficient evidence" path depends on the answer prompt (W4-D1-DAT-1) and then the evidence check (W5-D3-DAT-1), not on a score threshold.
 
 ## Measurements
-*(D09: fill in from `evaluation/reports/retrieval-v1.md` and `pipelines/reports/index_profile.md`.)*
+**B. Retrieval quality, official run (W3-D4-LDN-1, Plan B, run by FAO on 2026-10-21, #106).**
+- **Run files:** `evaluation/runs/20261021T1254{02,21,23}Z-retrieval-v1-{hybrid,dense,bm25}.json`, with the full `compare` output in `evaluation/runs/retrieval-v1-compare.txt`. Re-running `compare` on the committed files gives byte-identical output (checked by DAT on 2026-10-22).
+- **Commit:** `ad8f333` (`main` with #90 merged in), clean tree.
+- **Golden set:** `evaluation/golden_set/golden.jsonl` at that commit. Its sha256 is `215992869ee9…` in the Windows checkout (CRLF) and `f5b763f6b6b6…` in an LF checkout; the content is the same.
+- **Sample:** 30 answerable `dev` items, questions as asked.
+- **Index snapshot:** `scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37`. The BM25 index was built from the same `chunks.parquet` (`chunked_at` 2026-10-17T05:19:12).
+- **Settings:** exact search (`QDRANT_SEARCH_EXACT=true`), `RRF_K` 60, per-retriever top 50, all recorded in the config params of the run files. `compare` printed no warning.
 
-**B. Retrieval quality, official run, exact search (`QDRANT_SEARCH_EXACT=true` for all three runs, recorded in the run files).** Run file, commit, golden set sha256, index snapshot:
-
-| Retriever | recall@1 | recall@5 (95% CI) | recall@10 | MRR | questions where it beats / loses to hybrid at 5 |
+| Retriever | recall@1 | recall@5 (95% CI) | recall@10 | MRR | recall@5 vs hybrid: questions (wins / losses) |
 |---|---:|---:|---:|---:|---:|
-| dense | | | | | |
-| bm25 | | | | | |
-| hybrid | | | | | — |
+| dense | 0.183 | 0.283 [0.133, 0.450] | 0.317 | 0.253 | −1.5 (1 / 3) |
+| bm25 | 0.283 | 0.350 [0.183, 0.517] | 0.400 | 0.370 | +0.5 (2 / 1) |
+| hybrid | 0.250 | 0.333 [0.167, 0.500] | 0.383 | 0.301 | — |
 
-**C. Latency and memory** (W3-D5-FAO-1): p50 / p95 per retriever, RAM of Qdrant and of the BM25 index after load, machine.
+Paired with hybrid, every 95% bootstrap interval of the difference includes 0, for all four metrics and for both single retrievers. The MRR difference is −0.049 for dense and +0.069 for bm25. Dense equals ADR 0007 table B exactly (0.183 / 0.283 / 0.317 / 0.253), and bm25 equals table A, so the runs reproduce both earlier checks.
+
+**C. Latency and memory** (W3-D5-FAO-1, `pipelines/reports/index_profile.md`, #68). Measured on FAO's laptop (Windows 11, 8 logical CPUs, 15.8 GiB RAM, CPU only) with Qdrant 1.19.2 in Docker on the same machine. 100 sequential queries at k = 10, after 5 warm-ups. The time of `search` includes the query embedding on the CPU.
+
+| Retriever | p50 (ms) | p95 (ms) |
+|---|---:|---:|
+| dense | 82.5 | 88.5 |
+| bm25 | 7.1 | 14.2 |
+| hybrid | 107.2 | 149.1 |
+
+Memory and disk on the same machine:
+- Qdrant collection: 609.9 MiB on disk, container memory 280.7 MiB (`docker stats`, includes page cache).
+- BM25 index: 177.2 MiB on disk; its build peaked at 1,184 MB working set on DAT's laptop.
+- The backend process memory with the BM25 index and the embedding model loaded is not measured.
+
+The run files agree: excluding the first question, which includes loading the embedding model (14-15 s), p95 is 0.111 s for hybrid, 0.084 s for dense and 0.016 s for bm25.
 
 ## Decision
-*(D09: apply the rule to tables B and C, unchanged. State that the evidence is preliminary: 30 dev items, one index snapshot.)*
+The rule above is applied unchanged to tables B and C:
+1. **Retriever: hybrid.**
+   - Neither single retriever reaches the bar of +2.0 questions at recall@5 over hybrid: bm25 is at +0.5 and dense at −1.5. So rule 1 keeps hybrid, and rule 2 does not apply.
+   - Latency guard (rule 3): hybrid's p95 is 149 ms, far under 1 s. FAO's laptop is not yet the machine that will run the backend, so the guard is to be checked again there (W6 `make up`). With a margin of more than 6 times, it is not expected to change the result.
+2. **`RETRIEVAL_TOP_K` = 5.** For hybrid, recall@10 − recall@5 = 0.383 − 0.333 = 0.05, which is 1.5 questions, under the bar of 3.
+3. **`RETRIEVAL_MIN_SCORE`** stays 0.0, as stated above.
+
+No configuration change follows: `.env.example` and the code already default to `RETRIEVER=hybrid` and `RETRIEVAL_TOP_K=5`.
+
+**What this evidence can and cannot show.** It is preliminary: 30 dev items, one index snapshot, one run per retriever, and questions written by the team from the abstracts.
+- **BM25 vs hybrid.** BM25 is ahead of hybrid on every metric, but by 0.5 questions at recall@5 (2 wins, 1 loss), and all intervals include 0. So the data do not show that hybrid is better than BM25. Hybrid is kept because the rule, fixed before the numbers, asks a single retriever to beat it clearly.
+- **Possible favouring of keyword search.** The golden questions were written from the abstracts, which may favour keyword matching (`evaluation/golden_set/FORMAT.md`, rule 4). This was not measured.
+- **Dense vs hybrid.** Dense is behind hybrid by 1.5 questions. That is also within noise at this size.
 
 ## Consequences
-*(D09.)* To be written with the decision. Already known:
+- W4 starts on `RETRIEVER=hybrid`, `RETRIEVAL_TOP_K=5`. The backend needs both Qdrant and the BM25 index (`BM25_INDEX_DIR`). `make up` (W6-D3-DAT-1) and the data runbook (W4-D5-FAO-1, #93) must include the BM25 build.
+- If hybrid's cost becomes a problem (backend memory with the BM25 index and the embedding model, or two searches per question under concurrent users in W7), BM25 alone is the fallback. It loses nothing measurable on these 30 items and needs no Qdrant or embedding model at query time. The switch is one variable (`RETRIEVER=bm25`).
+- Hybrid scores are RRF ranks (at most about 0.033), so the sources panel shows no score (#83), and the insufficient-evidence path does not use a score threshold until W5-D3-DAT-1.
 - Whatever is chosen, the other two retrievers stay available through `RETRIEVER` for the final comparison (RQ1, W7), which uses the test items 31-60, not these dev items.
 - Revisit when the golden set reaches 60 items, if the embedding model changes (ADR 0007), or if the chunking changes.
-- If the decision lands late on D09, this ADR merges as "proposed" and becomes "accepted" by D10 09:00 (W3-D5-DAT-1 replan); W4-D1-DAT-1 starts with `RETRIEVER=hybrid` meanwhile.
