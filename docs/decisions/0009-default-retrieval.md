@@ -37,14 +37,14 @@ The two lists find different items (bm25 finds 13 of 30 at 10; dense misses 21 a
 RRF settings (`rrf_k` 60, per-retriever top 50) are **not tuned** here: with 30 questions, tuning them on the same items the decision uses would fit noise. They stay at the literature default and are recorded as fixed.
 
 ## Decision rule (set 2026-10-20, before the hybrid numbers)
-Confirmed before any number existed: LDN on 2026-10-21 (#85, including both bars); FAO's answer on the latency guard pending. The wording below was clarified to match `compare` output on 2026-10-21, without changing the rule.
+Confirmed before any number existed: LDN on 2026-10-21 (#85, including both bars). FAO confirmed the latency guard on 2026-10-22 (#85), with one condition: latency is measured with the embedding model already loaded, because the first query of a fresh process includes loading `bge-small-en-v1.5` (14-15 s on his laptop), which is a start-up cost, not search latency. The wording below was clarified to match `compare` output on 2026-10-21, without changing the rule.
 
 Numbers: LDN's run (W3-D4-LDN-1, `evaluation/reports/retrieval-v1.md`), 30 answerable dev items, questions as asked, same index snapshot for all three, `k` in {1, 5, 10}. "Questions" below means recall × 30; a difference in questions is the sum over the 30 items of the per-question recall difference (the `questions` column of `scitech_eval compare`, #90), so it can be fractional for items with two relevant papers.
 
 **Retriever.**
 1. **hybrid**, unless one single retriever has a recall@5 higher than hybrid's by **at least 2.0 questions** and an MRR that is not lower (point value of the mean MRR difference, 0 or positive; the bootstrap interval of the difference is reported but not used by the rule). The 2-question bar is the one ADR 0007 used for the same reason (noise at n = 30).
 2. If that happens, the single retriever that passes it. If both pass, the one with the higher recall@5; if still tied, the one with the higher MRR. `compare` pairs each single retriever with hybrid only, so this step and the k step below use the per-run means of the metrics table in `retrieval-v1.md`.
-3. Latency guard: the chosen retriever's p95 query latency from W3-D5-FAO-1 must be under **1 s** on the machine that will run the backend. If hybrid fails only this guard, choose the single retriever with the higher recall@5 and record the gap. *(1 s is a proposal: retrieval is one step before a 1.5 s median LLM answer, ADR 0006; to be confirmed in review.)*
+3. Latency guard: the chosen retriever's p95 query latency from W3-D5-FAO-1 must be under **1 s** on the machine that will run the backend. If hybrid fails only this guard, choose the single retriever with the higher recall@5 and record the gap. (1 s: retrieval is one step before a 1.5 s median LLM answer, ADR 0006; confirmed by FAO on #85.)
 
 On a near tie the rule prefers hybrid, because it covers both failure modes seen so far (paraphrase for bm25, exact technical terms for dense) at the cost of one extra in-memory search.
 
@@ -104,6 +104,7 @@ No configuration change follows: `.env.example` and the code already default to 
 ## Consequences
 - W4 starts on `RETRIEVER=hybrid`, `RETRIEVAL_TOP_K=5`. The backend needs both Qdrant and the BM25 index (`BM25_INDEX_DIR`). `make up` (W6-D3-DAT-1) and the data runbook (W4-D5-FAO-1, #93) must include the BM25 build.
 - If hybrid's cost becomes a problem (backend memory with the BM25 index and the embedding model, or two searches per question under concurrent users in W7), BM25 alone is the fallback. It loses nothing measurable on these 30 items and needs no Qdrant or embedding model at query time. The switch is one variable (`RETRIEVER=bm25`).
+- The backend loads the embedding model at start-up (or warms it with one query), so a user's first question does not pay the 14-15 s model load (FAO's condition on the latency guard). To do in W4 when the real retriever is wired into the backend.
 - Hybrid scores are RRF ranks (at most about 0.033), so the sources panel shows no score (#83), and the insufficient-evidence path does not use a score threshold until W5-D3-DAT-1.
 - Whatever is chosen, the other two retrievers stay available through `RETRIEVER` for the final comparison (RQ1, W7), which uses the test items 31-60, not these dev items.
 - Revisit when the golden set reaches 60 items, if the embedding model changes (ADR 0007), or if the chunking changes.
