@@ -129,7 +129,9 @@ def replace_documents(
     manifest = {
         "step": "load",
         "mode": "replace",
-        "index_snapshot": index_snapshot(store.collection, inputs["model"], inputs["chunked_at"]),
+        "index_snapshot": index_snapshot(
+            store.collection, inputs["model"], inputs["chunked_at"], inputs["embedded_at"]
+        ),
         "collection": store.collection,
         "loaded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "chunks": str(chunks),
