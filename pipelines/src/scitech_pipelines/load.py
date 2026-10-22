@@ -94,8 +94,10 @@ def _read_part(part: Path, chunks: Path, dimension: int) -> tuple[list[dict[str,
         f"LEFT JOIN read_parquet({_quote((chunks / CHUNK_FILE).as_posix())}) c USING (chunk_id) "
         "ORDER BY chunk_id"
     )
-    # to_arrow_table is the newer name (duckdb >= 1.4); fetch_arrow_table works from 1.1.
-    table = getattr(result, "to_arrow_table", result.fetch_arrow_table)()
+    # to_arrow_table is the newer name (duckdb >= 1.4); fetch_arrow_table works from 1.1 and is
+    # gone in 2.0, so it is looked up only when to_arrow_table is missing.
+    fetch = getattr(result, "to_arrow_table", None) or result.fetch_arrow_table
+    table = fetch()
     con.close()
     vectors = (
         table.column("embedding")
