@@ -103,9 +103,11 @@ def test_main_loads_builds_and_profiles_every_size(chunks: Path, tmp_path: Path,
     data = chunks.parents[1]
     full_index, full_bm25 = data / "processed" / "index", data / "index" / "bm25"
     full_index.mkdir(parents=True)
-    (full_index / LOAD_MANIFEST).write_text(
-        json.dumps({"counts": {"points": 999}, "seconds": 135.2})
-    )
+    vectors = tmp_path / "elsewhere" / "embeddings"  # not under data/: taken from the manifest
+    vectors.mkdir(parents=True)
+    full_load = {"counts": {"points": 999}, "seconds": 135.2}
+    full_load.update(chunks=str(chunks), vectors=str(vectors))
+    (full_index / LOAD_MANIFEST).write_text(json.dumps(full_load))
     full_bm25.mkdir(parents=True)
     (full_bm25 / "_bm25_manifest.json").write_text(
         json.dumps({"build_seconds": 36.7, "index_mb": 177.2})
@@ -141,6 +143,8 @@ def test_main_loads_builds_and_profiles_every_size(chunks: Path, tmp_path: Path,
     commands = [c for c, _ in calls]
     loads = [c for c in commands if "load" in c]
     assert [c[c.index("--collection") + 1] for c in loads] == ["chunks_10pct", "chunks_50pct"]
+    assert all(c[c.index("--vectors") + 1] == str(vectors) for c in loads)
+    assert all(c[c.index("--chunks") + 1] == str(chunks) for c in loads)
     restarts = [c for c in commands if c[:2] == ["docker", "compose"]]
     assert len(restarts) == len(waits) == 3
     profiles = [(c, env) for c, env in calls if c[1].endswith("index_profile.py")]
@@ -171,3 +175,15 @@ def test_main_needs_the_full_load_first(chunks: Path, tmp_path: Path):
 def test_main_refuses_a_fraction_of_one(tmp_path: Path):
     with pytest.raises(SystemExit):
         scaling.main(["--fraction", "1", "--out-dir", str(tmp_path)], run=lambda *a, **k: None)
+
+
+def test_main_needs_the_vectors_of_the_full_load(chunks: Path, tmp_path: Path, capsys):
+    data = chunks.parents[1]
+    (data / "processed" / "index").mkdir(parents=True)
+    manifest = {"chunks": str(chunks), "vectors": str(tmp_path / "gone")}
+    (data / "processed" / "index" / LOAD_MANIFEST).write_text(json.dumps(manifest))
+    (data / "index" / "bm25").mkdir(parents=True)
+    (data / "index" / "bm25" / "_bm25_manifest.json").write_text("{}")
+    with pytest.raises(SystemExit):
+        scaling.main(["--data-dir", str(data)], run=lambda *a, **k: 1 / 0)
+    assert "use --vectors" in capsys.readouterr().err

@@ -13,7 +13,9 @@ For each fraction below 1 (default 0.1 and 0.5), and for the full index already 
    runs the same queries against that size's collection and BM25 index. All sizes use the same
    query set, taken from the full chunks.
 
-The full size reuses `<data>/processed/index/_load_manifest.json` and `<data>/index/bm25`, which
+The subsets are cut from the chunks and vectors named in the full load's manifest,
+`<data>/processed/index/_load_manifest.json` (`--chunks` and `--vectors` override them). The
+full size reuses that manifest and `<data>/index/bm25`, which
 the full load and BM25 build wrote. Qdrant's memory is that of the whole container, which holds
 every collection, so the table also gives the growth of the container's memory after each load.
 
@@ -177,6 +179,12 @@ def main(argv: list[str] | None = None, run: Run = subprocess.run) -> int:
     parser.add_argument(
         "--qdrant-url", default=os.environ.get("QDRANT_URL", "http://localhost:6333")
     )
+    parser.add_argument(
+        "--chunks", type=Path, help="default: the chunks of the full load (its manifest)"
+    )
+    parser.add_argument(
+        "--vectors", type=Path, help="default: the vectors of the full load (its manifest)"
+    )
     parser.add_argument("--out-dir", type=Path, default=Path("data/reports/scaling"))
     parser.add_argument("--no-restart", action="store_true", help="do not restart Qdrant")
     parser.add_argument("--force", action="store_true", help="load and build the subsets again")
@@ -190,7 +198,6 @@ def main(argv: list[str] | None = None, run: Run = subprocess.run) -> int:
     from scitech_pipelines.load import LOAD_MANIFEST
 
     data = args.data_dir
-    chunks = data / "processed" / "chunks"
     python = sys.executable
     args.out_dir.mkdir(parents=True, exist_ok=True)
     started = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -203,9 +210,16 @@ def main(argv: list[str] | None = None, run: Run = subprocess.run) -> int:
         return json.loads(path.read_text(encoding="utf-8"))
 
     full_index, full_bm25 = data / "processed" / "index", data / "index" / "bm25"
-    for needed in (chunks / CHUNK_MANIFEST, full_index / LOAD_MANIFEST, full_bm25 / BM25_MANIFEST):
+    for needed in (full_index / LOAD_MANIFEST, full_bm25 / BM25_MANIFEST):
         if not needed.is_file():  # fail before the subsets are built, not after
             parser.error(f"{needed} is missing: the full load and BM25 build come first")
+    # The subsets come from the same chunks and vectors as the full index.
+    full_load = read(full_index / LOAD_MANIFEST)
+    chunks = args.chunks or Path(full_load["chunks"])
+    vectors = args.vectors or Path(full_load["vectors"])
+    for needed, option in ((chunks / CHUNK_MANIFEST, "--chunks"), (vectors, "--vectors")):
+        if not needed.exists():
+            parser.error(f"{needed} is missing (from {full_index / LOAD_MANIFEST}); use {option}")
 
     sizes = []  # (fraction, collection, load dir, bm25 dir, documents)
     for f in fractions:
@@ -218,7 +232,7 @@ def main(argv: list[str] | None = None, run: Run = subprocess.run) -> int:
             load = ["-m", "scitech_pipelines", "--data-dir", str(data), "load"]
             step(
                 [python, *load, "--fraction", str(f), "--collection", collection]
-                + ["--out", str(index_dir)]
+                + ["--chunks", str(chunks), "--vectors", str(vectors), "--out", str(index_dir)]
                 + (["--force"] if args.force else [])
             )
         if args.force or not (bm25_dir / BM25_MANIFEST).is_file():
