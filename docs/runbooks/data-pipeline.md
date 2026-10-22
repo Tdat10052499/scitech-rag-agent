@@ -3,7 +3,7 @@
 Task: W4-D5-FAO-1 (draft; final version W6-D3-FAO-1 adds incremental ingestion, scaling notes and more troubleshooting).
 Commands: `pipelines/AGENTS.md` (every option) and `pipelines/README.md` (setup, what runs where, the Kaggle recipes). Decisions: ADR 0003 (corpus), ADR 0005 (engine), ADR 0007 (embedding model), ADR 0008 (incremental ingestion).
 
-> Status: draft written on 2026-10-20 (D07). `run-all` is in review (#92) and the README's Kaggle recipes are on #60. Times are the measured ones from the FAO journal (W2, W3) unless marked otherwise.
+> Status: draft written on 2026-10-20 (D07), updated on 2026-10-22 (D09). `run-all` is merged (#92), the README's Kaggle recipes are on #60, and `incremental-run` is in review (#76). Times are the measured ones from the FAO journal (W2, W3) unless marked otherwise.
 
 ## 1. Before you start
 - **Python environment:** `make setup`, then `PYTHONPATH=pipelines/src:agent/src` from the repository root (PowerShell: `$env:PYTHONPATH = "pipelines/src;agent/src"`). `load` and `run-all` need `agent/src` for DAT's Qdrant store.
@@ -21,7 +21,7 @@ Commands: `pipelines/AGENTS.md` (every option) and `pipelines/README.md` (setup,
 | chunks `data/processed/chunks/` | 101 MB | |
 | vectors `data/processed/embeddings/` | 198 MB (bge-small), 385 MB (bge-base) | |
 | BM25 index `data/index/bm25/` | 177.2 MB | needed by the default retriever (hybrid) |
-| Qdrant storage | not measured yet | index profile, W3-D5-FAO-1 |
+| Qdrant storage | 609.9 MiB | the `scitech_chunks` collection (bge-small, 121,926 points); container memory 280.7 MiB (`docker stats`, includes page cache). Index profile, #68 |
 
 Plan for **at least 8 GB free** for a full rebuild from the download. On a small `C:` drive, point `DATA_DIR` (or a junction from `data\raw`) at another disk. On D02, the C: drive filled up while the zip was still there.
 
@@ -53,8 +53,9 @@ Measured times for the full corpus:
 | chunk | 14-18 s | Kaggle or laptop |
 | embed | 14.4 min (bge-small), 43.8 min (bge-base) | Kaggle T4 |
 | load | 106.3 s (121,926 bge-small points, 4-17 s per part) | Kaggle CPU notebook, Qdrant 1.19.2 |
-| load | 201.7 s (121,926 bge-small points, 10-20 s per part) | FAO's Windows laptop, Qdrant 1.19.2 in Docker (2026-10-21) |
+| load | 135.2 s (121,926 bge-small points, 7.6-11.2 s per part); a dry run earlier the same evening took 201.7 s | FAO's Windows laptop, Qdrant 1.19.2 in Docker (2026-10-21) |
 | BM25 build | 15.8-20.3 s, peak working set 1,184 MB | DAT's Windows laptop |
+| BM25 build | 36.7 s | FAO's Windows laptop (2026-10-21) |
 
 `run-all` writes each step's output to `<data-dir>/logs/run-all-<UTC time>/<nn>-<step>.log` and a summary `run-all.json` (exit code and seconds per step). Keep the folder of the run you report on.
 
@@ -81,6 +82,7 @@ The counts must chain, for snapshot 307:
 - `validate --golden evaluation/golden_set/golden.jsonl` checks the documents and that every golden `relevant_doc_ids` exists. `run-all` runs it on full runs.
 - `pipelines/scripts/golden_coverage.py --chunks data/processed/chunks --qdrant` checks the same ids against the chunks and the loaded collection (#69). Run it with `PYTHONPATH=pipelines/src` (PowerShell: `$env:PYTHONPATH = "pipelines/src"`). On 2026-10-20 all 57 doc ids of the 47 items (gs-001 to gs-045, gs-u01, gs-u02; golden set of #88) were in the chunks.
 - `_load_manifest.json` holds `index_snapshot`, the id that evaluation runs cite.
+- Search speed, filters, size on disk and memory: `pipelines/scripts/index_profile.py` (#68; usage and the 2026-10-21 numbers in `pipelines/reports/index_profile.md`). On FAO's laptop, p95 was 88 ms for dense, 14 ms for BM25 and 149 ms for hybrid.
 - A quick look at the store: `PYTHONPATH=agent/src python -c "from scitech_agent.store import QdrantStore; s = QdrantStore.from_env(); print(s.count())"`.
 
 ## 5. Common failures and fixes
@@ -99,9 +101,23 @@ The counts must chain, for snapshot 307:
 | `load`: "other settings" | Resume state from a load with other vectors, chunks or collection | `--force`, or another `--out` |
 | `load`: "load check failed ... holds N points" | Points from an older load in the same collection | Recreate the collection (another `QDRANT_COLLECTION`, or delete it), then `load --force` |
 | Dense recall lower than ADR 0007 through Qdrant | `QDRANT_SEARCH_EXACT=false`: approximate HNSW search, where gs-016 drops out (#87) | Check that `QDRANT_SEARCH_EXACT` is not `false`; exact search is the default since #101 |
+| `load` (or its tests) fails with an `AttributeError` about `fetch_arrow_table` | duckdb 2.0 removed `fetch_arrow_table`, and a fresh `make setup` installs 2.0 | Fixed in #107 (`to_arrow_table` first); on an older branch, merge `main` |
+| `ModuleNotFoundError: scitech_agent.retrieval.hybrid` (evaluation configs, `index_profile.py`) | A branch from before the hybrid retriever (#82, #101) | Merge `main` into the branch, or run from `main` |
+| `docker start qdrant`: "No such container: qdrant" | The container belongs to docker compose and is named `<folder>-qdrant-1` | `docker compose up -d` (or `make up`) from the repository root |
+| A golden set or run file copied from Windows has another sha256 than on Linux | Git on Windows checks text files out with CRLF line ends | Compare files with LF line ends, or run on one OS; the run file records the sha256 of the bytes it read |
 | Kaggle notebook: data of a previous run gone | `/kaggle/working` lasts only for the session | Keep inputs as Kaggle datasets; don't use *Save Version* with Qdrant's storage in `/kaggle/working` |
 
-## 6. Not covered yet
-- Incremental ingestion (ADR 0008, W5): the steps for new records since the watermark.
-- Qdrant storage size and RAM (W3-D5-FAO-1) and the scaling numbers (W6-D2-FAO-1).
+## 6. New records since the snapshot (in review, #76)
+`incremental-run` (ADR 0008) adds the arXiv records published since the watermark `<data-dir>/state/incremental.json` to a collection:
+```bash
+python -m scitech_pipelines incremental-run --start 2026-10-10 --model "$EMBEDDING_MODEL"   # first run only
+python -m scitech_pipelines incremental-run --model "$EMBEDDING_MODEL"                      # later runs
+```
+- It needs Java (`clean`), sentence-transformers (`embed`) and the Qdrant it loads into, on one machine.
+- A paper harvested again replaces all its old chunks, and the watermark moves only after a load whose count check passed. A failed run is simply run again.
+- Never point it at the frozen evaluation collection (`--collection`).
+- The live test, the numbers and the schedule come with W5-D4-FAO-1.
+
+## 7. Not covered yet
+- The scaling numbers at 10%, 50% and 100% of the corpus (W6-D2-FAO-1, `pipelines/scripts/scaling.py` on #96).
 - Restoring a frozen snapshot for the final evaluation (W6-D4-FAO-1).
