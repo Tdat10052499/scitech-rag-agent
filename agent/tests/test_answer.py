@@ -141,3 +141,37 @@ def test_answer_history_turns_zero_sends_no_conversation() -> None:
 def test_split_fragments_of_a_cleaned_answer_rejoin() -> None:
     text = clean_citations("A [1, 9]. B [3].", 3)
     assert "".join(split_fragments(text)) == text == "A [1]. B [3]."
+
+
+def test_manual_check_writes_markdown(monkeypatch, tmp_path, capsys) -> None:
+    import scitech_agent.llm as llm_module
+    import scitech_agent.retrieval.hybrid as hybrid
+    from scitech_agent.answer import main
+
+    class DescribedFakeLLM(FakeLLM):
+        def describe(self) -> dict:
+            return {"model": self.model}
+
+        def __enter__(self) -> DescribedFakeLLM:
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            return None
+
+    golden = tmp_path / "golden.jsonl"
+    golden.write_text(
+        '{"id": "gs-001", "question": "Transformer attention?", "type": "factual",'
+        ' "relevant_doc_ids": ["t"]}\n'
+        '{"id": "gs-002", "question": "Other?", "type": "factual", "relevant_doc_ids": []}\n',
+        encoding="utf-8",
+    )
+    fake = DescribedFakeLLM(default="Attention [1][9].")
+    monkeypatch.setattr(llm_module.OpenAICompatibleLLM, "from_env", staticmethod(lambda: fake))
+    monkeypatch.setattr(hybrid, "retriever_from_env", lambda: InMemoryRetriever(CHUNKS))
+    out = tmp_path / "run.md"
+
+    assert main(["--golden", str(golden), "--ids", "gs-001", "--out", str(out)]) == 0
+    text = out.read_text(encoding="utf-8")
+    assert text.strip() == capsys.readouterr().out.strip()
+    assert "### gs-001 (factual" in text and "**A:** Attention [1].\n" in text
+    assert "| 1 | `t#0` | yes | yes |" in text

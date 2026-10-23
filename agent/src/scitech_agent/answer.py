@@ -220,6 +220,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     from scitech_agent.llm import LLMConfigError, OpenAICompatibleLLM
     from scitech_agent.retrieval.hybrid import retriever_from_env
 
+    if hasattr(sys.stdout, "reconfigure"):  # a Windows console may not encode every answer
+        sys.stdout.reconfigure(errors="replace")
     parser = argparse.ArgumentParser(
         prog="python -m scitech_agent.answer",
         description="Answer golden questions with the configured retriever (RETRIEVER, "
@@ -228,7 +230,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--golden", default="evaluation/golden_set/golden.jsonl")
     parser.add_argument("-n", type=int, default=5, help="first N items (ignored with --ids)")
     parser.add_argument("--ids", default="", help="comma-separated golden ids, e.g. gs-001,gs-007")
+    parser.add_argument("--out", default="", help="also write the Markdown to this file (UTF-8)")
     args = parser.parse_args(argv)
+    lines: list[str] = []
+
+    def emit(line: str = "") -> None:
+        lines.append(line)
+        print(line, flush=True)
+
     items = _golden(args.golden, [i for i in args.ids.split(",") if i], args.n)
     try:
         llm = OpenAICompatibleLLM.from_env()
@@ -236,7 +245,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     config = AgentConfig.from_env()
-    print(f"Model: `{llm.describe()}`; config: `{config}`\n")
+    emit(f"Model: `{llm.describe()}`; config: `{config}`\n")
     failures = 0
     with llm:
         agent = Agent(retriever_from_env(), llm, config)
@@ -252,23 +261,26 @@ def main(argv: Sequence[str] | None = None) -> int:
                         parts.append(event.text)
             except AgentError as exc:
                 failures += 1
-                print(f"### {item['id']}: error `{exc.code}`\n")
+                emit(f"### {item['id']}: error `{exc.code}`\n")
                 continue
             answer = "".join(parts)
             relevant = set(item.get("relevant_doc_ids", []))
-            print(
+            emit(
                 f"### {item['id']} ({item.get('type', '')}, {time.perf_counter() - started:.1f} s)"
             )
-            print(f"**Q:** {item['question']}\n")
-            print(f"**A:** {answer}\n")
-            print("| [n] | chunk_id | cited | in relevant_doc_ids |")
-            print("|---|---|---|---|")
+            emit(f"**Q:** {item['question']}\n")
+            emit(f"**A:** {answer}\n")
+            emit("| [n] | chunk_id | cited | in relevant_doc_ids |")
+            emit("|---|---|---|---|")
             cited = {c.number for c in parse_citations(answer, evidence)}
             for n, chunk in enumerate(evidence, start=1):
                 mark = "yes" if n in cited else ""
                 rel = "yes" if chunk.doc_id in relevant else ""
-                print(f"| {n} | `{chunk.chunk_id}` | {mark} | {rel} |")
-            print()
+                emit(f"| {n} | `{chunk.chunk_id}` | {mark} | {rel} |")
+            emit()
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
     return 1 if failures else 0
 
 
