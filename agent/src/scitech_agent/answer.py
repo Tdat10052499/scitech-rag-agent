@@ -144,6 +144,11 @@ def strip_citations(text: str) -> str:
     return _MARKER.sub("", text)
 
 
+def answer_words(text: str) -> int:
+    """Words of `text` outside citation markers; 0 means the answer is only `[n]` markers."""
+    return len(re.findall(r"\w+", strip_citations(text)))
+
+
 # --- Prompt building --------------------------------------------------------------------------
 
 
@@ -270,6 +275,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             emit(f"**Q:** {item['question']}\n")
             emit(f"**A:** {answer}\n")
+            words = answer_words(answer)
+            flag = "" if words else " (answer is only markers)"
+            emit(f"Words outside markers: {words}{flag}\n")
             emit("| [n] | chunk_id | cited | in relevant_doc_ids |")
             emit("|---|---|---|---|")
             cited = {c.number for c in parse_citations(answer, evidence)}

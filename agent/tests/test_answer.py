@@ -9,6 +9,7 @@ from scitech_agent.answer import (
     Citation,
     CitationFilter,
     answer_user_message,
+    answer_words,
     clean_citations,
     parse_citations,
     strip_citations,
@@ -175,3 +176,8 @@ def test_manual_check_writes_markdown(monkeypatch, tmp_path, capsys) -> None:
     assert text.strip() == capsys.readouterr().out.strip()
     assert "### gs-001 (factual" in text and "**A:** Attention [1].\n" in text
     assert "| 1 | `t#0` | yes | yes |" in text
+
+
+def test_answer_words_counts_text_outside_markers() -> None:
+    assert answer_words("[4]") == 0 and answer_words(" [1][2, 3]\n") == 0
+    assert answer_words("No, more is not always better [4].") == 6

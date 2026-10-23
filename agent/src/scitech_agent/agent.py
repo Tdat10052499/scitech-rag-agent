@@ -24,6 +24,7 @@ from scitech_agent.answer import (
     CitationFilter,
     answer_messages,
     answer_user_message,
+    answer_words,
     format_sources,
     parse_citations,
 )
@@ -142,6 +143,8 @@ class Agent:
         cited = tuple(c.chunk_id for c in parse_citations(answer, evidence))
         if not cited:
             logger.info("answer cites no source")
+        if not answer_words(answer):
+            logger.warning("answer has no words outside citation markers")
         questions = self.followups(message, answer, evidence)
         if questions:
             yield FollowupsEvent(questions)
