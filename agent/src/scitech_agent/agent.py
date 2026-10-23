@@ -4,7 +4,8 @@
 step is a small method so later tasks can replace it: query rewriting with the history (W4),
 hybrid retrieval and reranking (W4), the evidence check. The answer and the follow-ups are two LLM
 calls per question; if no chunk reaches `RETRIEVAL_MIN_SCORE` the agent answers that the evidence
-is insufficient without calling the LLM (agent/AGENTS.md).
+is insufficient without calling the LLM (agent/AGENTS.md). The answer prompt and its citation
+checks live in `scitech_agent.answer` (W4-D1-DAT-1).
 """
 
 from __future__ import annotations
@@ -19,6 +20,13 @@ from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from scitech_agent.answer import (
+    CitationFilter,
+    answer_messages,
+    answer_user_message,
+    format_sources,
+    parse_citations,
+)
 from scitech_agent.events import (
     AgentError,
     AgentEvent,
@@ -31,6 +39,17 @@ from scitech_agent.llm import LLMClient, LLMError, Message, split_fragments
 from scitech_agent.retrieval import Retriever, ScoredChunk
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "Agent",
+    "AgentConfig",
+    "INSUFFICIENT_ANSWER",
+    "Turn",
+    "answer_user_message",
+    "format_sources",
+    "load_prompt",
+    "parse_followups",
+]
 
 PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
 INSUFFICIENT_ANSWER = (
@@ -57,6 +76,7 @@ class AgentConfig:
     min_score: float = 0.0
     max_followups: int = 3
     history_turns: int = 10  # turns kept per session for query rewriting
+    answer_history_turns: int = 3  # latest turns shown to the answer prompt
     temperature: float = 0.0
     answer_max_tokens: int = 512
     followups_max_tokens: int = 128
@@ -81,6 +101,7 @@ class AgentConfig:
 class Turn:
     question: str
     answer: str
+    citations: tuple[str, ...] = ()  # chunk_ids cited by the answer, in order of first use
 
 
 class Agent:
@@ -99,7 +120,8 @@ class Agent:
 
     def run(self, session_id: str, message: str) -> Iterator[AgentEvent]:
         """Answer `message` in the conversation `session_id`. Raises `AgentError` on failure."""
-        query = self.rewrite(message, self.history(session_id))
+        history = self.history(session_id)
+        query = self.rewrite(message, history)
         evidence = self.check_evidence(self.retrieve(query))
         message_id = f"msg-{uuid.uuid4().hex[:12]}"
 
@@ -113,14 +135,17 @@ class Agent:
 
         yield SourcesEvent(evidence)
         parts: list[str] = []
-        for fragment in self.answer(message, evidence):
+        for fragment in self.answer(message, evidence, history):
             parts.append(fragment)
             yield TokenEvent(fragment)
         answer = "".join(parts)
+        cited = tuple(c.chunk_id for c in parse_citations(answer, evidence))
+        if not cited:
+            logger.info("answer cites no source")
         questions = self.followups(message, answer, evidence)
         if questions:
             yield FollowupsEvent(questions)
-        self._remember(session_id, Turn(message, answer))
+        self._remember(session_id, Turn(message, answer, cited))
         yield DoneEvent(message_id=message_id)
 
     def rewrite(self, message: str, history: list[Turn]) -> str:
@@ -138,16 +163,20 @@ class Agent:
         """Chunks with `score >= min_score`, best first; empty means insufficient evidence."""
         return sorted((h for h in hits if h.score >= self.config.min_score), key=lambda h: -h.score)
 
-    def answer(self, question: str, evidence: list[ScoredChunk]) -> Iterator[str]:
-        messages = [
-            {"role": "system", "content": self.answer_prompt},
-            {"role": "user", "content": answer_user_message(question, evidence)},
-        ]
+    def answer(
+        self, question: str, evidence: list[ScoredChunk], history: list[Turn] | None = None
+    ) -> Iterator[str]:
+        """Streamed answer; markers that cite no source are dropped from it (`CitationFilter`)."""
+        keep = self.config.answer_history_turns
+        recent = (history or [])[-keep:] if keep > 0 else []
+        messages = answer_messages(self.answer_prompt, question, evidence, recent)
         try:
-            yield from self.llm.stream_chat(
-                messages,
-                temperature=self.config.temperature,
-                max_tokens=self.config.answer_max_tokens,
+            yield from CitationFilter(len(evidence)).filter(
+                self.llm.stream_chat(
+                    messages,
+                    temperature=self.config.temperature,
+                    max_tokens=self.config.answer_max_tokens,
+                )
             )
         except LLMError as exc:
             logger.warning("answer failed: %s (%s)", exc, exc.code)
@@ -187,25 +216,6 @@ class Agent:
 
 
 # --- Prompt building --------------------------------------------------------------------------
-
-
-def _inside_source(text: str) -> str:
-    """Chunk text cannot close or open a `<source>` block itself."""
-    return re.sub(r"<(/?source)", r"&lt;\1", text, flags=re.IGNORECASE)
-
-
-def format_sources(evidence: list[ScoredChunk]) -> str:
-    """Numbered sources; the numbers are the citation markers `[n]` of the answer."""
-    blocks = [
-        f'<source id="{n}">\nTitle: {_inside_source(chunk.title)}\n'
-        f"Text: {_inside_source(chunk.text)}\n</source>"
-        for n, chunk in enumerate(evidence, start=1)
-    ]
-    return "\n\n".join(blocks)
-
-
-def answer_user_message(question: str, evidence: list[ScoredChunk]) -> str:
-    return f"Sources:\n\n{format_sources(evidence)}\n\nQuestion: {question}"
 
 
 def followups_user_message(question: str, answer: str, evidence: list[ScoredChunk]) -> str:
