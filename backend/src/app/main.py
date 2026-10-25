@@ -2,28 +2,85 @@
 
 from __future__ import annotations
 
+import logging
 import os
+from collections.abc import AsyncIterator, Iterator, Mapping
+from contextlib import asynccontextmanager
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from scitech_agent import events as agent_events
 from scitech_agent.demo import demo_agent
+from scitech_agent.factory import agent_from_env
 
 from .agent_adapter import AgentAdapter
-from .agent_port import ChatAgent
-from .schemas import ChatRequest
+from .agent_port import AgentError, AgentEvent, ChatAgent
+from .schemas import ChatRequest, ErrorCode
 from .sse import chat_events
+
+logger = logging.getLogger(__name__)
+
+AGENT_MODES = ("real", "demo")
+
+
+def agent_mode(env: Mapping[str, str] | None = None) -> str:
+    """`AGENT_MODE`: `real` (configured retriever and LLM; the default) or `demo` (offline)."""
+    env = os.environ if env is None else env
+    mode = (env.get("AGENT_MODE") or "real").strip().lower()
+    if mode not in AGENT_MODES:
+        raise ValueError(f"AGENT_MODE must be one of {', '.join(AGENT_MODES)}, got {mode!r}")
+    return mode
+
+
+class UnavailableAgent:
+    """Stands in for an agent that could not be built: each request gets one `error` event."""
+
+    def __init__(self, code: ErrorCode, message: str) -> None:
+        self.code: ErrorCode = code
+        self.message = message
+
+    def run(self, session_id: str, message: str) -> Iterator[AgentEvent]:
+        raise AgentError(self.code, self.message)
+        yield  # a generator, like every ChatAgent
 
 
 @lru_cache(maxsize=1)
-def get_agent() -> ChatAgent:
-    """Agent used by `/chat`: the real pipeline with the offline demo retriever and LLM, until
-    the index and the LLM server are wired in (W3). One instance, so session history persists.
-    Tests override it."""
+def _demo_agent() -> ChatAgent:
     return AgentAdapter(demo_agent())
+
+
+@lru_cache(maxsize=1)
+def _real_agent() -> ChatAgent:
+    return AgentAdapter(agent_from_env())
+
+
+def get_agent() -> ChatAgent:
+    """Agent used by `/chat`, chosen by `AGENT_MODE`. One instance per mode, so session history
+    persists. If the real agent cannot be built, the request gets an `error` event and the next
+    request tries again (a failure is not cached). Tests override it."""
+    if agent_mode() == "demo":
+        return _demo_agent()
+    try:
+        return _real_agent()
+    except agent_events.AgentError as exc:
+        return UnavailableAgent(cast(ErrorCode, exc.code), exc.message)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Check `AGENT_MODE` and build the agent at startup, so a wrong setting shows in the log
+    before the first question (the server still starts, and `/chat` reports the error)."""
+    mode = agent_mode()
+    agent = get_agent()
+    if isinstance(agent, UnavailableAgent):
+        logger.error("AGENT_MODE=%s: agent not available (%s), see the log above", mode, agent.code)
+    else:
+        logger.info("AGENT_MODE=%s: agent ready", mode)
+    yield
 
 
 def cors_origins_from_env() -> list[str]:
@@ -32,7 +89,7 @@ def cors_origins_from_env() -> list[str]:
 
 
 def create_app(cors_origins: list[str] | None = None) -> FastAPI:
-    app = FastAPI(title="SciTech RAG Agent", version="0.2.1")
+    app = FastAPI(title="SciTech RAG Agent", version="0.2.1", lifespan=lifespan)
 
     origins = cors_origins_from_env() if cors_origins is None else cors_origins
     if origins:
