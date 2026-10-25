@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 import threading
 import uuid
 from collections import OrderedDict
@@ -36,6 +35,7 @@ from scitech_agent.events import (
     SourcesEvent,
     TokenEvent,
 )
+from scitech_agent.followups import followups_user_message, parse_followups
 from scitech_agent.llm import LLMClient, LLMError, Message, split_fragments
 from scitech_agent.retrieval import Retriever, ScoredChunk
 
@@ -49,7 +49,6 @@ __all__ = [
     "answer_user_message",
     "format_sources",
     "load_prompt",
-    "parse_followups",
 ]
 
 PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
@@ -75,12 +74,12 @@ def load_prompt(name: str) -> str:
 class AgentConfig:
     top_k: int = 5
     min_score: float = 0.0
-    max_followups: int = 3
+    max_followups: int = 4  # contract: followups has at most 4 questions
     history_turns: int = 10  # turns kept per session for query rewriting
     answer_history_turns: int = 3  # latest turns shown to the answer prompt
     temperature: float = 0.0
     answer_max_tokens: int = 512
-    followups_max_tokens: int = 128
+    followups_max_tokens: int = 192
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> AgentConfig:
@@ -145,7 +144,9 @@ class Agent:
             logger.info("answer cites no source")
         if not answer_words(answer):
             logger.warning("answer has no words outside citation markers")
-        questions = self.followups(message, answer, evidence)
+        # An answer that cites nothing was not supported by the sources (or says so): follow-ups
+        # grounded in those sources would point the user to more of the same.
+        questions = self.followups(message, answer, evidence, history) if cited else []
         if questions:
             yield FollowupsEvent(questions)
         self._remember(session_id, Turn(message, answer, cited))
@@ -185,11 +186,23 @@ class Agent:
             logger.warning("answer failed: %s (%s)", exc, exc.code)
             raise AgentError(exc.code, ERROR_MESSAGES[exc.code]) from exc
 
-    def followups(self, question: str, answer: str, evidence: list[ScoredChunk]) -> list[str]:
-        """Suggested next questions. A failure here only drops them: the answer is already out."""
+    def followups(
+        self,
+        question: str,
+        answer: str,
+        evidence: list[ScoredChunk],
+        history: list[Turn] | None = None,
+    ) -> list[str]:
+        """Suggested next questions (`scitech_agent.followups`), never one already asked in the
+        session. A failure here only drops them: the answer is already out."""
+        history = history or []
+        keep = self.config.answer_history_turns
+        recent = history[-keep:] if keep > 0 else []
+        limit = self.config.max_followups
+        user = followups_user_message(question, answer, evidence, recent, limit)
         messages: list[Message] = [
             {"role": "system", "content": self.followups_prompt},
-            {"role": "user", "content": followups_user_message(question, answer, evidence)},
+            {"role": "user", "content": user},
         ]
         try:
             text = self.llm.chat(
@@ -200,7 +213,8 @@ class Agent:
         except LLMError as exc:
             logger.warning("follow-ups skipped: %s (%s)", exc, exc.code)
             return []
-        return parse_followups(text, self.config.max_followups, exclude=question)
+        asked = [turn.question for turn in history] + [question]
+        return parse_followups(text, limit, asked)
 
     # --- Sessions -------------------------------------------------------------------------------
 
@@ -216,27 +230,3 @@ class Agent:
             self._history[session_id] = turns[-keep:] if keep > 0 else []
             while len(self._history) > MAX_SESSIONS:  # in-memory only: drop the oldest sessions
                 self._history.popitem(last=False)
-
-
-# --- Prompt building --------------------------------------------------------------------------
-
-
-def followups_user_message(question: str, answer: str, evidence: list[ScoredChunk]) -> str:
-    titles = "\n".join(f"- {chunk.title}" for chunk in evidence)
-    return f"Question: {question}\n\nAnswer: {answer}\n\nSource titles:\n{titles}"
-
-
-_BULLET = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s*")
-
-
-def parse_followups(text: str, limit: int, exclude: str = "") -> list[str]:
-    """One question per line: strip bullets and numbering, drop blanks, duplicates and a repeat
-    of the user's question, keep at most `limit`."""
-    seen = {exclude.strip().lower()} if exclude else set()
-    questions = []
-    for line in text.splitlines():
-        question = _BULLET.sub("", line).strip().strip('"').strip()
-        if question and question.lower() not in seen:
-            seen.add(question.lower())
-            questions.append(question)
-    return questions[:limit]

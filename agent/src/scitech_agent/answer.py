@@ -221,7 +221,7 @@ def _golden(path: str, ids: Sequence[str], limit: int) -> list[dict]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     from scitech_agent.agent import Agent, AgentConfig
-    from scitech_agent.events import AgentError, SourcesEvent, TokenEvent
+    from scitech_agent.events import AgentError, FollowupsEvent, SourcesEvent, TokenEvent
     from scitech_agent.llm import LLMConfigError, OpenAICompatibleLLM
     from scitech_agent.retrieval.hybrid import retriever_from_env
 
@@ -258,12 +258,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             started = time.perf_counter()
             evidence: list[ScoredChunk] = []
             parts: list[str] = []
+            followups: list[str] = []
             try:
                 for event in agent.run(item["id"], item["question"]):
                     if isinstance(event, SourcesEvent):
                         evidence = event.chunks
                     elif isinstance(event, TokenEvent):
                         parts.append(event.text)
+                    elif isinstance(event, FollowupsEvent):
+                        followups = list(event.questions)
             except AgentError as exc:
                 failures += 1
                 emit(f"### {item['id']}: error `{exc.code}`\n")
@@ -278,6 +281,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             words = answer_words(answer)
             flag = "" if words else " (answer is only markers)"
             emit(f"Words outside markers: {words}{flag}\n")
+            listed = "".join(f"\n- {q}" for q in followups) or " none"
+            emit(f"**Follow-ups:**{listed}\n")
             emit("| [n] | chunk_id | cited | in relevant_doc_ids |")
             emit("|---|---|---|---|")
             cited = {c.number for c in parse_citations(answer, evidence)}

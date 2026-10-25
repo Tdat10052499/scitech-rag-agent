@@ -115,7 +115,8 @@ def test_agent_streams_only_valid_citations_and_remembers_cited_chunks() -> None
     assert text == "Attention [1]. BERT pre-trains an encoder [2][1]."
     first, second = (c.chunk_id for c in events[0].chunks)
     assert agent.history("s1") == [Turn("Transformer attention BERT", text, (first, second))]
-    assert "Answer: Attention [1]. BERT" in llm.calls[1].messages[1]["content"]
+    followups_user = llm.calls[1].messages[1]["content"]  # filtered answer, markers removed
+    assert "<answer>\nAttention. BERT pre-trains an encoder.\n</answer>" in followups_user
 
 
 def test_answer_prompt_gets_the_latest_turns_without_their_markers() -> None:
@@ -166,7 +167,7 @@ def test_manual_check_writes_markdown(monkeypatch, tmp_path, capsys) -> None:
         '{"id": "gs-002", "question": "Other?", "type": "factual", "relevant_doc_ids": []}\n',
         encoding="utf-8",
     )
-    fake = DescribedFakeLLM(default="Attention [1][9].")
+    fake = DescribedFakeLLM(["Attention [1][9].", '["Why attention?"]'])
     monkeypatch.setattr(llm_module.OpenAICompatibleLLM, "from_env", staticmethod(lambda: fake))
     monkeypatch.setattr(hybrid, "retriever_from_env", lambda: InMemoryRetriever(CHUNKS))
     out = tmp_path / "run.md"
@@ -176,6 +177,7 @@ def test_manual_check_writes_markdown(monkeypatch, tmp_path, capsys) -> None:
     assert text.strip() == capsys.readouterr().out.strip()
     assert "### gs-001 (factual" in text and "**A:** Attention [1].\n" in text
     assert "| 1 | `t#0` | yes | yes |" in text
+    assert "**Follow-ups:**\n- Why attention?\n" in text
 
 
 def test_answer_words_counts_text_outside_markers() -> None:
