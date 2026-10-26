@@ -34,7 +34,10 @@ EVIDENCE = [chunk(1), chunk(2), chunk(3)]
         ("A [1-3].", "A [1][2][3]."),
         ("A [1–2].", "A [1][2]."),
         ("A [9]. B [2].", "A. B [2]."),
-        ("A [0][1].", "A[1]."),
+        ("A [0][1].", "A [0][1]."),  # [0] is never a source number: left as text
+        ("Scores are normalised to [0, 1] [2].", "Scores are normalised to [0, 1] [2]."),
+        ("Values in [-1, 1] and [0-3] stay [3].", "Values in [-1, 1] and [0-3] stay [3]."),
+        ("the interval [1, 5] holds", "the interval [1] holds"),  # ambiguous: kept as citation
         ("A [ 2 , 7 ].", "A [2]."),
         ("A [1, 1].", "A [1]."),
         ("Use x[0] and [see 1].", "Use x[0] and [see 1]."),
@@ -46,7 +49,7 @@ def test_clean_citations(text: str, expected: str) -> None:
 
 
 def test_parse_citations_maps_numbers_to_chunk_ids_in_order_of_first_use() -> None:
-    answer = "B [2]. A [1][2]. Ranges [1-3], bad [4] and [0], code x[3]."
+    answer = "B [2]. A [1][2]. Ranges [1-3], bad [4], [0] and [0, 3], code x[3]."
     assert parse_citations(answer, EVIDENCE) == [
         Citation(2, "d2#0"),
         Citation(1, "d1#0"),
@@ -63,6 +66,7 @@ def test_parse_citations_maps_numbers_to_chunk_ids_in_order_of_first_use() -> No
         "Ends with an open marker [1",
         "Spaces   [4]   and [2]\nnew line [3]",
         "[1] starts. [8] next.",
+        "Normalised to [0, 1] [2], ranges [0-3] and [1, 9].",
     ],
 )
 @pytest.mark.parametrize("size", [1, 2, 3, 7, 100])
@@ -86,6 +90,7 @@ def test_filter_holds_back_only_a_short_tail() -> None:
 
 def test_strip_citations() -> None:
     assert strip_citations("A [1]. B [2, 3] and [1-2].") == "A. B and."
+    assert strip_citations("In [0, 1] [2].") == "In [0, 1]."
 
 
 def test_user_message_has_delimited_conversation_and_sources() -> None:

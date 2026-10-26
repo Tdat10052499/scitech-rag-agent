@@ -9,7 +9,8 @@ position of the chunk in `sources` (api.openapi.yaml). Two helpers enforce that 
   holds back at most a short unfinished marker between fragments.
 - `parse_citations` maps the markers of the final text to `chunk_id`s.
 
-A marker directly after a letter, digit or `_` (`x[0]`, code) is text, not a citation.
+A marker directly after a letter, digit or `_` (`x[0]`, code) is text, not a citation, and so is
+a marker with a 0 (`[0, 1]`, an interval).
 
 Manual check with the real retriever and LLM (never in tests):
 `python -m scitech_agent.answer --golden evaluation/golden_set/golden.jsonl -n 5` prints, per
@@ -63,9 +64,17 @@ def _numbers(group: str) -> list[int]:
     return numbers
 
 
+def _is_citation(match: re.Match[str], before: str) -> bool:
+    """A marker right after a letter, digit or `_` (`x[0]`) is text, and so is one with a 0
+    (`[0, 1]`, `[0]`: an interval or index, never a source number)."""
+    if _WORD_CHAR.match(before):
+        return False
+    return all(int(b) != 0 for b in re.findall(r"\d+", match.group(2)))
+
+
 def _rewrite(match: re.Match[str], count: int, before: str) -> str:
     """Valid numbers of one marker as `[a][b]`; nothing (spaces included) when none is valid."""
-    if _WORD_CHAR.match(before):
+    if not _is_citation(match, before):
         return match.group(0)
     valid = list(dict.fromkeys(n for n in _numbers(match.group(2)) if 1 <= n <= count))
     if not valid:
@@ -131,7 +140,7 @@ def parse_citations(answer: str, evidence: Sequence[ScoredChunk]) -> list[Citati
     seen: dict[int, Citation] = {}
     for match in _MARKER.finditer(answer):
         start = match.start() + len(match.group(1))
-        if start > 0 and _WORD_CHAR.match(answer[start - 1]):
+        if not _is_citation(match, answer[start - 1] if start > 0 else ""):
             continue
         for n in _numbers(match.group(2)):
             if 1 <= n <= len(evidence) and n not in seen:
@@ -141,7 +150,12 @@ def parse_citations(answer: str, evidence: Sequence[ScoredChunk]) -> list[Citati
 
 def strip_citations(text: str) -> str:
     """`text` without citation markers: an earlier answer's numbers refer to other sources."""
-    return _MARKER.sub("", text)
+
+    def strip(match: re.Match[str]) -> str:
+        start = match.start() + len(match.group(1))
+        return "" if _is_citation(match, text[start - 1] if start > 0 else "") else match.group(0)
+
+    return _MARKER.sub(strip, text)
 
 
 def answer_words(text: str) -> int:
