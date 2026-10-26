@@ -34,7 +34,10 @@ EVIDENCE = [chunk(1), chunk(2), chunk(3)]
         ("A [1-3].", "A [1][2][3]."),
         ("A [1–2].", "A [1][2]."),
         ("A [9]. B [2].", "A. B [2]."),
-        ("A [0][1].", "A[1]."),
+        ("A [0][1].", "A [0][1]."),  # [0] is never a source number: left as text
+        ("Scores are normalised to [0, 1] [2].", "Scores are normalised to [0, 1] [2]."),
+        ("Values in [-1, 1] and [0-3] stay [3].", "Values in [-1, 1] and [0-3] stay [3]."),
+        ("the interval [1, 5] holds", "the interval [1] holds"),  # ambiguous: kept as citation
         ("A [ 2 , 7 ].", "A [2]."),
         ("A [1, 1].", "A [1]."),
         ("Use x[0] and [see 1].", "Use x[0] and [see 1]."),
@@ -46,7 +49,7 @@ def test_clean_citations(text: str, expected: str) -> None:
 
 
 def test_parse_citations_maps_numbers_to_chunk_ids_in_order_of_first_use() -> None:
-    answer = "B [2]. A [1][2]. Ranges [1-3], bad [4] and [0], code x[3]."
+    answer = "B [2]. A [1][2]. Ranges [1-3], bad [4], [0] and [0, 3], code x[3]."
     assert parse_citations(answer, EVIDENCE) == [
         Citation(2, "d2#0"),
         Citation(1, "d1#0"),
@@ -63,6 +66,7 @@ def test_parse_citations_maps_numbers_to_chunk_ids_in_order_of_first_use() -> No
         "Ends with an open marker [1",
         "Spaces   [4]   and [2]\nnew line [3]",
         "[1] starts. [8] next.",
+        "Normalised to [0, 1] [2], ranges [0-3] and [1, 9].",
     ],
 )
 @pytest.mark.parametrize("size", [1, 2, 3, 7, 100])
@@ -86,6 +90,7 @@ def test_filter_holds_back_only_a_short_tail() -> None:
 
 def test_strip_citations() -> None:
     assert strip_citations("A [1]. B [2, 3] and [1-2].") == "A. B and."
+    assert strip_citations("In [0, 1] [2].") == "In [0, 1]."
 
 
 def test_user_message_has_delimited_conversation_and_sources() -> None:
@@ -115,7 +120,8 @@ def test_agent_streams_only_valid_citations_and_remembers_cited_chunks() -> None
     assert text == "Attention [1]. BERT pre-trains an encoder [2][1]."
     first, second = (c.chunk_id for c in events[0].chunks)
     assert agent.history("s1") == [Turn("Transformer attention BERT", text, (first, second))]
-    assert "Answer: Attention [1]. BERT" in llm.calls[1].messages[1]["content"]
+    followups_user = llm.calls[1].messages[1]["content"]  # filtered answer, markers removed
+    assert "<answer>\nAttention. BERT pre-trains an encoder.\n</answer>" in followups_user
 
 
 def test_answer_prompt_gets_the_latest_turns_without_their_markers() -> None:
@@ -166,7 +172,7 @@ def test_manual_check_writes_markdown(monkeypatch, tmp_path, capsys) -> None:
         '{"id": "gs-002", "question": "Other?", "type": "factual", "relevant_doc_ids": []}\n',
         encoding="utf-8",
     )
-    fake = DescribedFakeLLM(default="Attention [1][9].")
+    fake = DescribedFakeLLM(["Attention [1][9].", '["Why attention?"]'])
     monkeypatch.setattr(llm_module.OpenAICompatibleLLM, "from_env", staticmethod(lambda: fake))
     monkeypatch.setattr(hybrid, "retriever_from_env", lambda: InMemoryRetriever(CHUNKS))
     out = tmp_path / "run.md"
@@ -176,6 +182,7 @@ def test_manual_check_writes_markdown(monkeypatch, tmp_path, capsys) -> None:
     assert text.strip() == capsys.readouterr().out.strip()
     assert "### gs-001 (factual" in text and "**A:** Attention [1].\n" in text
     assert "| 1 | `t#0` | yes | yes |" in text
+    assert "**Follow-ups:**\n- Why attention?\n" in text
 
 
 def test_answer_words_counts_text_outside_markers() -> None:

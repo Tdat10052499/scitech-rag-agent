@@ -11,6 +11,7 @@ stub (W2-D2-DAT-1):
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator, Sequence
 from typing import Any
 
@@ -87,7 +88,7 @@ class DemoRetriever:
 
 
 class DemoLLM:
-    """Scripted LLM: `stream_chat` streams `DEMO_ANSWER`, `chat` returns `DEMO_FOLLOWUPS`."""
+    """Scripted LLM: `stream_chat` streams `DEMO_ANSWER`, `chat` returns `DEMO_FOLLOWUPS` (JSON)."""
 
     model = "demo-llm"
 
@@ -97,7 +98,7 @@ class DemoLLM:
         temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: int = DEFAULT_MAX_TOKENS,
     ) -> str:
-        return "\n".join(DEMO_FOLLOWUPS)
+        return json.dumps(DEMO_FOLLOWUPS)
 
     def stream_chat(
         self,
