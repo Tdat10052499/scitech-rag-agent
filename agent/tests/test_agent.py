@@ -198,7 +198,10 @@ def test_history_is_kept_per_session_and_given_to_rewrite() -> None:
     list(agent.run("s2", "Transformer?"))
 
     assert seen[0] == [] and seen[3] == []
-    assert seen[2] == [Turn("Transformer?", "Attention [1]."), Turn("BERT?", "Attention [1].")]
+    assert [(t.question, t.answer) for t in seen[2]] == [
+        ("Transformer?", "Attention [1]."),
+        ("BERT?", "Attention [1]."),
+    ]
     assert [t.question for t in agent.history("s1")] == ["BERT?", "attention?"]
 
 
