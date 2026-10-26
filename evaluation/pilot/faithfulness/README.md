@@ -58,7 +58,9 @@ in the D13 journal entry. Not written yet: the judge runner and the kappa code.
 
 Rule-based, in `scitech_eval/answers.py`, no extra package. A line break ends a sentence; `.`, `!`
 or `?` end one when a capital letter, digit, quote or bracket follows; `[n]` markers right after the
-end mark stay with the sentence before. No split after `e.g.`, `i.e.`, `et al.`, `vs.`, an initial,
+end mark stay with the sentence before. Markers are read as the agent reads them: `[1][2]`,
+`[1, 2]`, `[1; 2]` and `[1-3]` all cite sources; `x[1]`, a marker with a 0 and a range longer than
+20 do not. No split after `e.g.`, `i.e.`, `et al.`, `vs.`, an initial,
 or inside `25.7` or `bge-small-en-v1.5`. Tried on the 30 answers rated for ADR 0006: 69 sentences,
 none cut in a wrong place by eye; two answers consist only of citation markers (`[1][2]`), which
 the protocol labels *not checkable*. Whether another splitter agrees better with the labels is

@@ -64,6 +64,22 @@ def test_cited_numbers_in_order_without_repeats():
     assert cited_numbers("no citation") == []
 
 
+def test_cited_numbers_read_lists_and_ranges_as_the_agent_does():
+    assert cited_numbers("RAG helps [1, 2].") == [1, 2]
+    assert cited_numbers("It fails [1-3] and [4; 2].") == [1, 2, 3, 4]
+    assert cited_numbers("See [2–3].") == [2, 3]
+    # not citations: an index after a word, a 0, a range longer than 20 numbers
+    assert cited_numbers("x[1] and the interval [0, 1].") == []
+    assert cited_numbers("Years [1-40].") == []
+
+
+def test_list_and_range_markers_after_the_end_mark_stay_with_their_sentence():
+    assert split_sentences("It improves recall. [1, 2] The cost is higher. [3-4]") == [
+        "It improves recall. [1, 2]",
+        "The cost is higher. [3-4]",
+    ]
+
+
 def _answers():
     return [
         {

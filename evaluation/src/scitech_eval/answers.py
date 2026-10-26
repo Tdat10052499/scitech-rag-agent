@@ -35,10 +35,14 @@ SHEET_COLUMNS = [
 ]
 CHUNK_COLUMNS = ["answer_id", "n", "chunk_id", "doc_id", "text"]
 
-CITATION = re.compile(r"\[(\d+)\]")
+# The same marker forms the agent parses (`agent/src/scitech_agent/answer.py`): `[1]`, `[1, 2]`,
+# `[1; 2]`, `[1-3]`. A range longer than 20 is not read as a citation, nor is a marker with a 0.
+_ITEM = r"\d+(?:\s*[-–]\s*\d+)?"
+CITATION = re.compile(rf"\[\s*({_ITEM}(?:\s*[,;]\s*{_ITEM})*)\s*\]")
+_MAX_RANGE = 20
 ABBREVIATIONS = {"e.g", "i.e", "et al", "vs", "etc", "fig", "no", "approx", "cf", "eq", "al"}
 _LIST_MARKER = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+")
-_END = re.compile(r"[.!?]+[)\"'”]*(?:\s*\[\d+\])*(?=\s|$)")
+_END = re.compile(rf"[.!?]+[)\"'”]*(?:\s*\[\s*{_ITEM}(?:\s*[,;]\s*{_ITEM})*\s*\])*(?=\s|$)")
 
 
 def _is_boundary(line: str, start: int, end: int) -> bool:
@@ -78,12 +82,24 @@ def split_sentences(text: str) -> list[str]:
 
 
 def cited_numbers(sentence: str) -> list[int]:
-    """The `[n]` markers of a sentence, in order, without repeats."""
+    """The source numbers cited in a sentence, in order, without repeats (`[1, 2]` and `[1-3]`
+    included, as the agent reads them)."""
     seen: list[int] = []
     for match in CITATION.finditer(sentence):
-        n = int(match.group(1))
-        if n not in seen:
-            seen.append(n)
+        if match.start() > 0 and re.match(r"\w", sentence[match.start() - 1]):
+            continue  # `x[1]` is an index, not a citation
+        numbers: list[int] = []
+        for item in re.split(r"\s*[,;]\s*", match.group(1).strip()):
+            bounds = [int(b) for b in re.split(r"\s*[-–]\s*", item)]
+            if len(bounds) == 2 and 0 <= bounds[1] - bounds[0] < _MAX_RANGE:
+                numbers.extend(range(bounds[0], bounds[1] + 1))
+            elif len(bounds) == 1:
+                numbers.append(bounds[0])
+        if 0 in numbers:
+            continue
+        for n in numbers:
+            if n not in seen:
+                seen.append(n)
     return seen
 
 
