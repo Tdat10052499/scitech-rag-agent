@@ -69,6 +69,7 @@ def test_real_mode_streams_from_the_configured_agent(monkeypatch: pytest.MonkeyP
     assert set(names[1:-2]) == {"token"}
     assert first[0][1][0]["chunk_id"] == "2410.18050#0"  # type: ignore[index]
     assert len(built) == 1  # built once at startup, then reused
+    assert built[0].retriever.calls[0] == ("warm-up", 1, None)  # type: ignore[attr-defined]
     assert [t.question for t in built[0].history("s1")] == [
         "How much better is LongRAG?",
         "And on single-hop questions?",

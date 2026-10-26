@@ -225,3 +225,16 @@ def test_history_turns_zero_keeps_no_history() -> None:
     for question in ("Transformer?", "BERT?", "attention?"):
         list(agent.run("s", question))
     assert agent.history("s") == []
+
+
+def test_warm_up_searches_once_and_only_logs_a_failure(caplog: pytest.LogCaptureFixture) -> None:
+    agent, retriever, llm = make_agent()
+    agent.warm_up()
+    assert retriever.calls == [("warm-up", 1, None)] and llm.calls == []
+
+    class Down(InMemoryRetriever):
+        def search(self, query, k, filters=None):
+            raise RetrievalError("Qdrant is down")
+
+    Agent(Down([]), FakeLLM()).warm_up()  # does not raise
+    assert "warm-up search failed: Qdrant is down" in caplog.text

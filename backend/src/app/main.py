@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from collections.abc import AsyncIterator, Iterator, Mapping
@@ -72,13 +73,17 @@ def get_agent() -> ChatAgent:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Check `AGENT_MODE` and build the agent at startup, so a wrong setting shows in the log
-    before the first question (the server still starts, and `/chat` reports the error)."""
+    """Check `AGENT_MODE`, build the agent and, in real mode, warm up its retriever at startup,
+    so a wrong setting shows in the log and the embedding model is loaded before the first
+    question (the server still starts if the build fails, and `/chat` reports the error)."""
     mode = agent_mode()
     agent = get_agent()
     if isinstance(agent, UnavailableAgent):
         logger.error("AGENT_MODE=%s: agent not available (%s), see the log above", mode, agent.code)
     else:
+        if mode == "real" and isinstance(agent, AgentAdapter):
+            # Load the embedding model now (14-15 s on a laptop), not in the first question.
+            await asyncio.to_thread(agent.warm_up)
         logger.info("AGENT_MODE=%s: agent ready", mode)
     yield
 

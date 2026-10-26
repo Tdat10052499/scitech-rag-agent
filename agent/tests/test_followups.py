@@ -155,3 +155,12 @@ def test_max_followups_limits_the_event() -> None:
     events = list(make_agent(llm, max_followups=2).run("s1", "Transformer attention"))
     assert [e.questions for e in events if isinstance(e, FollowupsEvent)] == [["A?", "B?"]]
     assert llm.calls[1].messages[1]["content"].endswith("Write at most 2 follow-up questions.")
+
+
+def test_answer_without_citation_is_marked_insufficient() -> None:
+    from scitech_agent.events import DoneEvent
+
+    refusal = list(make_agent(FakeLLM(["No source covers this."])).run("s1", "Transformer"))
+    cited = list(make_agent(FakeLLM([ANSWER, "[]"])).run("s1", "Transformer"))
+    assert isinstance(refusal[-1], DoneEvent) and refusal[-1].insufficient_evidence
+    assert isinstance(cited[-1], DoneEvent) and not cited[-1].insufficient_evidence

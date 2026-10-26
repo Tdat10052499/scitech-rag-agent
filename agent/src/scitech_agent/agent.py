@@ -150,7 +150,18 @@ class Agent:
         if questions:
             yield FollowupsEvent(questions)
         self._remember(session_id, Turn(message, answer, cited))
-        yield DoneEvent(message_id=message_id)
+        # An answer that cites no source is a refusal or comes from outside the evidence: either
+        # way the evidence did not support it (contract: "answered that the evidence is
+        # insufficient"). RRF scores are rank-based, so a score threshold cannot decide this.
+        yield DoneEvent(insufficient_evidence=not cited, message_id=message_id)
+
+    def warm_up(self) -> None:
+        """One search, so the embedding model and the index are loaded before the first
+        question (ADR 0009). A failure is only logged: a request reports it to the user."""
+        try:
+            self.retriever.search("warm-up", k=1)
+        except Exception as exc:  # noqa: BLE001 - the request path handles retrieval errors
+            logger.warning("warm-up search failed: %s", exc)
 
     def rewrite(self, message: str, history: list[Turn]) -> str:
         """Standalone search query for `message`. Identity for now; uses `history` later."""
