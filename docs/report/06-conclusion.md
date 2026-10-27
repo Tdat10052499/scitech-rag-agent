@@ -51,7 +51,8 @@ At this corpus size retrieval is not the bottleneck of a chat turn.
   on a machine with Java 17+. The frozen index used for evaluation stops at 2026-10-10.
 
 **Small samples.**
-- **Golden set:** 60 items, of which 30 were used for decisions. One question is 3.3 points of
+- **Golden set:** 60 items planned (47 on D13), of which 30 were used for decisions.
+  <!-- TODO(W5-D1-LDN-1): final count. --> One question is 3.3 points of
   recall on the dev split, and the intervals of most comparisons overlap.
 - **User study:** 5 to 6 participants, chosen by the team, not at random. It supports
   description, not a claim about users in general.
@@ -59,9 +60,10 @@ At this corpus size retrieval is not the bottleneck of a chat turn.
   several users at once was not measured.
 
 **Model size.**
-- **Generator:** `llama3.2:3b` (ADR 0006), chosen to fit a free GPU session and a laptop
-  fallback. A larger model may follow the evidence better, so the faithfulness numbers belong to
-  this model.
+- **Generator:** `llama3.2:3b` (ADR 0006). It was chosen on speed, because at n = 10 its answers
+  could not be told apart from those of `qwen2.5:3b` and `qwen2.5:7b`. The 7B model had no
+  ungrounded answer in that run, so a larger model may follow the evidence better. The
+  faithfulness numbers belong to this model.
 
 **Judge bias.**
 - **Judge:** faithfulness is judged by an LLM that is not the generator (`evaluation/PLAN.md` §5).
