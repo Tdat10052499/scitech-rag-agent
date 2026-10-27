@@ -1,7 +1,7 @@
 # 0008. Incremental ingestion: daily OAI-PMH harvest with a date watermark
 
-- Status: proposed. The OAI-PMH set is settled by the live check of 2026-10-17, one real day went through fetch, clean, validate and chunk on 2026-10-19, and the end-to-end live test passed on 2026-10-27 (all three below); scheduling decided by that test (point 6)
-- Date: 2026-10-17 (drafted early; task W3-D4-FAO-1 is scheduled for D13, 2026-10-27)
+- Status: accepted (2026-10-27, DAT's review on #124). The OAI-PMH set is settled by the live check of 2026-10-17, one real day went through fetch, clean, validate and chunk on 2026-10-19, and the end-to-end live test passed on 2026-10-27 (all three below); scheduling decided by that test (point 6)
+- Date: 2026-10-17 (drafted early for W3-D4-FAO-1); live test and scheduling 2026-10-27 (W5-D4-FAO-1)
 - Deciders: FAO (author), DAT (reviewer)
 
 ## Context
@@ -28,7 +28,7 @@ Scheduling:
 2. cron (WSL2) or Windows Task Scheduler on FAO's laptop.
 3. GitHub Actions on a schedule. CI has no data and no Qdrant (`data/` is git-ignored, the index is local), so it could only remind someone to run the command.
 
-## Decision (proposed)
+## Decision
 **Harvest arXiv OAI-PMH by datestamp with `incremental-fetch`, run the existing clean -> chunk -> embed -> load on that file only, and keep a date watermark that moves only after a successful load.**
 
 1. **Fetch** (prototype in this PR): `python -m scitech_pipelines incremental-fetch --from <watermark> --until <yesterday, UTC> --set cs:cs:CL --category cs.CL --out <file>.jsonl`. It follows `resumptionToken`, waits at least 3 s between requests, retries 429/5xx with `Retry-After`, treats `noRecordsMatch` as zero records, and writes the records as JSON Lines in the Kaggle snapshot shape, plus `<file>.manifest.json` with the settings and counts. `--from` is the watermark day itself, not the day after: datestamps are days, and a day's records may still be arriving when it is first harvested. The overlap costs one day of records, and re-loading them is harmless (point 5).
