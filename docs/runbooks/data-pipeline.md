@@ -1,9 +1,9 @@
 # Runbook: data pipeline (arXiv snapshot to a loaded Qdrant index)
 
-Task: W4-D5-FAO-1 (draft; final version W6-D3-FAO-1 adds incremental ingestion, scaling notes and more troubleshooting).
+Tasks: W4-D5-FAO-1 (draft) and W6-D3-FAO-1 (final: incremental ingestion with the live test, scaling notes, more troubleshooting).
 Commands: `pipelines/AGENTS.md` (every option) and `pipelines/README.md` (setup, what runs where, the Kaggle recipes). Decisions: ADR 0003 (corpus), ADR 0005 (engine), ADR 0007 (embedding model), ADR 0008 (incremental ingestion).
 
-> Status: draft written on 2026-10-20 (D07), updated on 2026-10-22 (D09). `run-all` is merged (#92), the README's Kaggle recipes are on #60, and `incremental-run` is in review (#76). Times are the measured ones from the FAO journal (W2, W3) unless marked otherwise.
+> Status: final version, 2026-10-27 (D13). Draft of 2026-10-20 (D07), updated on 2026-10-22 (D09). `run-all` is merged (#92). In review when this was written: the README's Kaggle recipes (#60), the index profile (#68), the scaling script (#96), `incremental-run` (#76) and its live test (#124). Times are the measured ones from the FAO journal (W2, W3, W5) unless marked otherwise.
 
 ## 1. Before you start
 - **Python environment:** `make setup`, then `PYTHONPATH=pipelines/src:agent/src` from the repository root (PowerShell: `$env:PYTHONPATH = "pipelines/src;agent/src"`). `load` and `run-all` need `agent/src` for DAT's Qdrant store.
@@ -106,19 +106,46 @@ The counts must chain, for snapshot 307:
 | `docker start qdrant`: "No such container: qdrant" | The container belongs to docker compose and is named `<folder>-qdrant-1` | `docker compose up -d` (or `make up`) from the repository root |
 | A golden set or run file copied from Windows has another sha256 than on Linux | Git on Windows checks text files out with CRLF line ends | Compare files with LF line ends, or run on one OS; the run file records the sha256 of the bytes it read |
 | Kaggle notebook: data of a previous run gone | `/kaggle/working` lasts only for the session | Keep inputs as Kaggle datasets; don't use *Save Version* with Qdrant's storage in `/kaggle/working` |
+| `Warning: You are sending unauthenticated requests to the HF Hub` at the start of `embed` or `incremental-run` | No Hugging Face token; the model is public | Harmless. Downloads are only slower; don't put a token in the repository |
+| `WARN NativeCodeLoader: Unable to load native-hadoop library` | Spark without native Hadoop libraries | Harmless; `clean` uses the Java fallback |
+| Notebook cell: `UsageError: Line magic function %%time not found` | `%%time` is not the first line of the cell (a comment above it counts) | Move `%%time` to the first line |
+| `incremental-run`: "no watermark ... give the first day with --start" | First run on this data directory | `--start` with the date of the snapshot the index was built from (2026-10-10 for version 307) |
+| `incremental-run`: "load check failed" | Another process wrote to or deleted from the collection during the run | The watermark did not move: run the command again; it deletes and reloads the same papers |
 
-## 6. New records since the snapshot (in review, #76)
-`incremental-run` (ADR 0008) adds the arXiv records published since the watermark `<data-dir>/state/incremental.json` to a collection:
+## 6. New records since the snapshot
+`incremental-run` (ADR 0008, #76) adds the arXiv records published since the watermark `<data-dir>/state/incremental.json` to a collection:
 ```bash
 python -m scitech_pipelines incremental-run --start 2026-10-10 --model "$EMBEDDING_MODEL"   # first run only
 python -m scitech_pipelines incremental-run --model "$EMBEDDING_MODEL"                      # later runs
 ```
-- It needs Java (`clean`), sentence-transformers (`embed`) and the Qdrant it loads into, on one machine.
-- A paper harvested again replaces all its old chunks, and the watermark moves only after a load whose count check passed. A failed run is simply run again.
-- Never point it at the frozen evaluation collection (`--collection`).
-- It does not rebuild the BM25 index, so incremental papers are found only by the dense half of hybrid retrieval, and BM25 keeps the old text of replaced papers, until the index is rebuilt (#119).
-- The live test, the numbers and the schedule come with W5-D4-FAO-1.
+- It needs Java 17+ (`clean`), sentence-transformers (`embed`, a CPU is enough) and the Qdrant it loads into, on one machine. FAO's laptop has Java 8, so it runs in WSL2, Linux or a Kaggle CPU notebook. A notebook has its own Qdrant and cannot update the one on the laptop.
+- **Schedule:** none. It is run by hand when new papers are needed (ADR 0008, point 6). One run catches up all missed days in one range. The cron line for a machine with Java 17+ is in the ADR (not tested).
+- **What it does:** fetch from OAI-PMH (set `cs:cs:CL`) from the watermark day to yesterday (UTC), then `clean`, `chunk`, `embed` and a replacing load: every fetched paper loses all its old points before its new chunks are loaded. The watermark moves only after the load's count check passes, so a failed run is simply run again. The watermark day is fetched again on the next run (its records may still have been arriving), which costs about one day of embedding.
+- **Check a run:** the last lines say `load: N papers replaced in <collection>: D old points deleted, L loaded, P points now` and `incremental: watermark <day> -> ...`. In the run's `_load_manifest.json` (`<data-dir>/processed/incremental/<from>_<until>/index/`), `counts.points` must equal `points_before - points_deleted + points_loaded`.
+- **Live test** (W5-D4-FAO-1, 2026-10-27, `pipelines/reports/incremental_test.md`, #124), on a Kaggle CPU notebook against a copy of the full index:
 
-## 7. Not covered yet
-- The scaling numbers at 10%, 50% and 100% of the corpus (W6-D2-FAO-1, `pipelines/scripts/scaling.py` on #96).
-- Restoring a frozen snapshot for the final evaluation (W6-D4-FAO-1).
+  | | `--start 2026-10-10` | same day again |
+  |---|---:|---:|
+  | Papers / chunks | 2,744 / 2,758 | 177 / 178 |
+  | Already indexed (old points deleted) | 962 (966) | 177 (178) |
+  | Points before -> after | 121,926 -> 123,718 | 123,718 -> 123,718 |
+  | Duplicate, stale or missing chunks | 0 | 0 |
+  | Wall time (embed on CPU) | 10 min 45 s (549.2 s) | 1 min 13 s (39.1 s) |
+
+  The cells, with the independent check of duplicates and stale chunks, are in the report's "Reproduce" section.
+- **Never** point it at the frozen evaluation collection (`--collection`): no index changes from W6-D4 to D22 unless approved.
+- It does not rebuild the BM25 index, so incremental papers are found only by the dense half of hybrid retrieval, and BM25 keeps the old text of replaced papers, until the index is rebuilt (#119).
+- Deleted arXiv records are counted in the fetch manifest but stay in the index until the next full rebuild.
+
+## 7. Scaling measurements
+`pipelines/scripts/scaling.py` (W6-D2-FAO-1, #96) builds the index at 10% and 50% of the corpus next to the full one, from the vectors already computed (nothing is embedded again), and profiles each size with `index_profile.py`:
+```bash
+PYTHONPATH=agent/src:pipelines/src python pipelines/scripts/scaling.py --out-dir data/reports/scaling
+```
+- It needs the full load and BM25 build done first (it reads `processed/index/_load_manifest.json` and `index/bm25`), Qdrant in Docker (it runs `docker compose restart qdrant` before each size) and about 1.5 GiB of Qdrant storage for the three collections.
+- The subsets go to `<QDRANT_COLLECTION>_10pct` and `_50pct`, and their BM25 indexes to `data/index/bm25-10pct` and `-50pct`. Re-running reuses them; `--force` builds them again. Delete these collections when done: they are not used by the app.
+- Results of 2026-10-22 on FAO's laptop (`pipelines/reports/scaling.md`): hybrid p95 131 to 135 ms at every size; BM25 grows with the corpus (p50 1.2, 4.8, 8.1 ms); dense stays at 81 to 93 ms p50, mostly query embedding on the CPU. One run of 100 queries per size, so differences of a few ms are noise.
+- Charts: `python pipelines/scripts/scaling_charts.py` writes two SVG charts next to `scaling.csv` (W7-D2-FAO-1, #121).
+
+## 8. Not covered yet
+- Restoring the frozen snapshot for the final evaluation (W6-D4-FAO-1, `evaluation/SNAPSHOT.md`).
