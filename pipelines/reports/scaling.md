@@ -69,6 +69,14 @@ Where the 100% numbers come from:
   2026-10-21 (#91, `index_profile.md`), not from this run. The subset loads ran today.
 - The 100% latency, disk and memory rows were measured in this run.
 
+Charts of the same numbers (W7-D2-FAO-1), drawn from `scaling.csv` by
+`python pipelines/scripts/scaling_charts.py`. The x axis is the corpus size in chunks; solid lines
+are p50, dashed lines p95.
+
+![Query latency by corpus size](scaling-latency.svg)
+
+![Build time by corpus size](scaling-build.svg)
+
 ## 3. What the numbers say
 
 - **BM25 latency grows with the corpus:** p50 1.2 ms, 4.8 ms, 8.1 ms at 10%, 50% and 100%. That
