@@ -82,7 +82,7 @@ The counts must chain, for snapshot 307:
 - `validate --golden evaluation/golden_set/golden.jsonl` checks the documents and that every golden `relevant_doc_ids` exists. `run-all` runs it on full runs.
 - `pipelines/scripts/golden_coverage.py --chunks data/processed/chunks --qdrant` checks the same ids against the chunks and the loaded collection (#69). Run it with `PYTHONPATH=pipelines/src` (PowerShell: `$env:PYTHONPATH = "pipelines/src"`). On 2026-10-20 all 57 doc ids of the 47 items (gs-001 to gs-045, gs-u01, gs-u02; golden set of #88) were in the chunks.
 - `_load_manifest.json` holds `index_snapshot`, the id that evaluation runs cite.
-- Search speed, filters, size on disk and memory: `pipelines/scripts/index_profile.py` (#68; usage and the 2026-10-21 numbers in `pipelines/reports/index_profile.md`). On FAO's laptop, p95 was 88 ms for dense, 14 ms for BM25 and 149 ms for hybrid.
+- Search speed, filters, size on disk and memory: `pipelines/scripts/index_profile.py`, with usage and the 2026-10-21 numbers in `pipelines/reports/index_profile.md` (both on #68, not on `main` until it merges). On FAO's laptop, p95 was 88 ms for dense, 14 ms for BM25 and 149 ms for hybrid.
 - A quick look at the store: `PYTHONPATH=agent/src python -c "from scitech_agent.store import QdrantStore; s = QdrantStore.from_env(); print(s.count())"`.
 
 ## 5. Common failures and fixes
@@ -116,6 +116,7 @@ python -m scitech_pipelines incremental-run --model "$EMBEDDING_MODEL"          
 - It needs Java (`clean`), sentence-transformers (`embed`) and the Qdrant it loads into, on one machine.
 - A paper harvested again replaces all its old chunks, and the watermark moves only after a load whose count check passed. A failed run is simply run again.
 - Never point it at the frozen evaluation collection (`--collection`).
+- It does not rebuild the BM25 index, so incremental papers are found only by the dense half of hybrid retrieval, and BM25 keeps the old text of replaced papers, until the index is rebuilt (#119).
 - The live test, the numbers and the schedule come with W5-D4-FAO-1.
 
 ## 7. Not covered yet
