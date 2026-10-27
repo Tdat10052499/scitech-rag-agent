@@ -46,7 +46,7 @@ from typing import Any
 
 import numpy as np
 
-from scitech_agent.retrieval import Filters, ScoredChunk, matches
+from scitech_agent.retrieval import Filters, ScoredChunk, compile_filters
 
 CHUNK_FILE = "chunks.parquet"  # input name, as written by `chunk` (pipelines)
 CHUNK_MANIFEST = "_chunk_manifest.json"
@@ -164,13 +164,15 @@ class BM25Index:
         # Best first; ties in index order (chunks are sorted by doc_id, chunk_index).
         hits = hits[np.lexsort((hits, -scores[hits]))]
         if filters:
-            hits = list(islice((i for i in hits if self._matches(int(i), filters)), k))
+            keep = compile_filters(filters)  # bounds checked and parsed once per search
+            columns = {name: self._values(name) for name in filters}
+            hits = list(islice((i for i in hits if keep(self._row(int(i), columns))), k))
         return [self.chunk(int(i), scores[i]) for i in hits[:k]]
 
-    def _matches(self, i: int, filters: Filters) -> bool:
-        """`retrieval.matches` on the filtered fields of row `i` only (no full row conversion)."""
-        row = SimpleNamespace(**{name: self._values(name)[i] for name in filters})
-        return matches(row, filters)  # type: ignore[arg-type]
+    @staticmethod
+    def _row(i: int, columns: dict[str, list[Any]]) -> SimpleNamespace:
+        """The filtered fields of row `i` only (no full row conversion)."""
+        return SimpleNamespace(**{name: values[i] for name, values in columns.items()})
 
     def _values(self, name: str) -> list[Any]:
         """A filterable column as a Python list, converted on first use and kept."""
