@@ -235,7 +235,13 @@ def _golden(path: str, ids: Sequence[str], limit: int) -> list[dict]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     from scitech_agent.agent import Agent, AgentConfig
-    from scitech_agent.events import AgentError, FollowupsEvent, SourcesEvent, TokenEvent
+    from scitech_agent.events import (
+        AgentError,
+        DoneEvent,
+        FollowupsEvent,
+        SourcesEvent,
+        TokenEvent,
+    )
     from scitech_agent.llm import LLMConfigError, OpenAICompatibleLLM
     from scitech_agent.retrieval.hybrid import retriever_from_env
 
@@ -273,6 +279,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             evidence: list[ScoredChunk] = []
             parts: list[str] = []
             followups: list[str] = []
+            insufficient = False
             try:
                 for event in agent.run(item["id"], item["question"]):
                     if isinstance(event, SourcesEvent):
@@ -281,6 +288,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                         parts.append(event.text)
                     elif isinstance(event, FollowupsEvent):
                         followups = list(event.questions)
+                    elif isinstance(event, DoneEvent):
+                        insufficient = event.insufficient_evidence
             except AgentError as exc:
                 failures += 1
                 emit(f"### {item['id']}: error `{exc.code}`\n")
@@ -294,7 +303,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             emit(f"**A:** {answer}\n")
             words = answer_words(answer)
             flag = "" if words else " (answer is only markers)"
-            emit(f"Words outside markers: {words}{flag}\n")
+            emit(f"Words outside markers: {words}{flag}; insufficient_evidence: {insufficient}\n")
             listed = "".join(f"\n- {q}" for q in followups) or " none"
             emit(f"**Follow-ups:**{listed}\n")
             emit("| [n] | chunk_id | cited | in relevant_doc_ids |")
