@@ -1,0 +1,10 @@
+{"id": "gs-011", "question": "Does the way a prompt is laid out, for example as plain text, Markdown or JSON, change how well a GPT model does the task?", "type": "factual"}
+{"id": "gs-012", "question": "How much does ShotKV improve accuracy on long-context generation tasks, and how much latency does it save compared with running with the full cache?", "type": "factual"}
+{"id": "gs-027", "question": "How many parameters does the OLMoE language model use for each token, and how much data was it trained on?", "type": "factual"}
+{"id": "gs-013", "question": "Can preference tuning on English data alone make a multilingual language model less toxic in other languages?", "type": "explanatory"}
+{"id": "gs-017", "question": "How does high-precision scoring fix the problem of tied relevance scores when a retrieval system runs in low precision?", "type": "explanatory"}
+{"id": "gs-028", "question": "How can a language model be made cheaper to run in one specialised domain by changing its vocabulary?", "type": "explanatory"}
+{"id": "gs-016", "question": "How does SetFit differ from LoRA fine-tuning of a large language model when you want to train a text classifier with limited data and hardware?", "type": "comparison"}
+{"id": "gs-026", "question": "How can you tell whether a text was part of a language model's training data: by testing the model, or by searching the training corpus?", "type": "comparison"}
+{"id": "gs-015", "question": "Why can an AI judge give misleading quality scores, and how can a small number of human labels be used to correct them?", "type": "multi_hop"}
+{"id": "gs-025", "question": "What have researchers done about gender bias in Chinese text and in machine translation?", "type": "multi_hop"}
