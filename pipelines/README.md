@@ -120,3 +120,8 @@ The small `load` goes into its own collection (`--collection`), so it never mixe
 - `_clean_manifest.json`, `_chunk_manifest.json`, `_embed_manifest.json` and `_load_manifest.json` hold the counts of each run; `documents -> chunks -> vectors -> points` must be 121,860 -> 121,926 -> 121,926 -> 121,926 for snapshot 307. `load` fails if the points do not equal the chunks.
 - `validate` re-checks the documents against the clean manifest; `embed` checks its own output (count, distinct ids, dimension) and fails if it is wrong.
 - Data files never go into git (`data/` is ignored); share them through Kaggle.
+
+## After the first build
+- **New papers since the snapshot:** `incremental-run` adds the arXiv records published after a date watermark to the same collection and replaces the points of papers that come back (ADR 0008, #76). It is run by hand when needed. The steps, the live test (#124) and how to check a run are in `docs/runbooks/data-pipeline.md` §6.
+- **Problems:** `docs/runbooks/data-pipeline.md` §5 lists the common failures with their fixes.
+- **Index profile and scaling:** `pipelines/reports/index_profile.md` (#68) and `pipelines/reports/scaling.md` (#96) measure the built index.
