@@ -3,7 +3,7 @@
 Each sub-command is implemented by its own task (download: W2-D1-FAO-1, clean: W2-D2-FAO-1,
 validate: W2-D4-FAO-1, profile: W2-D3-FAO-1, chunk: W3-D1-FAO-1, embed: W3-D2-FAO-1,
 load: W3-D3-FAO-1, through the Qdrant store of W3-D1-DAT-1; incremental-fetch: W3-D4-FAO-1
-prototype for ADR 0008; run-all: W4-D2-FAO-1).
+prototype for ADR 0008; incremental-run: W5-D2-FAO-1; run-all: W4-D2-FAO-1).
 Paths and settings come from arguments, with environment variables as defaults.
 """
 
@@ -24,6 +24,7 @@ STEPS: dict[str, str] = {
     "embed": "Compute an embedding for every chunk (resumable).",
     "load": "Load chunks and embeddings into the vector store.",
     "incremental-fetch": "Fetch new arXiv records by date through OAI-PMH (snapshot format).",
+    "incremental-run": "Add the new arXiv records since the watermark to the index (ADR 0008).",
     "run-all": "Run download, clean, validate, chunk, embed and load in one go (--limit: small).",
 }
 SOURCES = ("arxiv", "wikipedia")
@@ -350,6 +351,49 @@ def add_incremental_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_incremental_run_arguments(parser: argparse.ArgumentParser) -> None:
+    from scitech_pipelines.clean import DEFAULT_CATEGORY
+    from scitech_pipelines.incremental import DEFAULT_SET
+
+    parser.add_argument(
+        "--start",
+        type=_day,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="First day, only for the first run (no watermark yet): the date of the snapshot "
+        "the bulk index was built from (2026-10-10 for version 307).",
+    )
+    parser.add_argument(
+        "--collection",
+        default=None,
+        help="Qdrant collection (default: env QDRANT_COLLECTION, else scitech_chunks). Never "
+        "the frozen evaluation collection (ADR 0008).",
+    )
+    parser.add_argument(
+        "--model",
+        default=os.environ.get("EMBEDDING_MODEL"),
+        help="Embedding model, the one the collection was built with (env EMBEDDING_MODEL).",
+    )
+    parser.add_argument(
+        "--device", default=None, help="embed: cuda, cpu, ... (default: GPU if there is one)."
+    )
+    parser.add_argument(
+        "--passage-prefix", default="", help="Text put before every chunk, as in the bulk embed."
+    )
+    parser.add_argument(
+        "--set",
+        dest="set_spec",
+        metavar="SET",
+        default=DEFAULT_SET,
+        help=f"OAI-PMH set (default {DEFAULT_SET}; ADR 0008).",
+    )
+    parser.add_argument(
+        "--category",
+        default=DEFAULT_CATEGORY,
+        help="Keep records whose categories contain this one (ADR 0003).",
+    )
+
+
 def _positive(value: str) -> int:
     number = int(value)
     if number < 1:
@@ -410,7 +454,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="scitech_pipelines",
         description="Data pipeline: download, clean, validate, profile, chunk, embed, load, "
-        "incremental-fetch, run-all.",
+        "incremental-fetch, incremental-run, run-all.",
     )
     parser.add_argument(
         "--data-dir",
@@ -436,6 +480,8 @@ def build_parser() -> argparse.ArgumentParser:
             add_load_arguments(sub)
         elif name == "incremental-fetch":
             add_incremental_arguments(sub)
+        elif name == "incremental-run":
+            add_incremental_run_arguments(sub)
         elif name == "run-all":
             add_run_all_arguments(sub)
     return parser
@@ -594,6 +640,42 @@ def run_incremental_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_incremental_run(args: argparse.Namespace) -> int:
+    from dataclasses import replace
+
+    from scitech_agent.store import QdrantStore, StoreConfig
+    from scitech_pipelines.embed import SentenceTransformerEncoder, check_model_name
+    from scitech_pipelines.incremental_run import (
+        QdrantReplaceStore,
+        check_index_model,
+        default_steps,
+        run_incremental,
+    )
+
+    model = check_model_name(args.model)  # fail now, not after the fetch and the clean
+    config = StoreConfig.from_env()  # QDRANT_URL, QDRANT_COLLECTION
+    if args.collection:
+        config = replace(config, collection=args.collection)
+    check_index_model(Path(args.data_dir), config.collection, model)
+    encoder = SentenceTransformerEncoder(model, device=args.device)
+    with QdrantStore(config) as qdrant, QdrantReplaceStore(qdrant) as store:
+        steps = default_steps(
+            store,
+            encoder,
+            set_spec=args.set_spec,
+            category=args.category,
+            passage_prefix=args.passage_prefix,
+        )
+        run_incremental(
+            Path(args.data_dir),
+            steps,
+            start=args.start,
+            set_spec=args.set_spec,
+            category=args.category,
+        )
+    return 0
+
+
 def run_run_all(args: argparse.Namespace) -> int:
     from scitech_pipelines.embed import check_model_name
     from scitech_pipelines.run_all import plan_steps, run_all, select_steps
@@ -636,6 +718,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_load(args)
     if args.command == "incremental-fetch":
         return run_incremental_fetch(args)
+    if args.command == "incremental-run":
+        return run_incremental_run(args)
     if args.command == "run-all":
         return run_run_all(args)
     raise ValueError(f"no handler for command {args.command!r}")
