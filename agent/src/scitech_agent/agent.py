@@ -1,11 +1,12 @@
 """Agent pipeline (W2-D3-DAT-1): rewrite -> retrieve -> evidence check -> answer -> follow-ups.
 
 `Agent.run(session_id, message)` yields the events of `scitech_agent.events` in API order. Each
-step is a small method so later tasks can replace it: query rewriting with the history (W4),
-hybrid retrieval and reranking (W4), the evidence check. The answer and the follow-ups are two LLM
-calls per question; if no chunk reaches `RETRIEVAL_MIN_SCORE` the agent answers that the evidence
-is insufficient without calling the LLM (agent/AGENTS.md). The answer prompt and its citation
-checks live in `scitech_agent.answer` (W4-D1-DAT-1).
+step is a small method so later tasks can replace it. With `AGENT_REWRITE=on` a message that
+follows earlier turns is rewritten into a standalone search query first (`scitech_agent.rewrite`,
+W5-D1-DAT-1). The answer and the follow-ups are two LLM calls per question; if no chunk reaches
+`RETRIEVAL_MIN_SCORE` the agent answers that the evidence is insufficient without calling the LLM
+(agent/AGENTS.md). The answer prompt and its citation checks live in `scitech_agent.answer`
+(W4-D1-DAT-1).
 """
 
 from __future__ import annotations
@@ -38,6 +39,7 @@ from scitech_agent.events import (
 from scitech_agent.followups import followups_user_message, parse_followups
 from scitech_agent.llm import LLMClient, LLMError, Message, split_fragments
 from scitech_agent.retrieval import Retriever, ScoredChunk
+from scitech_agent.rewrite import rewrite_query
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +66,7 @@ ERROR_MESSAGES = {
     "internal": "Internal error while answering. Please try again.",
 }
 MAX_SESSIONS = 1000
+_FLAGS = {"on": True, "true": True, "1": True, "off": False, "false": False, "0": False, "": False}
 
 
 def load_prompt(name: str) -> str:
@@ -80,10 +83,14 @@ class AgentConfig:
     temperature: float = 0.0
     answer_max_tokens: int = 512
     followups_max_tokens: int = 192
+    rewrite: bool = False  # AGENT_REWRITE: standalone search query for follow-up messages
+    rewrite_history_turns: int = 3  # latest turns shown to the rewrite prompt
+    rewrite_max_tokens: int = 96
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> AgentConfig:
-        """Read `RETRIEVAL_TOP_K` and `RETRIEVAL_MIN_SCORE` (empty: 5 and 0.0)."""
+        """Read `RETRIEVAL_TOP_K`, `RETRIEVAL_MIN_SCORE` and `AGENT_REWRITE` (empty: 5, 0.0 and
+        off)."""
         env = os.environ if env is None else env
         try:
             top_k = int(env.get("RETRIEVAL_TOP_K") or 5)
@@ -94,7 +101,14 @@ class AgentConfig:
             ) from None
         if top_k <= 0:
             raise ValueError("RETRIEVAL_TOP_K must be > 0")
-        return cls(top_k=top_k, min_score=min_score)
+        return cls(top_k=top_k, min_score=min_score, rewrite=_flag(env, "AGENT_REWRITE"))
+
+
+def _flag(env: Mapping[str, str], name: str) -> bool:
+    value = (env.get(name) or "").strip().lower()
+    if value not in _FLAGS:
+        raise ValueError(f"{name} must be on or off, not {value!r}")
+    return _FLAGS[value]
 
 
 @dataclass(frozen=True)
@@ -113,6 +127,7 @@ class Agent:
         self.config = config or AgentConfig()
         self.answer_prompt = load_prompt("answer")
         self.followups_prompt = load_prompt("followups")
+        self.rewrite_prompt = load_prompt("rewrite")
         self._history: OrderedDict[str, list[Turn]] = OrderedDict()
         self._lock = threading.Lock()  # the backend streams requests from worker threads
 
@@ -164,8 +179,30 @@ class Agent:
             logger.warning("warm-up search failed: %s", exc)
 
     def rewrite(self, message: str, history: list[Turn]) -> str:
-        """Standalone search query for `message`. Identity for now; uses `history` later."""
-        return message
+        """Standalone search query for `message` from the latest turns (`scitech_agent.rewrite`).
+        `message` itself when rewriting is off, the session has no earlier turn, or the call
+        fails or returns nothing usable: a bad rewrite must not fail the question."""
+        keep = self.config.rewrite_history_turns
+        recent = history[-keep:] if keep > 0 else []
+        if not self.config.rewrite or not recent or not message.strip():
+            return message
+        try:
+            query = rewrite_query(
+                self.llm,
+                self.rewrite_prompt,
+                message,
+                recent,
+                temperature=self.config.temperature,
+                max_tokens=self.config.rewrite_max_tokens,
+            )
+        except LLMError as exc:
+            logger.warning("rewrite skipped: %s (%s)", exc, exc.code)
+            return message
+        if query is None:
+            logger.info("rewrite output unusable, original message kept")
+            return message
+        logger.info("rewrote %r as %r", message, query)
+        return query
 
     def retrieve(self, query: str) -> list[ScoredChunk]:
         try:
