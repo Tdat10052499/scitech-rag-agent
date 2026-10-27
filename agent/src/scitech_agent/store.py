@@ -172,8 +172,13 @@ class QdrantStore:
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.config = config or StoreConfig()
+        # No gzip: Qdrant answers a gzip request with a chunked gzip response, and on Linux each
+        # such search waited about 44 ms instead of about 1 ms (#128). Answers here are small.
         self._http = httpx.Client(
-            base_url=self.config.url, timeout=self.config.timeout, transport=transport
+            base_url=self.config.url,
+            timeout=self.config.timeout,
+            transport=transport,
+            headers={"Accept-Encoding": "identity"},
         )
 
     @classmethod
