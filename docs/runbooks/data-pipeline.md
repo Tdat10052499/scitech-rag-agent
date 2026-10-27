@@ -145,7 +145,7 @@ PYTHONPATH=agent/src:pipelines/src python pipelines/scripts/scaling.py --out-dir
 - It needs the full load and BM25 build done first (it reads `processed/index/_load_manifest.json` and `index/bm25`), Qdrant in Docker (it runs `docker compose restart qdrant` before each size) and about 1.5 GiB of Qdrant storage for the three collections.
 - The subsets go to `<QDRANT_COLLECTION>_10pct` and `_50pct`, and their BM25 indexes to `data/index/bm25-10pct` and `-50pct`. Re-running reuses them; `--force` builds them again. Delete these collections when done: they are not used by the app.
 - Results of 2026-10-22 on FAO's laptop (`pipelines/reports/scaling.md`): hybrid p95 131 to 135 ms at every size; BM25 grows with the corpus (p50 1.2, 4.8, 8.1 ms); dense stays at 81 to 93 ms p50, mostly query embedding on the CPU. One run of 100 queries per size, so differences of a few ms are noise.
-- Charts: `python pipelines/scripts/scaling_charts.py` writes two SVG charts next to `scaling.csv` (W7-D2-FAO-1, in review, #121).
+- Charts: `python pipelines/scripts/scaling_charts.py` writes two SVG charts next to `scaling.csv` (W7-D2-FAO-1, #121).
 
 ## 8. Not covered yet
 - Restoring the frozen snapshot for the final evaluation (W6-D4-FAO-1, `evaluation/SNAPSHOT.md`).
