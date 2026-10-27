@@ -189,12 +189,17 @@ search.
 
 - **BM25 grows with the corpus.** Latency, build time and size rise in step with the chunk count
   (p50 1.2, 4.8, 8.1 ms).
-- **Dense latency is mostly query embedding.** Embedding the query on the CPU takes most of a
-  dense search, and that cost does not depend on the corpus. The 13 ms rise from 10% to 100% is
-  about the size of the run-to-run variation (82.5 ms on the full index two days earlier).
-  Exact search grows linearly with the points. Extrapolating the measured slope (an inference), a
-  million chunks would add about 100 ms per query, and HNSW search would then be needed, with its
-  recall checked again (#87).
+- **Dense latency is mostly fixed costs.** A dense search is query embedding on the CPU (p50 38
+  to 63 ms), a round trip to Qdrant in Docker (about 46 ms on this laptop) and the vector search
+  itself. Only the search depends on the corpus.
+- **Vector search alone** was timed separately, with the query vectors computed beforehand
+  (`scaling.md` §2.1, #121). Inside Qdrant (p50):
+  - exact search took 2.0, 8.0 and 14.4 ms at 10%, 50% and 100%, about 1.1 ms per 10,000
+    points;
+  - HNSW took 1.6 to 2.6 ms at every size and returned 97.9% to 100% of the exact top 10.
+
+  At a million chunks exact search would take about 110 ms (an extrapolation), so HNSW would then
+  be the better choice, with its recall checked again (#87).
 - **Retrieval is not the bottleneck.** Hybrid retrieval stays under 135 ms at p95 at every size,
   far below the LLM's time to first token (0.44 s, #91).
 
