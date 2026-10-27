@@ -1,0 +1,29 @@
+# W3-D4-LDN-1: dense run for evaluation/reports/retrieval-v1.md. Paths are relative to the repository root.
+# The three retrieval-v1-*.yaml files differ only in name, retriever_type, embedding_model, notes
+# and retriever params; the golden file, split, ks and snapshots must stay identical.
+# Needs: PYTHONPATH with evaluation/src and agent/src; the agent's environment (see .env.example):
+#   QDRANT_URL and QDRANT_COLLECTION (dense, hybrid), DATA_DIR or BM25_INDEX_DIR (bm25, hybrid).
+# Every setting that changes the ranking is in retriever.params, so it reaches the run file;
+# the process environment only supplies QDRANT_URL, QDRANT_COLLECTION and the index folders.
+# Run: see "Retrieval comparison v1" in evaluation/AGENTS.md
+name: retrieval-v1-dense
+golden_path: evaluation/golden_set/golden.jsonl
+split: dev
+language: en
+query: question
+ks: [1, 5, 10]
+dataset_snapshot: kaggle-arxiv-v307-cs.CL-2026-10-10
+retriever_type: dense
+embedding_model: BAAI/bge-small-en-v1.5
+index_snapshot: scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37
+notes: "dense on the answerable dev items (ADR 0009 table B); same index snapshot as the other two runs. Qdrant collection scitech_chunks, exact search."
+bootstrap:
+  resamples: 1000
+  seed: 0
+retriever:
+  factory: scitech_eval.retrievers:agent_retriever
+  params:
+    retriever: dense
+    EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
+    EMBEDDING_QUERY_PREFIX: "Represent this sentence for searching relevant passages:"
+    QDRANT_SEARCH_EXACT: "true"

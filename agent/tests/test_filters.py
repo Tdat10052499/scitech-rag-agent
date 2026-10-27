@@ -17,8 +17,16 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+from scitech_agent import retrieval
 from scitech_agent.embedding import FakeEmbedder
-from scitech_agent.retrieval import InMemoryRetriever, ScoredChunk, check_range, year_range
+from scitech_agent.retrieval import (
+    InMemoryRetriever,
+    ScoredChunk,
+    check_range,
+    compile_filters,
+    matches,
+    year_range,
+)
 from scitech_agent.retrieval.dense import DenseRetriever
 from scitech_agent.retrieval.hybrid import HybridRetriever
 from scitech_agent.retrieval.keyword import KeywordRetriever, build_index
@@ -137,6 +145,41 @@ def test_a_bound_that_is_not_an_iso_date_is_refused_everywhere(retriever, bound)
         retriever.search(QUERY, k=10, filters={"published_at": {"gte": bound}})
 
 
+def test_a_range_mixing_numbers_and_dates_is_refused_everywhere(retriever):
+    with pytest.raises(ValueError, match="mixes numbers and dates"):
+        retriever.search(QUERY, k=10, filters={"published_at": {"gte": 2020, "lt": "2024-01-01"}})
+
+
+def test_a_bad_bound_is_refused_even_when_nothing_would_be_compared(retriever):
+    # No chunk has the field, so a per-row check would never run; the check is per search.
+    with pytest.raises(ValueError, match="year_range"):
+        retriever.search(QUERY, k=10, filters={"no_such_field": {"gte": "2024"}})
+
+
+@pytest.mark.parametrize(("filters", "expected"), CASES)
+def test_compile_filters_agrees_with_matches(filters, expected):
+    chunks = [
+        ScoredChunk(score=0.0, **{**p, "categories": tuple(p["categories"])}) for p in PAYLOADS
+    ]
+    keep = compile_filters(filters)
+    assert {c.doc_id for c in chunks if keep(c)} == expected
+    assert [keep(c) for c in chunks] == [matches(c, filters) for c in chunks]
+
+
+def test_compile_filters_checks_the_bounds_once(monkeypatch):
+    calls = []
+    real = retrieval.check_range
+    monkeypatch.setattr(retrieval, "check_range", lambda *a: calls.append(a) or real(*a))
+    keep = compile_filters({**year_range(2024, 2024), "categories": "cs.CL"})
+    chunk = ScoredChunk(
+        score=0.0, **{**PAYLOADS[0], "categories": tuple(PAYLOADS[0]["categories"])}
+    )
+    for _ in range(1000):
+        keep(chunk)
+    assert len(calls) == 1
+    assert compile_filters(None)(chunk) and compile_filters({})(chunk)
+
+
 def test_year_range():
     assert year_range(2020, 2024) == {"published_at": {"gte": "2020-01-01", "lt": "2025-01-01"}}
     assert year_range(end=1999) == {"published_at": {"lt": "2000-01-01"}}
@@ -155,3 +198,5 @@ def test_check_range():
         check_range("published_at", {})
     with pytest.raises(ValueError, match="'published_at': gte bound True"):
         check_range("published_at", {"gte": True})
+    with pytest.raises(ValueError, match="mixes numbers and dates"):
+        check_range("published_at", {"gte": 2020, "lt": "2024-01-01"})
