@@ -203,8 +203,8 @@ search.
 - **Retrieval is not the bottleneck.** Hybrid retrieval stays under 135 ms at p95 at every size,
   far below the LLM's time to first token (0.44 s, #91).
 
-<!-- TODO(W7-D2-FAO-1): repeat on the frozen snapshot (W6-D4) if it differs, and say which
-snapshot the numbers belong to. -->
+All sizes were cut from the index that is frozen for evaluation (§2.7), so these numbers belong
+to that snapshot.
 
 Limits of these measurements: one machine and one run of 100 sequential queries per size, so
 differences of a few milliseconds are noise. Memory was measured for the whole Qdrant container,
@@ -212,5 +212,19 @@ not per collection. The 100% load and BM25 build times come from the full load o
 
 ## 2.7 Frozen snapshot for evaluation
 
-<!-- TODO(W6-D4-FAO-1): snapshot id, document and chunk counts and embedding model from
-evaluation/SNAPSHOT.md, and the rule that incremental loads never touch it. -->
+Every evaluation run uses one index, recorded in `evaluation/SNAPSHOT.md` (W6-D4-FAO-1):
+
+| Item | Value |
+|---|---|
+| Snapshot id | `scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37` |
+| Dataset | Kaggle arXiv version 307 (2026-10-10), `cs.CL` |
+| Documents / chunks / points | 121,860 / 121,926 / 121,926 |
+| Embedding model | `BAAI/bge-small-en-v1.5`, 384 dimensions, cosine, query prefix only |
+| Search | Qdrant 1.19.2, exact search; BM25 over the same chunks |
+
+The id names the collection, the model and the times of chunking and embedding, and every
+evaluation run records it, so runs on different indexes cannot be compared by mistake. Incremental
+loads are never pointed at this collection before the final gate (its live test ran on a copy).
+On 2026-10-27 the machine that serves it was checked against the file: same id, 121,926 points in
+Qdrant, and all 57 relevant documents of the golden set present.
+<!-- TODO(W6-D4-FAO-1): confirm after the bug bash (W6-D4-DAT-1) that the data did not change. -->
