@@ -35,15 +35,19 @@ Since W5-D4-DAT-1 the agent writes one JSON line per question to `data/logs/trac
 | `model` | object | `LLM_MODEL`, `LLM_TIMEOUT`, `LLM_MAX_RETRIES` (never the URL or the key). |
 | `config` | object | The `AgentConfig` values (top_k, min_score, flags, limits, token limits) and the retriever class (`HybridRetriever`, ...). |
 
+For latency figures (W7), keep only `status == "ok"` and `evidence.decision == "answer"`: on a refusal, `first_token` is the time to the fixed refusal text, not to an LLM token.
+
 Not logged: names, IP addresses, browser data, the chunk texts, API keys or endpoint URLs. The earlier turns of a conversation are not repeated: they are the earlier lines with the same `session_id`.
 
 ## Evaluation without the API
 
 `Agent.run_batch(items)` answers each item in its own new session and returns `BatchResult`s (`id`, `question`, `error`, `sources`, `trace`). An item is a string, a `BatchItem`, or a golden-set object (`id`, `question`, optional `history` of `{"role", "content"}` turns, which become the session's earlier turns). A failed question gets `error` (a contract code) and the batch goes on. `BatchResult.to_dict()` gives `answer_id`, `answer`, `answer_raw`, `sources` (`n`, `chunk_id`, `doc_id`, `title`, `text`, `score`, as `scitech_eval.answers.read_answers` expects), `citations`, `followups`, `insufficient_evidence` and the trace under `trace`.
 
+An evaluation run should set `AGENT_TRACES` to its own file (for example next to its run file), so its traces do not mix with the backend's or the user study's in the default file.
+
 ```python
 from scitech_agent.factory import agent_from_env
-agent = agent_from_env()  # AGENT_TRACES applies here too
+agent = agent_from_env()  # writes to AGENT_TRACES: set it per run
 results = agent.run_batch(golden_items)
 records = [r.to_dict() for r in results]
 ```
