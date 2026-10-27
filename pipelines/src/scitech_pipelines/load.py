@@ -135,10 +135,14 @@ def load_index(
     *,
     batch_size: int = DEFAULT_BATCH_SIZE,
     force: bool = False,
+    expected_points: int | None = None,
     log: Log = print,
 ) -> dict[str, Any]:
     """Upsert every vector of `vectors` with its chunk from `chunks` into `store`, then check
-    the count and write `<out>/_load_manifest.json`. `force` ignores the resume state."""
+    the count and write `<out>/_load_manifest.json`. `force` ignores the resume state.
+    `expected_points` is the count the store must hold at the end; by default one point per
+    chunk (a bulk load into its own collection). Incremental ingestion loads a few chunks into
+    the full collection and passes the count it expects there."""
     if batch_size < 1:
         raise ValueError(f"batch_size must be >= 1, got {batch_size}")
     started = time.monotonic()
@@ -206,7 +210,12 @@ def load_index(
         log(f"load: part {i}/{len(parts)}, {len(rows):,} points in {time.monotonic() - t:.1f} s")
 
     points = store.count()
-    if points != expected:
+    if expected_points is not None and points != expected_points:
+        raise RuntimeError(
+            f"load check failed: {store.collection} holds {points} points, expected "
+            f"{expected_points} ({expected} chunks loaded into it)"
+        )
+    if expected_points is None and points != expected:
         raise RuntimeError(
             f"load check failed: {store.collection} holds {points} points, expected {expected} "
             "(one per chunk). Points from an older load? Recreate the collection and use --force"
@@ -227,6 +236,7 @@ def load_index(
         "batch_size": batch_size,
         "counts": {
             "points": points,
+            "chunks": expected,
             "parts": len(parts),
             "parts_resumed": len(done),
             "points_loaded_this_run": loaded,

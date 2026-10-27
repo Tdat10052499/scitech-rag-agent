@@ -203,3 +203,7 @@ def test_in_memory_store_behaves_like_the_store():
     assert [h.chunk_id for h in store.search([1.0, 0.1], k=1)] == ["d#0"]
     with pytest.raises(StoreError):
         store.upsert([Point(3, [1.0], payload)])
+    other = dict(payload, chunk_id="e#0", doc_id="e")
+    store.upsert([Point(4, [0.5, 0.5], other)])
+    assert store.delete_doc_ids(["d", "missing"]) == 2  # every chunk of "d"
+    assert [h.chunk_id for h in store.search([1.0, 0.0], k=5)] == ["e#0"]

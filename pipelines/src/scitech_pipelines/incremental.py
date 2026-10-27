@@ -20,10 +20,11 @@ from __future__ import annotations
 import json
 import time
 import xml.etree.ElementTree as ET
-from collections.abc import Callable, Iterator
-from datetime import date, datetime, timezone
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from scitech_pipelines.clean import DEFAULT_CATEGORY
 from scitech_pipelines.download import DEFAULT_USER_AGENT, RETRY_STATUS, HttpSession, file_entry
@@ -346,3 +347,327 @@ def fetch_incremental(
         f"{len(pages)} page(s), {kept:,} kept with {category or 'any category'} -> {out}"
     )
     return manifest
+
+
+# --- the incremental run (W5-D2-FAO-1, ADR 0008) ------------------------------------------------
+
+STATE_FILE = "incremental.json"  # the watermark, in <data-dir>/state/
+SUMMARY = "incremental.json"  # what the run did, in its log folder
+STEP_NAMES = ("incremental-fetch", "clean", "validate", "chunk", "embed", "load")
+
+
+class IncrementalStore(Protocol):
+    """What the run needs from the store (`scitech_agent.store.QdrantStore` has it)."""
+
+    collection: str
+
+    def ensure_collection(self, dimension: int) -> Any: ...
+
+    def upsert(self, points: Sequence[Any]) -> Any: ...
+
+    def count(self) -> int: ...
+
+    def delete_doc_ids(self, doc_ids: Iterable[str]) -> int: ...
+
+
+@dataclass(frozen=True)
+class RunPaths:
+    raw: Path  # the fetched records
+    work: Path  # everything made from them
+    documents: Path
+    chunks: Path
+    embeddings: Path
+    index: Path
+
+
+def run_paths(data_dir: Path, set_spec: str | None, from_date: date, until: date) -> RunPaths:
+    """Where one range goes: the raw file next to those of `incremental-fetch`, the processed
+    data in `<data-dir>/processed/incremental/<from>_<until>/`, never in the bulk folders."""
+    name = f"{set_spec or 'all'}_{from_date}_{until}".replace(":", "-")  # ":" breaks Windows
+    work = data_dir / "processed" / "incremental" / f"{from_date}_{until}"
+    return RunPaths(
+        raw=data_dir / "raw" / "arxiv-oai" / f"{name}.jsonl",
+        work=work,
+        documents=work / "documents",
+        chunks=work / "chunks",
+        embeddings=work / "embeddings",
+        index=work / "index",
+    )
+
+
+def read_state(path: Path) -> dict[str, Any] | None:
+    """The watermark file, or None before the first run."""
+    if not path.is_file():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_state(path: Path, state: dict[str, Any]) -> None:
+    """Write the watermark through a temporary file, so a crash never leaves half a file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def plan_range(
+    state: dict[str, Any] | None,
+    *,
+    start: date | None,
+    until: date | None,
+    today: date,
+    state_path: Path,
+) -> tuple[date, date]:
+    """The datestamp range of this run. It starts at the watermark day itself (ADR 0008, point
+    1: that day may have been harvested before all its records arrived), or at `start` on the
+    first run, and ends at `until`, by default yesterday (UTC)."""
+    if state is not None:
+        if start is not None:
+            raise ValueError(
+                f"--start is only for the first run; {state_path} already holds the watermark "
+                f"{state['until']} (delete that file to start again)"
+            )
+        from_date = date.fromisoformat(state["until"])
+    elif start is None:
+        raise ValueError(
+            f"no watermark in {state_path}: pass --start with the date of the snapshot of the "
+            "bulk index (2026-10-10 for Kaggle snapshot 307, ADR 0008 point 4)"
+        )
+    else:
+        from_date = start
+    return from_date, until or today - timedelta(days=1)
+
+
+def check_settings(
+    state: dict[str, Any] | None, settings: dict[str, Any], state_path: Path
+) -> None:
+    """A run with another set, category, collection or model than the watermark's would mix
+    two indexes, so it fails."""
+    if state is None:
+        return
+    changed = [k for k, v in settings.items() if state.get(k) != v]
+    if changed:
+        was = ", ".join(f"{k} {state.get(k)!r}" for k in changed)
+        now = ", ".join(f"{k} {settings[k]!r}" for k in changed)
+        raise ValueError(f"{state_path} was written with {was}; this run has {now}")
+
+
+def plan_incremental_steps(
+    data_dir: Path,
+    paths: RunPaths,
+    *,
+    from_date: date,
+    until: date,
+    set_spec: str | None,
+    category: str | None,
+    base_url: str,
+    pause: float,
+    model: str,
+    device: str | None = None,
+) -> dict[str, tuple[str, ...]]:
+    """The arguments of every step run as its own `python -m scitech_pipelines` process (the
+    same commands as by hand); `load` runs in this process because it deletes first."""
+    base = ("--data-dir", str(data_dir))
+    fetch = [*base, "incremental-fetch", "--from", str(from_date), "--until", str(until)]
+    fetch += ["--set", set_spec or "", "--category", category or "", "--out", str(paths.raw)]
+    fetch += ["--base-url", base_url, "--pause", f"{pause:g}"]
+    clean = [*base, "clean", "--input", str(paths.raw), "--out", str(paths.documents)]
+    clean += ["--sample-size", "0"]
+    validate = [*base, "validate", "--input", str(paths.documents)]
+    if category:
+        clean += ["--category", category]
+        validate += ["--category", category]
+    embed = [*base, "embed", "--input", str(paths.chunks), "--out", str(paths.embeddings)]
+    embed += ["--model", model, "--force"]  # re-chunked input after a failed run: embed again
+    if device:
+        embed += ["--device", device]
+    return {
+        "incremental-fetch": tuple(fetch),
+        "clean": tuple(clean),
+        "validate": tuple(validate),
+        "chunk": (*base, "chunk", "--input", str(paths.documents), "--out", str(paths.chunks)),
+        "embed": tuple(embed),
+    }
+
+
+def _doc_ids(chunks: Path) -> list[str]:
+    import duckdb
+
+    from scitech_pipelines.chunk import CHUNK_FILE
+    from scitech_pipelines.validate import _quote
+
+    con = duckdb.connect()
+    rows = con.execute(
+        f"SELECT DISTINCT doc_id FROM read_parquet({_quote((chunks / CHUNK_FILE).as_posix())}) "
+        "ORDER BY doc_id"
+    ).fetchall()
+    con.close()
+    return [r[0] for r in rows]
+
+
+def replace_documents(
+    store: IncrementalStore,
+    paths: RunPaths,
+    *,
+    batch_size: int,
+    log: Log = print,
+) -> dict[str, Any]:
+    """Delete every point of the documents in this run's chunks, then load their new chunks
+    (ADR 0008, point 5), and check that the store holds exactly the points it should."""
+    from scitech_pipelines.embed import EMBED_STATE
+    from scitech_pipelines.load import load_index
+
+    dimension = json.loads((paths.embeddings / EMBED_STATE).read_text(encoding="utf-8"))[
+        "dimension"
+    ]
+    store.ensure_collection(dimension)
+    doc_ids = _doc_ids(paths.chunks)
+    before = store.count()
+    store.delete_doc_ids(doc_ids)
+    left = store.count()
+    log(
+        f"load: {len(doc_ids):,} documents to (re)load; {before - left:,} of their old points "
+        f"deleted, {left:,} points left in {store.collection}"
+    )
+    chunks = json.loads((paths.chunks / "_chunk_manifest.json").read_text(encoding="utf-8"))
+    manifest = load_index(
+        paths.chunks,
+        paths.embeddings,
+        store,
+        paths.index,
+        batch_size=batch_size,
+        force=True,
+        expected_points=left + chunks["counts"]["chunks"],
+        log=log,
+    )
+    manifest["counts"].update(
+        {"documents": len(doc_ids), "points_before": before, "old_points_deleted": before - left}
+    )
+    (paths.index / "_load_manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    return manifest
+
+
+def run_incremental(
+    data_dir: Path,
+    store: IncrementalStore,
+    *,
+    model: str,
+    state_path: Path | None = None,
+    start: date | None = None,
+    until: date | None = None,
+    today: date | None = None,
+    set_spec: str | None = DEFAULT_SET,
+    category: str | None = DEFAULT_CATEGORY,
+    base_url: str = DEFAULT_BASE_URL,
+    pause: float = MIN_PAUSE,
+    device: str | None = None,
+    batch_size: int = 256,
+    run_step: Callable[[Sequence[str], Path], int] | None = None,
+    log: Log = print,
+) -> int:
+    """One incremental run: fetch the range from the watermark, clean, validate, chunk, embed,
+    replace the documents in the store, and only then move the watermark. Any failure leaves the
+    watermark where it was, so the next run repeats the same range. Returns the exit code."""
+    from scitech_pipelines.run_all import tee_step
+
+    run_step = run_step or tee_step
+    state_path = state_path or data_dir / "state" / STATE_FILE
+    today = today or datetime.now(timezone.utc).date()
+    state = read_state(state_path)
+    from_date, until = plan_range(
+        state, start=start, until=until, today=today, state_path=state_path
+    )
+    settings = {
+        "set": set_spec or None,
+        "category": category or None,
+        "collection": store.collection,
+        "model": model,
+    }
+    check_settings(state, settings, state_path)
+    if until < from_date:
+        log(f"incremental: nothing to do, the watermark {from_date} is after {until}")
+        return 0
+    paths = run_paths(data_dir, set_spec, from_date, until)
+    steps = plan_incremental_steps(
+        data_dir,
+        paths,
+        from_date=from_date,
+        until=until,
+        set_spec=set_spec,
+        category=category,
+        base_url=base_url,
+        pause=pause,
+        model=model,
+        device=device,
+    )
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    logs = data_dir / "logs" / f"incremental-{stamp}"
+    logs.mkdir(parents=True, exist_ok=True)
+    summary: dict[str, Any] = {
+        "step": "incremental",
+        "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "from": str(from_date),
+        "until": str(until),
+        "watermark_before": state["until"] if state else None,
+        **settings,
+        "work_dir": str(paths.work),
+        "steps": [],
+    }
+    started = time.monotonic()
+
+    def finish(code: int, message: str) -> int:
+        summary["exit_code"] = code
+        summary["watermark_after"] = str(until) if code == 0 else summary["watermark_before"]
+        summary["seconds"] = round(time.monotonic() - started, 1)
+        (logs / SUMMARY).write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+        log(f"incremental: {message}; logs in {logs}")
+        return code
+
+    log(f"incremental: {from_date} to {until} into {store.collection} (logs {logs})")
+    load_manifest: dict[str, Any] | None = None
+    for i, name in enumerate(STEP_NAMES, 1):
+        log_file = logs / f"{i:02d}-{name}.log"
+        t = time.monotonic()
+        if name == "load":
+            try:
+                load_manifest = replace_documents(store, paths, batch_size=batch_size, log=log)
+                code = 0
+            except Exception as exc:  # noqa: BLE001 - reported, and the watermark stays
+                log_file.write_text(f"{type(exc).__name__}: {exc}\n", encoding="utf-8")
+                log(f"load failed: {exc}")
+                code = 1
+        else:
+            code = run_step(steps[name], log_file)
+        summary["steps"].append(
+            {"name": name, "exit_code": code, "seconds": round(time.monotonic() - t, 1)}
+        )
+        if code != 0:
+            message = f"{name} FAILED (exit {code}), watermark stays at {from_date}"
+            if name == "load":
+                message += " (documents deleted before the failure come back when it is re-run)"
+            return finish(code, message)
+        if name == "incremental-fetch":
+            fetched = json.loads(manifest_path(paths.raw).read_text(encoding="utf-8"))
+            summary["fetch"] = fetched["counts"]
+            if fetched["counts"]["kept"] == 0:
+                summary["steps"][-1]["note"] = "no records: nothing to clean or load"
+                break
+
+    points = load_manifest["counts"]["points"] if load_manifest else (state or {}).get("points")
+    write_state(
+        state_path,
+        {
+            "until": str(until),
+            **settings,
+            "points": points,
+            "fetch_manifest": str(manifest_path(paths.raw)),
+            "load_manifest": str(paths.index / "_load_manifest.json") if load_manifest else None,
+            "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        },
+    )
+    if load_manifest:
+        summary["load"] = load_manifest["counts"]
+    loaded = load_manifest["counts"]["chunks"] if load_manifest else 0
+    return finish(0, f"{loaded:,} chunks loaded, watermark moved to {until}")

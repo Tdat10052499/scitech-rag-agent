@@ -135,6 +135,28 @@ def test_count_is_exact_and_takes_filters():
     assert body == {"exact": True, "filter": {"must": must}}
 
 
+def test_delete_doc_ids_sends_match_any_in_batches_without_duplicates():
+    fake = FakeQdrant()
+    store = make_store(fake)
+    assert store.delete_doc_ids(["2401.3", "2401.1", "2401.2", "2401.1"], batch_size=2) == 3
+    path = "/collections/test_chunks/points/delete?wait=true"
+    sent = [b for m, p, b in fake.requests if p == path]
+    assert [b["filter"]["must"][0]["match"]["any"] for b in sent] == [
+        ["2401.1", "2401.2"],
+        ["2401.3"],
+    ]
+    assert all(b["filter"]["must"][0]["key"] == "doc_id" for b in sent)
+
+
+def test_delete_of_no_doc_ids_sends_nothing_and_rejects_a_bad_batch_size():
+    fake = FakeQdrant()
+    store = make_store(fake)
+    assert store.delete_doc_ids([]) == 0
+    assert fake.requests == []
+    with pytest.raises(ValueError):
+        store.delete_doc_ids(["2401.1"], batch_size=0)
+
+
 def test_search_maps_payload_to_scored_chunks_in_order():
     fake = FakeQdrant()
     other = dict(PAYLOAD, chunk_id="2401.00002#1", doc_id="2401.00002", chunk_index=1)

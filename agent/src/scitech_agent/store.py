@@ -269,6 +269,22 @@ class QdrantStore:
             total += len(batch)
         return total
 
+    def delete_doc_ids(
+        self, doc_ids: Iterable[str], *, batch_size: int = DEFAULT_BATCH_SIZE
+    ) -> int:
+        """Delete every point whose `doc_id` is in `doc_ids` (all chunks of those documents), in
+        requests of at most `batch_size` ids; return the number of distinct ids. Incremental
+        ingestion calls it before it reloads a document, so chunks of an older, longer abstract
+        do not stay behind (ADR 0008, point 5)."""
+        if batch_size < 1:
+            raise ValueError(f"batch_size must be >= 1, got {batch_size}")
+        ids = sorted(set(doc_ids))
+        for start in range(0, len(ids), batch_size):
+            wanted = {"key": "doc_id", "match": {"any": ids[start : start + batch_size]}}
+            body = {"filter": {"must": [wanted]}}
+            self._request("POST", self._path("/points/delete?wait=true"), json=body)
+        return len(ids)
+
     def count(self, filters: Filters | None = None) -> int:
         """Exact number of points (matching `filters`, if given)."""
         body: dict[str, Any] = {"exact": True}
@@ -327,6 +343,13 @@ class InMemoryStore:
             self.points[p.id] = (vector, dict(p.payload))
             total += 1
         return total
+
+    def delete_doc_ids(
+        self, doc_ids: Iterable[str], *, batch_size: int = DEFAULT_BATCH_SIZE
+    ) -> int:
+        ids = set(doc_ids)
+        self.points = {k: v for k, v in self.points.items() if v[1].get("doc_id") not in ids}
+        return len(ids)
 
     def count(self, filters: Filters | None = None) -> int:
         return len([c for c in self._chunks(0.0) if matches(c, filters)])

@@ -94,6 +94,20 @@ def test_create_upsert_count_search_with_filters(store):
     assert store.search(unit(0, 0, 1), k=1)[0].categories == ("x",)
 
 
+def test_delete_doc_ids_removes_every_chunk_of_those_documents(store):
+    store.ensure_collection(3)
+    points = [
+        Point(str(uuid.uuid4()), unit(1, 0, 0), chunk("a", 0, ["cs.CL"], "2022-05-01")),
+        Point(str(uuid.uuid4()), unit(1, 0.1, 0), chunk("a", 1, ["cs.CL"], "2022-05-01")),
+        Point(str(uuid.uuid4()), unit(0, 1, 0), chunk("b", 0, ["cs.CL"], "2023-03-15")),
+        Point(str(uuid.uuid4()), unit(0, 0, 1), chunk("c", 0, ["cs.CL"], "2024-07-30")),
+    ]
+    store.upsert(points)
+    assert store.delete_doc_ids(["a", "c", "missing"], batch_size=2) == 3
+    assert store.count() == 1
+    assert [h.chunk_id for h in store.search(unit(1, 0, 0), k=10)] == ["b#0"]
+
+
 def test_exact_and_hnsw_search_both_answer(store):
     """Qdrant accepts `params.exact` (default) and the plain HNSW query; on a tiny collection
     both find the same nearest points."""
