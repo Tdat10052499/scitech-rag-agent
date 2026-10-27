@@ -26,3 +26,11 @@ Source of truth for output: `docs/contracts/chunk.schema.json`. Sources and lice
 - `clean` needs Java 17+ and does **not** run natively on Windows. Run it in WSL2, Colab, or a Kaggle **CPU** notebook (Accelerator: None, so no GPU quota is used) with the arXiv dataset added as input and `--input /kaggle/input/.../arxiv-metadata-oai-snapshot.json`. Spark settings: `--master`/`SPARK_MASTER` (default `local[*]`), `--driver-memory`/`SPARK_DRIVER_MEMORY` (default `4g`).
 - Spark tests skip (not fail) without PySpark or without Java 17+ (an older Java, e.g. Java 8 on a Windows laptop, counts as none; `java -version` is checked), so `make test` works on Windows; CI runs them. They use one `local[1]` session on small JSON Lines files built from `tests/fixtures/sample.jsonl`.
 - Tests never call Kaggle or Wikipedia: they use fakes (`tests/test_download.py`).
+
+## Scripts behind ADRs and reports
+Each script's docstring has its full usage. They are kept so the numbers they produced can be checked again.
+- `scripts/profile_arxiv_snapshot.py`: W1-D2-FAO-1. Streams the Kaggle arXiv snapshot and profiles one category (ADR 0003, `docs/03-data-sources.md`).
+- `scripts/bench_embeddings.py`: W1-D2-FAO-1. Embedding throughput on the sample and the full-run estimate. Needs `requirements-bench.txt`.
+- `scripts/bench_engines.py`: W1-D5-FAO-1. The same small job on PySpark, DuckDB and Polars (ADR 0005). Needs `requirements-bench.txt`; PySpark needs Java 17+.
+- `scripts/compare_embeddings.py`: W3-D2-FAO-1. Golden-set retrieval of each candidate embedding model, for ADR 0007. Needs `requirements-embed.txt` and `evaluation/requirements.txt`.
+- `scripts/golden_coverage.py`: W4-D3-FAO-1 (#69), also W7-D1-FAO-1. Checks that every golden `relevant_doc_ids` is in the chunks (`--chunks`) and the loaded collection (`--qdrant`); exit 1 lists what is missing. Runbook §4.
