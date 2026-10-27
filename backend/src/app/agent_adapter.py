@@ -49,6 +49,9 @@ class AgentAdapter:
     def __init__(self, agent: Agent) -> None:
         self.agent = agent
 
+    def warm_up(self) -> None:
+        self.agent.warm_up()
+
     def run(self, session_id: str, message: str) -> Iterator[AgentEvent]:
         try:
             for event in self.agent.run(session_id, message):

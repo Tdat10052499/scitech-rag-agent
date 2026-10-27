@@ -1,7 +1,7 @@
 # 0008. Incremental ingestion: daily OAI-PMH harvest with a date watermark
 
-- Status: proposed. The OAI-PMH set is settled by the live check of 2026-10-17, and one real day went through fetch, clean, validate and chunk on 2026-10-19 (both below)
-- Date: 2026-10-17 (drafted early; task W3-D4-FAO-1 is scheduled for D13, 2026-10-27)
+- Status: accepted (2026-10-27, DAT's review on #124). The OAI-PMH set is settled by the live check of 2026-10-17, one real day went through fetch, clean, validate and chunk on 2026-10-19, and the end-to-end live test passed on 2026-10-27 (all three below); scheduling decided by that test (point 6)
+- Date: 2026-10-17 (drafted early for W3-D4-FAO-1); live test and scheduling 2026-10-27 (W5-D4-FAO-1)
 - Deciders: FAO (author), DAT (reviewer)
 
 ## Context
@@ -28,7 +28,7 @@ Scheduling:
 2. cron (WSL2) or Windows Task Scheduler on FAO's laptop.
 3. GitHub Actions on a schedule. CI has no data and no Qdrant (`data/` is git-ignored, the index is local), so it could only remind someone to run the command.
 
-## Decision (proposed)
+## Decision
 **Harvest arXiv OAI-PMH by datestamp with `incremental-fetch`, run the existing clean -> chunk -> embed -> load on that file only, and keep a date watermark that moves only after a successful load.**
 
 1. **Fetch** (prototype in this PR): `python -m scitech_pipelines incremental-fetch --from <watermark> --until <yesterday, UTC> --set cs:cs:CL --category cs.CL --out <file>.jsonl`. It follows `resumptionToken`, waits at least 3 s between requests, retries 429/5xx with `Retry-After`, treats `noRecordsMatch` as zero records, and writes the records as JSON Lines in the Kaggle snapshot shape, plus `<file>.manifest.json` with the settings and counts. `--from` is the watermark day itself, not the day after: datestamps are days, and a day's records may still be arriving when it is first harvested. The overlap costs one day of records, and re-loading them is harmless (point 5).
@@ -38,8 +38,12 @@ Scheduling:
    - `chunk`, then `embed` with the model of the index (`EMBEDDING_MODEL`, ADR 0007) on CPU. The live check harvested 304 records for one day (above the 90 estimated from the 2025 total; see the table). `bge-small-en-v1.5` (the model of ADR 0007) embedded 2.8 records/s on a Colab CPU (`docs/03-data-sources.md`), so 304 chunks take about 2 min (estimate; the live day of 2026-10-19 gave exactly one chunk per record). No GPU is needed.
    - `load` (W3-D3-FAO-1) into the same collection.
 4. **Watermark**: `data/state/incremental.json` (git-ignored) with the last loaded `until` day, the set and category, the fetch manifest path and the point count after the load. It is written only after `load` succeeds and its count check passes (W5-D2-FAO-1); a failure at any step leaves it, so the next run repeats the same range. The first value is the date of the Kaggle snapshot of the bulk index (2026-10-10 for version 307). A run after missed days harvests all of them in one range.
-5. **Idempotency**: `load` upserts by `chunk_id` (`<doc_id>#<chunk_index>`, stable), so re-running a range replaces points instead of adding them. A record's datestamp also changes when an old paper gets a new version (or its metadata is edited), so it is harvested again with its latest title and abstract and replaces the old chunks. `published_at` stays the v1 date (`created`) and `updated_at` becomes the new version's date. If the new abstract has fewer chunks, the old higher-numbered chunks would remain, so `load` must first delete the points of every `doc_id` it reloads (W5-D2-FAO-1).
-6. **Scheduling**: the manual command until the D14 live test passes; then one daily run after the announcement, through cron in WSL2 or Task Scheduler calling `wsl`, chosen and recorded here by W5-D4-FAO-1. GitHub Actions is not used.
+5. **Idempotency**: `load` upserts by `chunk_id` (`<doc_id>#<chunk_index>`, stable), so re-running a range replaces points instead of adding them. A record's datestamp also changes when an old paper gets a new version (or its metadata is edited), so it is harvested again with its latest title and abstract and replaces the old chunks. `published_at` stays the v1 date (`created`) and `updated_at` becomes the new version's date. If the new abstract has fewer chunks, the old higher-numbered chunks would remain, so `load` must first delete the points of every `doc_id` it reloads (W5-D2-FAO-1). Accepted gap of delete-then-upsert (DAT's review of #76): the papers being replaced have no points between the delete and the upsert (0.3 to 2.4 s in the live test below), and if the upsert fails they stay missing until the next run, which repeats the range. `incremental-run` also refuses a `--model` other than the one in the bulk load's manifest for the same collection, since Qdrant checks only the vector size.
+6. **Scheduling** (decided by W5-D4-FAO-1 on 2026-10-27): **one manual command, run on demand; no unattended schedule for v1.0.** GitHub Actions is not used. Reasons:
+   - The command needs Java 17+, the embedding model and the serving Qdrant on one machine. FAO's laptop, where the serving Qdrant runs, has Java 8 and no WSL2 with Java 17 set up, so `clean` cannot run there yet; the live test ran in a Kaggle notebook against its own copy of the index, and a Kaggle notebook cannot reach the laptop's Qdrant.
+   - The evaluation index is frozen at W6-D4 (2026-10-30), with no index changes until D22 (2026-11-06) unless approved, and incremental loads must not change it (Consequences). Before the presentation on 2026-11-10 the serving index needs new papers only for the demo, and one run catches up every missed day in one range (point 4): 17 days took 10 min 45 s on a Kaggle CPU.
+   - To run it, on a machine with Java 17+ that reaches the serving Qdrant (`QDRANT_URL`, `QDRANT_COLLECTION`): `PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines incremental-run --model BAAI/bge-small-en-v1.5 --device cpu`.
+   - If a machine with Java 17+ and the serving Qdrant becomes available (WSL2 on the laptop, or a Linux server), the daily schedule is one cron line, run after arXiv's nightly metadata update (not tested): `30 5 * * * cd <repo> && QDRANT_URL=http://localhost:6333 PYTHONPATH=pipelines/src:agent/src .venv/bin/python -m scitech_pipelines incremental-run --model BAAI/bge-small-en-v1.5 --device cpu >> data/logs/incremental.log 2>&1` (05:30 UTC, 12:30 in UTC+7). On Windows, a Task Scheduler task runs the same command through `wsl`.
 
 ## Live check: which set (run 2026-10-17)
 Run on FAO's laptop (Windows PowerShell, repo root, `.venv` active, no Java needed): two harvests of one recent weekday before today, then a comparison of the ids. Each run takes a few requests.
@@ -99,6 +103,20 @@ It then compared the cleaned ids with the bulk documents of snapshot 307 (Kaggle
 
 A third of the day's records are papers the index already has. Being in snapshot 307, their first version is older than 2026-10-10, and they were harvested again because they got a new version or a metadata change on 2026-10-16; at least 85 of the 89 are 2026 papers. That is the case of point 5: their chunks must replace the old ones, so the delete-then-upsert per `doc_id` in W5-D2-FAO-1 is needed on most days, not only in rare cases. `embed` and `load` were not run: `load` is W3-D3-FAO-1 (D09), and the end-to-end run with the watermark is W5-D4-FAO-1 (D14).
 
+## Live test: two end-to-end runs with the watermark (run 2026-10-27)
+Run in a Kaggle CPU notebook (Java 21, Qdrant 1.19.2) with `incremental-run` (#76) at `de6819d`, against a copy of the full bulk index (snapshot 307, 121,926 points). Full report: `pipelines/reports/incremental_test.md`.
+
+| | Run 1: `--start 2026-10-10` | Run 2: same day again |
+|---|---:|---:|
+| Range | 2026-10-10 to 2026-10-26 | 2026-10-26 |
+| Records kept / chunks | 2,744 / 2,758 | 177 / 178 |
+| Papers already in the index (old points deleted) | 962 (966) | 177 (178) |
+| Points before -> after | 121,926 -> 123,718 | 123,718 -> 123,718 |
+| Duplicate chunk ids / stale chunks / missing chunks | 0 / 0 / 0 | 0 / 0 / 0 |
+| Wall time (embed on CPU) | 10 min 45 s (549.2 s) | 1 min 13 s (39.1 s) |
+
+Both runs passed: the index grew by exactly the new papers' chunks, every reloaded paper kept only its new chunks, and repeating the watermark day changed nothing. 35% of run 1's papers were already indexed, which confirms that replacing by `doc_id` (point 5) is the normal case. Cut-list item 6 is not applied.
+
 ## Consequences
 - One code path: fetched records go through the bulk `clean`. The tests check that hand-written OAI-PMH pages fetched by the prototype pass `clean` (Spark and DuckDB) with the expected rows, and the live day above did the same with 276 real records.
 - Each day costs one or two requests and a few hundred records and chunks (304 and 276 on the two checked days), and one Spark start-up (about 15 s, ADR 0005) that is large next to the data. Accepted, to keep one code path.
@@ -107,4 +125,4 @@ A third of the day's records are papers the index already has. Being in snapshot
 - Deleted records (`<header status="deleted">`) are counted in the fetch manifest but stay in the index until the next full rebuild. A paper whose `cs.CL` category is removed also stays until then. Both are rare and accepted for v1.0.
 - After W6 freezes the evaluation index, incremental loads must not change it: they go to the serving collection, or each evaluation run records the watermark.
 - A full rebuild from a newer Kaggle snapshot resets the watermark to that snapshot's date.
-- Revisit if: a later check finds `cs.CL` ids that `cs:cs:CL` misses; OAI-PMH is unavailable for more than two days (fall back to (a), the weekly Kaggle diff); the measured daily volume is far above the estimate; or cut-list item 6 is applied at D14 (status: rejected, and the report describes this design).
+- Revisit if: a later check finds `cs.CL` ids that `cs:cs:CL` misses; OAI-PMH is unavailable for more than two days (fall back to (a), the weekly Kaggle diff); the measured daily volume is far above the estimate; or a machine with Java 17+ and the serving Qdrant becomes available (then schedule the daily run, point 6).

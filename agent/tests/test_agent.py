@@ -11,7 +11,6 @@ from scitech_agent.agent import (
     Turn,
     format_sources,
     load_prompt,
-    parse_followups,
 )
 from scitech_agent.events import (
     AgentError,
@@ -91,7 +90,8 @@ def test_answer_prompt_numbers_the_sources_and_guards_against_injection() -> Non
     assert user["content"].endswith("Question: How does the Transformer use attention?")
     assert (llm.calls[0].temperature, llm.calls[0].max_tokens) == (0.2, 300)
     followups_user = llm.calls[1].messages[1]["content"]
-    assert f"Answer: {ANSWER}" in followups_user and "- BERT" in followups_user
+    assert "<answer>\nThe Transformer relies on attention. BERT" in followups_user
+    assert '<source id="2">\nTitle: BERT' in followups_user
 
 
 def test_chunk_text_cannot_close_its_source_block() -> None:
@@ -198,19 +198,11 @@ def test_history_is_kept_per_session_and_given_to_rewrite() -> None:
     list(agent.run("s2", "Transformer?"))
 
     assert seen[0] == [] and seen[3] == []
-    assert seen[2] == [Turn("Transformer?", "Attention [1]."), Turn("BERT?", "Attention [1].")]
-    assert [t.question for t in agent.history("s1")] == ["BERT?", "attention?"]
-
-
-def test_parse_followups() -> None:
-    text = '1) "First?"\n2. Second?\n* Third?\n• Fourth?\nsecond?\n\n   \nOriginal?'
-    assert parse_followups(text, 3) == ["First?", "Second?", "Third?"]
-    assert parse_followups(text, 10, exclude="original?") == [
-        "First?",
-        "Second?",
-        "Third?",
-        "Fourth?",
+    assert [(t.question, t.answer) for t in seen[2]] == [
+        ("Transformer?", "Attention [1]."),
+        ("BERT?", "Attention [1]."),
     ]
+    assert [t.question for t in agent.history("s1")] == ["BERT?", "attention?"]
 
 
 def test_config_from_env() -> None:
@@ -233,3 +225,16 @@ def test_history_turns_zero_keeps_no_history() -> None:
     for question in ("Transformer?", "BERT?", "attention?"):
         list(agent.run("s", question))
     assert agent.history("s") == []
+
+
+def test_warm_up_searches_once_and_only_logs_a_failure(caplog: pytest.LogCaptureFixture) -> None:
+    agent, retriever, llm = make_agent()
+    agent.warm_up()
+    assert retriever.calls == [("warm-up", 1, None)] and llm.calls == []
+
+    class Down(InMemoryRetriever):
+        def search(self, query, k, filters=None):
+            raise RetrievalError("Qdrant is down")
+
+    Agent(Down([]), FakeLLM()).warm_up()  # does not raise
+    assert "warm-up search failed: Qdrant is down" in caplog.text

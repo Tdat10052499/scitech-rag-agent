@@ -1,0 +1,124 @@
+# Runbook: data pipeline (arXiv snapshot to a loaded Qdrant index)
+
+Task: W4-D5-FAO-1 (draft; final version W6-D3-FAO-1 adds incremental ingestion, scaling notes and more troubleshooting).
+Commands: `pipelines/AGENTS.md` (every option) and `pipelines/README.md` (setup, what runs where, the Kaggle recipes). Decisions: ADR 0003 (corpus), ADR 0005 (engine), ADR 0007 (embedding model), ADR 0008 (incremental ingestion).
+
+> Status: draft written on 2026-10-20 (D07), updated on 2026-10-22 (D09). `run-all` is merged (#92), the README's Kaggle recipes are on #60, and `incremental-run` is in review (#76). Times are the measured ones from the FAO journal (W2, W3) unless marked otherwise.
+
+## 1. Before you start
+- **Python environment:** `make setup`, then `PYTHONPATH=pipelines/src:agent/src` from the repository root (PowerShell: `$env:PYTHONPATH = "pipelines/src;agent/src"`). `load` and `run-all` need `agent/src` for DAT's Qdrant store.
+- **Java 17+** for `clean` (PySpark). Native Windows does not work: use WSL2, Linux or a Kaggle CPU notebook. Java 8 counts as none.
+- **A GPU** for `embed` on the full corpus (Kaggle T4: 14.4 min with bge-small). On a CPU it would take about 12 h (estimate, `docs/03-data-sources.md`).
+- **Qdrant** for `load`: `make up` (docker compose, `qdrant/qdrant:v1.19.2`), or the release binary of the same version in a notebook (README, "load on Kaggle").
+- **Kaggle login** for `download`: `kaggle auth login` once. The token stays in your user profile, never in the repository.
+- **Environment:** `EMBEDDING_MODEL`, `EMBEDDING_QUERY_PREFIX`, `QDRANT_URL`, `QDRANT_COLLECTION` and `DATA_DIR` from `.env.example`.
+
+### Disk space (full corpus, snapshot version 307)
+| What | Size | Note |
+|---|---|---|
+| raw snapshot `data/raw/arxiv/` | 5.61 GB | 7.5 GB at the peak while the 1.86 GB zip is still there |
+| documents `data/processed/documents/` | 95 MB | 33 year partitions |
+| chunks `data/processed/chunks/` | 101 MB | |
+| vectors `data/processed/embeddings/` | 198 MB (bge-small), 385 MB (bge-base) | |
+| BM25 index `data/index/bm25/` | 177.2 MB | needed by the default retriever (hybrid) |
+| Qdrant storage | 609.9 MiB | the `scitech_chunks` collection (bge-small, 121,926 points); container memory 280.7 MiB (`docker stats`, includes page cache). Index profile, #68 |
+
+Plan for **at least 8 GB free** for a full rebuild from the download. On a small `C:` drive, point `DATA_DIR` (or a junction from `data\raw`) at another disk. On D02, the C: drive filled up while the zip was still there.
+
+## 2. Full rebuild
+With `run-all` (#92):
+```bash
+python -m scitech_pipelines run-all --model "$EMBEDDING_MODEL"
+```
+On machines without everything (the usual case), split it where the hardware changes:
+```bash
+python -m scitech_pipelines run-all --to chunk           # Java machine or Kaggle CPU notebook
+python -m scitech_pipelines run-all --from embed --to embed --model "$EMBEDDING_MODEL"   # GPU notebook
+python -m scitech_pipelines run-all --from load          # where Qdrant runs
+```
+Step by step without `run-all`: the "Full rebuild" block of `pipelines/README.md`.
+
+Then build the BM25 index from the same chunks. `run-all` does not do it, and the default retriever (hybrid, `RETRIEVER` empty) needs both the Qdrant collection and this index:
+```bash
+PYTHONPATH=agent/src python -m scitech_agent.retrieval.keyword build --chunks data/processed/chunks --out data/index/bm25
+```
+
+Measured times for the full corpus:
+
+| Step | Time | Where |
+|---|---|---|
+| download | 150 s | FAO's laptop (19.8 MB/s) |
+| clean | 82-111 s for the whole process, peak memory 2.7-2.9 GB | Kaggle CPU notebook (4 CPUs) |
+| validate | seconds | anywhere |
+| chunk | 14-18 s | Kaggle or laptop |
+| embed | 14.4 min (bge-small), 43.8 min (bge-base) | Kaggle T4 |
+| load | 106.3 s (121,926 bge-small points, 4-17 s per part) | Kaggle CPU notebook, Qdrant 1.19.2 |
+| load | 135.2 s (121,926 bge-small points, 7.6-11.2 s per part); a dry run earlier the same evening took 201.7 s | FAO's Windows laptop, Qdrant 1.19.2 in Docker (2026-10-21) |
+| BM25 build | 15.8-20.3 s, peak working set 1,184 MB | DAT's Windows laptop |
+| BM25 build | 36.7 s | FAO's Windows laptop (2026-10-21) |
+
+`run-all` writes each step's output to `<data-dir>/logs/run-all-<UTC time>/<nn>-<step>.log` and a summary `run-all.json` (exit code and seconds per step). Keep the folder of the run you report on.
+
+## 3. Small rebuild (weak machine, or to try the steps)
+```bash
+python -m scitech_pipelines run-all --limit 2000 --device cpu --model "$EMBEDDING_MODEL"
+```
+- `--limit N` keeps the first N `cs.CL` records in snapshot order, which are mostly the oldest papers, and none of the golden documents. A small run is a smoke test of the steps only: never evaluate on it or report retrieval numbers from it.
+- Everything after the download goes to `<data-dir>/limit-<N>/` and into the collection `<QDRANT_COLLECTION>_limit_<N>`, so the full data and the full index are never touched.
+- The download is still the full 1.86 GB zip, because Kaggle only serves the whole snapshot. With a snapshot already on disk, add `--snapshot <path>` to skip it.
+- Without any download: the records of `pipelines/tests/fixtures/sample.jsonl` (in git), for example `--snapshot pipelines/tests/fixtures/sample.jsonl --limit 10`. Up to `chunk` (`--to chunk`), this took 16.9 s on a Linux VM (4 CPUs), mostly Spark's start-up.
+- Time for `--limit 2000`, from the snapshot on disk to loaded points: **400.1 s** in a Kaggle CPU notebook on 2026-10-20 (sample 38.2 s, clean 28.4 s, validate 0.4 s, chunk 0.4 s, embed on CPU 329.7 s at 7.0 chunks/s, load 3.0 s). That gave 2,000 documents, 2,002 chunks and 2,002 points. Per-step table: `pipelines/README.md`.
+
+## 4. Verify a build
+The counts must chain, for snapshot 307:
+
+| Manifest | Field | Expected |
+|---|---|---|
+| `processed/documents/_clean_manifest.json` | `counts.records_out` | 121,860 |
+| `processed/chunks/_chunk_manifest.json` | `counts.chunks` | 121,926 |
+| `processed/embeddings/_embed_manifest.json` | `counts.chunks` | 121,926 |
+| `processed/index/_load_manifest.json` | `counts.points` | 121,926 |
+
+- `validate --golden evaluation/golden_set/golden.jsonl` checks the documents and that every golden `relevant_doc_ids` exists. `run-all` runs it on full runs.
+- `pipelines/scripts/golden_coverage.py --chunks data/processed/chunks --qdrant` checks the same ids against the chunks and the loaded collection (#69). Run it with `PYTHONPATH=pipelines/src` (PowerShell: `$env:PYTHONPATH = "pipelines/src"`). On 2026-10-20 all 57 doc ids of the 47 items (gs-001 to gs-045, gs-u01, gs-u02; golden set of #88) were in the chunks.
+- `_load_manifest.json` holds `index_snapshot`, the id that evaluation runs cite.
+- Search speed, filters, size on disk and memory: `pipelines/scripts/index_profile.py`, with usage and the 2026-10-21 numbers in `pipelines/reports/index_profile.md` (both on #68, not on `main` until it merges). On FAO's laptop, p95 was 88 ms for dense, 14 ms for BM25 and 149 ms for hybrid.
+- A quick look at the store: `PYTHONPATH=agent/src python -c "from scitech_agent.store import QdrantStore; s = QdrantStore.from_env(); print(s.count())"`.
+
+## 5. Common failures and fixes
+| Symptom | Cause | Fix |
+|---|---|---|
+| `clean` stops at once, or its tests are skipped | No Java 17+ (or Java 8) | Install Java 17+, or run `clean` in WSL2, Linux or a Kaggle CPU notebook |
+| `clean` fails on Kaggle with an unknown Spark function | Older PySpark in the notebook | Fixed for PySpark 4.0.4 (`a64d69a`); run from current `main` |
+| `download` fails with 401/403 | No Kaggle login | `kaggle auth login`; never copy the token into the repository |
+| Kaggle's dataset page crashes | Kaggle side | Download through the API (the `download` command), not the web page |
+| "No space left on device" during `download` | Zip and extracted file both on disk (7.5 GB peak) | Free space or move `DATA_DIR`; the zip is deleted after extraction unless `--keep-zip` |
+| `embed` very slow | Running on CPU (no GPU runtime selected) | Select a GPU in the notebook; `--device cuda` fails loudly instead of falling back |
+| `embed` fails with "no embedding model" | `EMBEDDING_MODEL` unset or `replace-me` | `--model BAAI/bge-small-en-v1.5` (ADR 0007) or set the variable |
+| `load`: `ModuleNotFoundError: scitech_agent` | `agent/src` not on `PYTHONPATH` | Add it (section 1) |
+| `load`: connection refused | Qdrant not running, or a wrong `QDRANT_URL` | `make up`, or start the binary; check `curl $QDRANT_URL/healthz` |
+| `load` refuses the vectors | Vectors from other chunks (`chunked_at` differs), an `embed --limit` run, or an unfinished embed run | Re-run `embed` on the current chunks, without `--limit` |
+| `load`: "other settings" | Resume state from a load with other vectors, chunks or collection | `--force`, or another `--out` |
+| `load`: "load check failed ... holds N points" | Points from an older load in the same collection | Recreate the collection (another `QDRANT_COLLECTION`, or delete it), then `load --force` |
+| Dense recall lower than ADR 0007 through Qdrant | `QDRANT_SEARCH_EXACT=false`: approximate HNSW search, where gs-016 drops out (#87) | Check that `QDRANT_SEARCH_EXACT` is not `false`; exact search is the default since #101 |
+| `load` (or its tests) fails with an `AttributeError` about `fetch_arrow_table` | duckdb 2.0 removed `fetch_arrow_table`, and a fresh `make setup` installs 2.0 | Fixed in #107 (`to_arrow_table` first); on an older branch, merge `main` |
+| `ModuleNotFoundError: scitech_agent.retrieval.hybrid` (evaluation configs, `index_profile.py`) | A branch from before the hybrid retriever (#82, #101) | Merge `main` into the branch, or run from `main` |
+| `docker start qdrant`: "No such container: qdrant" | The container belongs to docker compose and is named `<folder>-qdrant-1` | `docker compose up -d` (or `make up`) from the repository root |
+| A golden set or run file copied from Windows has another sha256 than on Linux | Git on Windows checks text files out with CRLF line ends | Compare files with LF line ends, or run on one OS; the run file records the sha256 of the bytes it read |
+| Kaggle notebook: data of a previous run gone | `/kaggle/working` lasts only for the session | Keep inputs as Kaggle datasets; don't use *Save Version* with Qdrant's storage in `/kaggle/working` |
+
+## 6. New records since the snapshot (in review, #76)
+`incremental-run` (ADR 0008) adds the arXiv records published since the watermark `<data-dir>/state/incremental.json` to a collection:
+```bash
+python -m scitech_pipelines incremental-run --start 2026-10-10 --model "$EMBEDDING_MODEL"   # first run only
+python -m scitech_pipelines incremental-run --model "$EMBEDDING_MODEL"                      # later runs
+```
+- It needs Java (`clean`), sentence-transformers (`embed`) and the Qdrant it loads into, on one machine.
+- A paper harvested again replaces all its old chunks, and the watermark moves only after a load whose count check passed. A failed run is simply run again.
+- Never point it at the frozen evaluation collection (`--collection`).
+- It does not rebuild the BM25 index, so incremental papers are found only by the dense half of hybrid retrieval, and BM25 keeps the old text of replaced papers, until the index is rebuilt (#119).
+- The live test, the numbers and the schedule come with W5-D4-FAO-1.
+
+## 7. Not covered yet
+- The scaling numbers at 10%, 50% and 100% of the corpus (W6-D2-FAO-1, `pipelines/scripts/scaling.py` on #96).
+- Restoring a frozen snapshot for the final evaluation (W6-D4-FAO-1).

@@ -4,7 +4,8 @@
 `python -m scitech_pipelines` process, so a step behaves exactly as when it is run by hand and
 the Spark JVM of `clean` ends with its step. Every step's output is shown and also written to
 `<data-dir>/logs/run-all-<time>/<nn>-<step>.log`; `run-all.json` in the same folder records the
-plan, the exit code and the time of every step. The run stops at the first step that fails.
+plan, the exit code and the time of every step. The run stops at the first step that fails; after
+Ctrl+C or an error `run-all.json` still records the finished steps and the one that was running.
 
 `--limit N` is the small run for weak machines: after the download, a `sample` step keeps the
 first N records of the category from the snapshot, and every later step works on that sample in
@@ -32,6 +33,7 @@ STEP_NAMES = ("download", "sample", "clean", "validate", "chunk", "embed", "load
 SUMMARY = "run-all.json"
 DEFAULT_GOLDEN = Path("evaluation/golden_set/golden.jsonl")
 DEFAULT_COLLECTION = "scitech_chunks"
+INTERRUPTED = 130  # exit code of a run stopped by Ctrl+C, as a shell reports it
 
 Log = Callable[[str], None]
 # Runs one step (its argv after `python -m scitech_pipelines`) and returns its exit code.
@@ -163,9 +165,11 @@ def sample_snapshot(snapshot: Path, out: Path, limit: int, category: str) -> int
 
 
 def tee_step(argv: Sequence[str], log_file: Path) -> int:
-    """Run `python -m scitech_pipelines <argv>`, show its output and copy it to `log_file`."""
+    """Run `python -m scitech_pipelines <argv>`, show its output and copy it to `log_file`. The
+    child writes UTF-8 (`PYTHONUTF8=1`): on Windows a pipe would otherwise get the locale code page,
+    which garbles non-ASCII text or fails on characters the code page lacks."""
     command = [sys.executable, "-m", "scitech_pipelines", *argv]
-    env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+    env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONUTF8": "1"}
     with log_file.open("w", encoding="utf-8") as log:
         log.write("$ " + " ".join(command) + "\n")
         process = subprocess.Popen(
@@ -177,11 +181,26 @@ def tee_step(argv: Sequence[str], log_file: Path) -> int:
             errors="replace",
             env=env,
         )
-        assert process.stdout is not None
-        for line in process.stdout:
-            sys.stdout.write(line)
-            log.write(line)
-        return process.wait()
+        try:
+            assert process.stdout is not None
+            for line in process.stdout:
+                show(line)
+                log.write(line)
+            return process.wait()
+        finally:
+            if process.poll() is None:  # Ctrl+C or an error here: do not leave the step running
+                process.kill()
+                process.wait()
+
+
+def show(line: str) -> None:
+    """Write a step's line to stdout; a character stdout cannot encode (a redirected stdout on
+    Windows uses the code page) is replaced instead of stopping the run."""
+    try:
+        sys.stdout.write(line)
+    except UnicodeEncodeError:
+        encoding = sys.stdout.encoding or "ascii"
+        sys.stdout.write(line.encode(encoding, "replace").decode(encoding))
 
 
 def run_all(
@@ -208,32 +227,50 @@ def run_all(
         "category": category,
         "steps": [],
     }
-    started, code = time.monotonic(), 0
-    for i, step in enumerate(steps, 1):
-        log_file = logs / f"{i:02d}-{step.name}.log"
-        log(f"run-all: step {i}/{len(steps)} {step.name} (log {log_file})")
-        t = time.monotonic()
-        if step.name == "sample":
-            assert limit and paths.sample is not None
-            written = sample_snapshot(paths.snapshot, paths.sample, limit, category)
-            message = f"sample: {written:,} {category} records -> {paths.sample}"
-            log_file.write_text(message + "\n", encoding="utf-8")
-            log(message)
-            code = 0 if written else 1
-        else:
-            code = run_step(step.argv, log_file)
-        seconds = round(time.monotonic() - t, 1)
-        summary["steps"].append(
-            {"name": step.name, "argv": list(step.argv), "exit_code": code, "seconds": seconds}
-        )
-        log(f"run-all: {step.name} {'done' if code == 0 else 'FAILED'} in {seconds} s")
-        if code != 0:
-            break
-    summary["seconds"] = round(time.monotonic() - started, 1)
-    summary["exit_code"] = code
-    (logs / SUMMARY).write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    started, code, running, t = time.monotonic(), 0, None, 0.0
+    try:
+        for i, step in enumerate(steps, 1):
+            log_file = logs / f"{i:02d}-{step.name}.log"
+            log(f"run-all: step {i}/{len(steps)} {step.name} (log {log_file})")
+            running, t = step, time.monotonic()
+            if step.name == "sample":
+                assert limit and paths.sample is not None
+                written = sample_snapshot(paths.snapshot, paths.sample, limit, category)
+                message = f"sample: {written:,} {category} records -> {paths.sample}"
+                log_file.write_text(message + "\n", encoding="utf-8")
+                log(message)
+                code = 0 if written else 1
+            else:
+                code = run_step(step.argv, log_file)
+            running = None
+            seconds = record(summary, step, code, t)
+            log(f"run-all: {step.name} {'done' if code == 0 else 'FAILED'} in {seconds} s")
+            if code != 0:
+                break
+    except KeyboardInterrupt:
+        code = INTERRUPTED
+        log("run-all: interrupted (Ctrl+C)")
+    except BaseException:
+        code = 1
+        raise
+    finally:
+        if running is not None:  # stopped inside a step: keep it in the record
+            record(summary, running, code, t)
+        summary["seconds"] = round(time.monotonic() - started, 1)
+        summary["exit_code"] = code
+        (logs / SUMMARY).write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     if code == 0:
         log(f"run-all: {len(steps)} step(s) done in {summary['seconds']} s; logs in {logs}")
     else:
-        log(f"run-all: stopped at {summary['steps'][-1]['name']} (exit {code}); see {logs}")
+        last = summary["steps"][-1]["name"] if summary["steps"] else "the start"
+        log(f"run-all: stopped at {last} (exit {code}); see {logs}")
     return code
+
+
+def record(summary: dict[str, Any], step: Step, code: int, started: float) -> float:
+    """Add `step` with its exit code and seconds to the run's summary; return the seconds."""
+    seconds = round(time.monotonic() - started, 1)
+    summary["steps"].append(
+        {"name": step.name, "argv": list(step.argv), "exit_code": code, "seconds": seconds}
+    )
+    return seconds
