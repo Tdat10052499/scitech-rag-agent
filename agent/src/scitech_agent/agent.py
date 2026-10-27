@@ -292,7 +292,7 @@ class Agent:
         if verdict is None:
             logger.info("self-check verdict unreadable: %r", text[:80])
             return True
-        logger.info("self-check: %s", verdict)
+        logger.info("self-check: %s (%r)", verdict, text[:80])
         return verdict != "no"
 
     def answer(
