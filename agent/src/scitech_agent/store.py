@@ -39,7 +39,13 @@ from typing import Any, Protocol
 
 import httpx
 
-from scitech_agent.retrieval import Filters, RetrievalError, ScoredChunk, check_range, matches
+from scitech_agent.retrieval import (
+    Filters,
+    RetrievalError,
+    ScoredChunk,
+    check_range,
+    compile_filters,
+)
 
 DISTANCE = "Cosine"
 DEFAULT_BATCH_SIZE = 256
@@ -329,7 +335,8 @@ class InMemoryStore:
         return total
 
     def count(self, filters: Filters | None = None) -> int:
-        return len([c for c in self._chunks(0.0) if matches(c, filters)])
+        keep = compile_filters(filters)
+        return len([c for c in self._chunks(0.0) if keep(c)])
 
     def _chunks(self, score: float) -> list[ScoredChunk]:
         return [to_scored_chunk(payload, score) for _, payload in self.points.values()]
@@ -343,13 +350,14 @@ class InMemoryStore:
         if len(query) != self.dimension:
             raise StoreError(f"query has {len(query)} dimensions, expected {self.dimension}")
         self.searches.append((query, k, filters))
+        keep = compile_filters(filters)
         norm = math.sqrt(sum(x * x for x in query)) or 1.0
         hits = []
         for stored, payload in self.points.values():
             stored_norm = math.sqrt(sum(x * x for x in stored)) or 1.0
             score = sum(a * b for a, b in zip(query, stored, strict=True)) / (norm * stored_norm)
             chunk = to_scored_chunk(payload, round(score, 6))
-            if matches(chunk, filters):
+            if keep(chunk):
                 hits.append(chunk)
         hits.sort(key=lambda c: (-c.score, c.chunk_id))
         return hits[:k]
