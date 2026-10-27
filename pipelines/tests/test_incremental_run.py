@@ -10,6 +10,7 @@ from scitech_pipelines.incremental_run import (
     STATE_FILE,
     QdrantReplaceStore,
     Steps,
+    check_index_model,
     default_steps,
     read_watermark,
     replace_documents,
@@ -398,6 +399,38 @@ def test_qdrant_replace_store_raises_when_the_delete_fails():
         with QdrantReplaceStore(store, transport=transport) as replace_store:
             with pytest.raises(RuntimeError, match="HTTP 500: disk full"):
                 replace_store.delete_doc_ids(["2404.00001"])
+
+
+def write_bulk_manifest(data_dir: Path, collection: str, model: str) -> None:
+    index = data_dir / "processed" / "index"
+    index.mkdir(parents=True)
+    manifest = {"step": "load", "collection": collection, "model": model}
+    (index / "_load_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def test_index_model_must_match_the_bulk_load_of_the_same_collection(tmp_path: Path):
+    check_index_model(tmp_path, "scitech_chunks", "any/model")  # no bulk manifest: no check
+    write_bulk_manifest(tmp_path, "scitech_chunks", "BAAI/bge-small-en-v1.5")
+    check_index_model(tmp_path, "scitech_chunks", "BAAI/bge-small-en-v1.5")
+    check_index_model(tmp_path, "other_collection", "other/model")  # not the bulk collection
+    with pytest.raises(ValueError, match="loaded with BAAI/bge-small-en-v1.5"):
+        check_index_model(tmp_path, "scitech_chunks", "BAAI/bge-base-en-v1.5")
+
+
+def test_incremental_run_command_refuses_another_model_than_the_bulk_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    import scitech_pipelines.embed
+    from scitech_pipelines.cli import main
+
+    write_bulk_manifest(tmp_path, "scitech_chunks", "BAAI/bge-small-en-v1.5")
+    monkeypatch.setenv("QDRANT_COLLECTION", "scitech_chunks")
+    monkeypatch.setattr(  # the check runs before the model is loaded
+        scitech_pipelines.embed, "SentenceTransformerEncoder", lambda *a, **k: pytest.fail()
+    )
+    args = ["--data-dir", str(tmp_path), "incremental-run", "--model", "BAAI/bge-base-en-v1.5"]
+    with pytest.raises(ValueError, match="vectors of two models"):
+        main(args)
 
 
 def test_incremental_run_command_wires_store_model_and_watermark(

@@ -647,6 +647,7 @@ def run_incremental_run(args: argparse.Namespace) -> int:
     from scitech_pipelines.embed import SentenceTransformerEncoder, check_model_name
     from scitech_pipelines.incremental_run import (
         QdrantReplaceStore,
+        check_index_model,
         default_steps,
         run_incremental,
     )
@@ -655,6 +656,7 @@ def run_incremental_run(args: argparse.Namespace) -> int:
     config = StoreConfig.from_env()  # QDRANT_URL, QDRANT_COLLECTION
     if args.collection:
         config = replace(config, collection=args.collection)
+    check_index_model(Path(args.data_dir), config.collection, model)
     encoder = SentenceTransformerEncoder(model, device=args.device)
     with QdrantStore(config) as qdrant, QdrantReplaceStore(qdrant) as store:
         steps = default_steps(

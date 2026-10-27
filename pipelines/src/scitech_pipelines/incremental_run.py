@@ -13,6 +13,16 @@ version or a metadata change, about a third of a day on 2026-10-16) replaces its
 including higher-numbered ones its new abstract no longer has. Points of other papers are left
 alone, and the store must end with exactly (points before - points deleted + chunks loaded).
 
+Known gap of delete-then-upsert (DAT's review): between the delete and the upsert, the papers being
+replaced have no points, so a search at that moment does not find them (0.3 to 2.4 s in the live
+test, #124). If the upsert fails, they stay missing until the next run, which repeats the range
+because the watermark did not move. Accepted for v1.0: runs are manual and short, and the
+evaluation index is never a target (ADR 0008).
+
+The run refuses a model other than the one the bulk load wrote into the same collection
+(`check_index_model`): only the vector size is checked against Qdrant, so a different model with
+the same size would mix vectors silently.
+
 The steps are passed in (`Steps`), so the order and the watermark rules are tested without
 Spark, a model or Qdrant; `default_steps` wires the real ones. The store needs one method more
 than `load` (`delete_doc_ids`). DAT's store module (W3-D1-DAT-1) has no delete, so
@@ -138,6 +148,20 @@ def write_watermark(data_dir: Path, state: dict[str, Any]) -> Path:
     tmp.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
     os.replace(tmp, path)
     return path
+
+
+def check_index_model(data_dir: Path, collection: str, model: str) -> None:
+    """Refuse `model` if the bulk load's manifest (`<data>/processed/index/_load_manifest.json`)
+    says the same collection was loaded with another model. Nothing to check without it."""
+    path = data_dir / "processed" / "index" / LOAD_MANIFEST
+    if not path.is_file():
+        return
+    bulk = json.loads(path.read_text(encoding="utf-8"))
+    if bulk.get("collection") == collection and bulk.get("model") not in (None, model):
+        raise ValueError(
+            f"{collection} was loaded with {bulk['model']} ({path}), not {model}: vectors of two "
+            "models would be mixed. Use the model of the bulk load, or another --collection."
+        )
 
 
 def _doc_ids(chunks: Path) -> list[str]:
