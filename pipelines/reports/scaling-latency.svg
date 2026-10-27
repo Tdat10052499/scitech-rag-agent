@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="380" viewBox="0 0 640 380" font-family="sans-serif" font-size="12" role="img" aria-label="Query latency by corpus size (k = 10)">
+<rect width="640" height="380" fill="#ffffff"/>
+<text x="70" y="24" font-size="15" font-weight="bold" fill="#000">Query latency by corpus size (k = 10)</text>
+<line x1="70" y1="320.0" x2="470" y2="320.0" stroke="#e0e0e0"/>
+<text x="64" y="324.0" text-anchor="end" fill="#555555">0</text>
+<line x1="70" y1="266.0" x2="470" y2="266.0" stroke="#e0e0e0"/>
+<text x="64" y="270.0" text-anchor="end" fill="#555555">40</text>
+<line x1="70" y1="212.0" x2="470" y2="212.0" stroke="#e0e0e0"/>
+<text x="64" y="216.0" text-anchor="end" fill="#555555">80</text>
+<line x1="70" y1="158.0" x2="470" y2="158.0" stroke="#e0e0e0"/>
+<text x="64" y="162.0" text-anchor="end" fill="#555555">120</text>
+<line x1="70" y1="104.0" x2="470" y2="104.0" stroke="#e0e0e0"/>
+<text x="64" y="108.0" text-anchor="end" fill="#555555">160</text>
+<line x1="70" y1="50.0" x2="470" y2="50.0" stroke="#e0e0e0"/>
+<text x="64" y="54.0" text-anchor="end" fill="#555555">200</text>
+<text x="108.4" y="338" text-anchor="middle" fill="#555555">12,162</text>
+<text x="262.6" y="338" text-anchor="middle" fill="#555555">61,067</text>
+<text x="454.6" y="338" text-anchor="middle" fill="#555555">121,926</text>
+<line x1="70" y1="320" x2="470" y2="320" stroke="#555555"/>
+<text x="270.0" y="364" text-anchor="middle" fill="#000">Corpus size (chunks)</text>
+<text transform="translate(18 185.0) rotate(-90)" text-anchor="middle" fill="#000">Latency (ms)</text>
+<polyline points="108.4,211.2 262.6,206.2 454.6,193.9" fill="none" stroke="#0072B2" stroke-width="2"/>
+<circle cx="108.4" cy="211.2" r="3.5" fill="#0072B2"/>
+<circle cx="262.6" cy="206.2" r="3.5" fill="#0072B2"/>
+<circle cx="454.6" cy="193.9" r="3.5" fill="#0072B2"/>
+<line x1="486" y1="60" x2="510" y2="60" stroke="#0072B2" stroke-width="2"/>
+<text x="516" y="64" fill="#000">dense p50</text>
+<polyline points="108.4,163.3 262.6,194.7 454.6,183.6" fill="none" stroke="#0072B2" stroke-width="2" stroke-dasharray="6 4"/>
+<circle cx="108.4" cy="163.3" r="3.5" fill="#0072B2"/>
+<circle cx="262.6" cy="194.7" r="3.5" fill="#0072B2"/>
+<circle cx="454.6" cy="183.6" r="3.5" fill="#0072B2"/>
+<line x1="486" y1="82" x2="510" y2="82" stroke="#0072B2" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="516" y="86" fill="#000">dense p95</text>
+<polyline points="108.4,318.4 262.6,313.5 454.6,309.0" fill="none" stroke="#D55E00" stroke-width="2"/>
+<circle cx="108.4" cy="318.4" r="3.5" fill="#D55E00"/>
+<circle cx="262.6" cy="313.5" r="3.5" fill="#D55E00"/>
+<circle cx="454.6" cy="309.0" r="3.5" fill="#D55E00"/>
+<line x1="486" y1="104" x2="510" y2="104" stroke="#D55E00" stroke-width="2"/>
+<text x="516" y="108" fill="#000">bm25 p50</text>
+<polyline points="108.4,316.7 262.6,307.5 454.6,299.0" fill="none" stroke="#D55E00" stroke-width="2" stroke-dasharray="6 4"/>
+<circle cx="108.4" cy="316.7" r="3.5" fill="#D55E00"/>
+<circle cx="262.6" cy="307.5" r="3.5" fill="#D55E00"/>
+<circle cx="454.6" cy="299.0" r="3.5" fill="#D55E00"/>
+<line x1="486" y1="126" x2="510" y2="126" stroke="#D55E00" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="516" y="130" fill="#000">bm25 p95</text>
+<polyline points="108.4,199.1 262.6,188.1 454.6,157.5" fill="none" stroke="#009E73" stroke-width="2"/>
+<circle cx="108.4" cy="199.1" r="3.5" fill="#009E73"/>
+<circle cx="262.6" cy="188.1" r="3.5" fill="#009E73"/>
+<circle cx="454.6" cy="157.5" r="3.5" fill="#009E73"/>
+<line x1="486" y1="148" x2="510" y2="148" stroke="#009E73" stroke-width="2"/>
+<text x="516" y="152" fill="#000">hybrid p50</text>
+<polyline points="108.4,143.1 262.6,137.5 454.6,138.2" fill="none" stroke="#009E73" stroke-width="2" stroke-dasharray="6 4"/>
+<circle cx="108.4" cy="143.1" r="3.5" fill="#009E73"/>
+<circle cx="262.6" cy="137.5" r="3.5" fill="#009E73"/>
+<circle cx="454.6" cy="138.2" r="3.5" fill="#009E73"/>
+<line x1="486" y1="170" x2="510" y2="170" stroke="#009E73" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="516" y="174" fill="#000">hybrid p95</text>
+</svg>
