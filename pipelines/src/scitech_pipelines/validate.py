@@ -121,7 +121,9 @@ def validate_documents(
 
     checks.append(Check("records", records > 0, f"{records:,} records"))
     for field in ("doc_id", "title", "abstract"):
-        checks.append(_row_check(con, f"{field} present", f"{field} IS NULL OR trim({field}) = ''"))
+        checks.append(
+            _row_check(con, f"{field} present", f"{field} IS NULL OR trim({field}) = ''")
+        )
     checks.append(
         _row_check(
             con, "doc_id without version suffix", f"regexp_matches(doc_id, '{VERSION_SUFFIX}')"

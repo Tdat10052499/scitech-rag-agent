@@ -210,7 +210,8 @@ RETRY_STATUS = {429, 500, 502, 503, 504}
 
 
 class HttpSession(Protocol):
-    def get(self, url: str, *, params: dict[str, Any], headers: dict[str, str], timeout: float): ...
+    def get(self, url: str, *, params: dict[str, Any], headers: dict[str, str], timeout: float):
+        ...
 
 
 class WikiClient:
@@ -382,7 +383,11 @@ def download_wikipedia(
     source_dir.mkdir(parents=True, exist_ok=True)
     settings = {"root": root, "max_depth": max_depth, "max_pages": max_pages}
     manifest = read_manifest(source_dir)
-    if not force and is_complete(source_dir, manifest) and manifest.get("settings") == settings:
+    if (
+        not force
+        and is_complete(source_dir, manifest)
+        and manifest.get("settings") == settings
+    ):
         log(f"wikipedia: complete in {source_dir} (manifest {manifest['downloaded_at']}), skipping")
         return manifest
 
