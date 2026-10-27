@@ -1,16 +1,21 @@
+import io
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 from scitech_pipelines.cli import main
 from scitech_pipelines.run_all import (
+    INTERRUPTED,
     SUMMARY,
     Step,
     plan_steps,
     run_all,
     sample_snapshot,
     select_steps,
+    show,
     tee_step,
 )
 
@@ -147,6 +152,98 @@ def test_tee_step_shows_and_logs_the_output(monkeypatch, capsys, tmp_path: Path)
     assert "--limit" in text and "--limit" in capsys.readouterr().out
     assert text.startswith("$ ")
     assert tee_step(["no-such-step"], tmp_path / "bad.log") == 2  # argparse error
+
+
+def stop_at(name: str, error: BaseException):
+    def fake(argv, log_file: Path) -> int:
+        if argv[2] == name:
+            raise error
+        return 0
+
+    return fake
+
+
+def summary_of(data_dir: Path) -> dict:
+    (logs,) = (data_dir / "logs").iterdir()
+    return json.loads((logs / SUMMARY).read_text())
+
+
+def test_interrupted_run_keeps_the_record_of_its_steps(tmp_path: Path):
+    snapshot = write_snapshot(tmp_path / "snap.json", ["cs.CL"])
+    steps = plan_steps(tmp_path, snapshot=snapshot, model="m")
+    fake = stop_at("chunk", KeyboardInterrupt())
+    code = run_all(tmp_path, steps, snapshot=snapshot, run_step=fake, log=lambda _: None)
+    assert code == INTERRUPTED == 130
+    summary = summary_of(tmp_path)
+    assert summary["exit_code"] == INTERRUPTED
+    assert [(s["name"], s["exit_code"]) for s in summary["steps"]] == [
+        ("clean", 0),
+        ("validate", 0),
+        ("chunk", INTERRUPTED),
+    ]
+
+
+def test_run_stopped_by_an_error_keeps_the_record_and_raises(tmp_path: Path):
+    snapshot = write_snapshot(tmp_path / "snap.json", ["cs.CL"])
+    steps = plan_steps(tmp_path, snapshot=snapshot, model="m")
+    fake = stop_at("validate", OSError("disk full"))
+    with pytest.raises(OSError, match="disk full"):
+        run_all(tmp_path, steps, snapshot=snapshot, run_step=fake, log=lambda _: None)
+    summary = summary_of(tmp_path)
+    assert summary["exit_code"] == 1
+    assert [(s["name"], s["exit_code"]) for s in summary["steps"]] == [
+        ("clean", 0),
+        ("validate", 1),
+    ]
+
+
+def test_tee_step_child_writes_utf8(monkeypatch, capsys, tmp_path: Path):
+    monkeypatch.setenv("PYTHONPATH", str(SRC))
+    # A child whose pipe is not UTF-8, as on Windows (code page): ASCII locale, no UTF-8 mode
+    monkeypatch.setenv("PYTHONUTF8", "0")
+    monkeypatch.setenv("PYTHONCOERCECLOCALE", "0")
+    monkeypatch.setenv("LC_ALL", "C")
+    monkeypatch.delenv("PYTHONIOENCODING", raising=False)
+    envs: list[dict] = []
+    real_popen = subprocess.Popen
+
+    def popen(*args, **kwargs):
+        envs.append(kwargs["env"])
+        return real_popen(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    assert tee_step(["no-such-step-\u00e9\u2713"], tmp_path / "bad.log") == 2
+    assert envs[0]["PYTHONUTF8"] == "1"
+    error = "invalid choice: 'no-such-step-\u00e9\u2713'"  # the child's own line, not the "$ " one
+    assert error in (tmp_path / "bad.log").read_text(encoding="utf-8")
+    assert error in capsys.readouterr().out
+
+
+def test_tee_step_stops_the_child_when_interrupted(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("PYTHONPATH", str(SRC))
+    processes: list[subprocess.Popen] = []
+    real_popen = subprocess.Popen
+
+    def popen(*args, **kwargs):
+        processes.append(real_popen(*args, **kwargs))
+        return processes[-1]
+
+    def interrupt(line: str) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    monkeypatch.setattr("scitech_pipelines.run_all.show", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        tee_step(["run-all", "--help"], tmp_path / "help.log")
+    assert processes[0].poll() is not None  # not left running
+
+
+def test_show_replaces_what_stdout_cannot_encode(monkeypatch):
+    out = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    monkeypatch.setattr(sys, "stdout", out)
+    show("caf\u00e9 \u2713\n")  # cp1252 has the accent but not the check mark
+    out.flush()
+    assert out.buffer.getvalue() == "caf\u00e9 ?\n".encode("cp1252")
 
 
 def test_command_runs_a_part_of_the_chain(monkeypatch, tmp_path: Path):
