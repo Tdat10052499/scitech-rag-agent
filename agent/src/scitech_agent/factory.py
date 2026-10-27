@@ -1,7 +1,8 @@
 """Build the configured agent from environment variables (W4-D2-DAT-1).
 
 `agent_from_env()` wires `Agent` to the retriever named by `RETRIEVER` and to the LLM of
-`LLM_BASE_URL` / `LLM_MODEL`, with `RETRIEVAL_TOP_K` and `RETRIEVAL_MIN_SCORE`. A setting that
+`LLM_BASE_URL` / `LLM_MODEL`, with `RETRIEVAL_TOP_K` and `RETRIEVAL_MIN_SCORE`; it writes one
+trace per request where `AGENT_TRACES` says (`scitech_agent.trace`). A setting that
 stops the agent from being built raises `AgentError` with the contract code the user should see
 (`llm_unavailable` for the LLM settings, `retrieval_failed` for the retriever, `internal` for the
 agent settings); the cause goes to the log only. Nothing here contacts Qdrant or the LLM server,
@@ -24,6 +25,7 @@ from scitech_agent.llm import LLMConfigError, OpenAICompatibleLLM
 from scitech_agent.retrieval import Retriever
 from scitech_agent.retrieval.dense import DenseRetriever
 from scitech_agent.retrieval.hybrid import HybridRetriever, retriever_from_env
+from scitech_agent.trace import trace_writer_from_env
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +55,14 @@ def agent_from_env(env: Mapping[str, str] | None = None) -> Agent:
             f"{type(retriever).__name__} ({ceiling:.4f}): every question would be refused"
         )
         raise _startup_error("internal", "agent settings", exc) from exc
-    logger.info("agent ready: retriever %s, LLM %s", type(retriever).__name__, llm.describe())
-    return Agent(retriever, llm, config)
+    tracer = trace_writer_from_env(env)
+    logger.info(
+        "agent ready: retriever %s, LLM %s, traces %s",
+        type(retriever).__name__,
+        llm.describe(),
+        tracer.path if tracer else "off",
+    )
+    return Agent(retriever, llm, config, tracer=tracer)
 
 
 def score_ceiling(retriever: Retriever) -> float | None:
