@@ -71,25 +71,34 @@ def test_measure_uses_the_same_vectors_for_every_collection_and_mode():
     stores = {"small": store("small", 10), "big": store("big", 50)}
     made = []
 
-    def store_for(collection: str, exact: bool, gzip: bool) -> InMemoryStore:
-        made.append((collection, exact, gzip))
-        return stores[collection]
+    def store_for(collection: str, mode) -> InMemoryStore:
+        made.append((collection, mode))
+        store = stores[collection]
+        if collection == "big":  # Qdrant's `time` field of each answer, warm-up ones first
+            store.server_seconds = [0.5] * 3 + [0.001] * 2
+        return store
 
     vectors = [[1.0, 0.1], [1.0, 0.9]]
+
     result = vst.measure(
         ["small", "big"], vectors, store_for, k=5, warmup=0, rounds=1, clock=ticks()
     )
-    modes = [(True, True), (False, True), (True, False)]
-    assert made == [(c, *m) for c in ("small", "big") for m in modes]
+    assert made == [(c, m) for c in ("small", "big") for m in vst.MODES.values()]
+    assert [m.exact for m in vst.MODES.values()] == [True, False, True, True]
     assert result["small"]["points"] == 10
     assert result["big"]["points"] == 50
     for row in result.values():
-        assert row["exact"]["n"] == row["hnsw"]["n"] == row["exact_no_gzip"]["n"] == 2
+        assert {row[m]["n"] for m in vst.MODES} == {2}
         assert row["exact"]["p50_ms"] == pytest.approx(2.0)
         assert row["hnsw"]["overlap_with_exact"] == 1.0  # same fake store: same hits
-    assert [v for v, _, _ in stores["big"].searches] == vectors * 3
+    assert [v for v, _, _ in stores["big"].searches] == vectors * 4
+    assert "qdrant" not in result["small"]["exact"]
+    assert result["big"]["exact"]["qdrant"]["n"] == 2
+    assert result["big"]["exact"]["qdrant"]["p50_ms"] == pytest.approx(1.0)
     text = vst.markdown(
         {"embedding": {"n": 2, "p50_ms": 80.0, "p95_ms": 90.0}, "collections": result}
     )
-    assert "| big | 50 | 2.0 / 2.0 / 2.0 | 2.0 / 2.0 / 2.0 | 2.0 / 2.0 / 2.0 | 100.0% |" in text
+    assert "| big | 50 | " + " | ".join(["2.0 / 2.0 / 2.0"] * 4) + " | 100.0% |" in text
+    assert "| big | " + " | ".join(["1.0 / 1.0 / 1.0"] * 4) + " |" in text
+    assert "| small | - | - | - | - |" in text
     json.dumps(result)  # the result is written as JSON

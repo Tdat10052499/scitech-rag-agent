@@ -156,8 +156,10 @@ Check: it ends with 121,926 points.
 ```python
 import json, duckdb, httpx, os
 from pathlib import Path
+
 D = Path("/kaggle/working/data")
 URL, COL = os.environ["QDRANT_URL"], os.environ["QDRANT_COLLECTION"]
+
 
 def all_points():
     """(chunk_id, doc_id) of every point in the collection."""
@@ -166,11 +168,14 @@ def all_points():
         body = {"limit": 10000, "with_payload": ["chunk_id", "doc_id"], "with_vector": False}
         if offset is not None:
             body["offset"] = offset
-        r = httpx.post(f"{URL}/collections/{COL}/points/scroll", json=body, timeout=300).json()["result"]
+        r = httpx.post(f"{URL}/collections/{COL}/points/scroll", json=body, timeout=300).json()[
+            "result"
+        ]
         out += [(p["payload"]["chunk_id"], p["payload"]["doc_id"]) for p in r["points"]]
         offset = r.get("next_page_offset")
         if offset is None:
             return out
+
 
 def check(run_name, before):
     """Compare the index after a run with the index before it and the run's chunks."""
@@ -178,10 +183,14 @@ def check(run_name, before):
     fetch = json.loads(Path(state["fetch_manifest"]).read_text())
     after = all_points()
     chunk_ids = [c for c, _ in after]
-    result = {"run": run_name, "range": [state["from"], state["until"]],
-              "fetch_counts": fetch["counts"], "points_before": len(before),
-              "points_after": len(after),
-              "duplicate_chunk_ids": len(chunk_ids) - len(set(chunk_ids))}
+    result = {
+        "run": run_name,
+        "range": [state["from"], state["until"]],
+        "fetch_counts": fetch["counts"],
+        "points_before": len(before),
+        "points_after": len(after),
+        "duplicate_chunk_ids": len(chunk_ids) - len(set(chunk_ids)),
+    }
     if not state["load_manifest"]:  # a range without records: nothing may change
         result["PASS"] = len(after) == len(before) and result["duplicate_chunk_ids"] == 0
         return result, after, state
@@ -189,24 +198,33 @@ def check(run_name, before):
     new = Path(load["chunks"]) / "chunks.parquet"
     con = duckdb.connect()
     new_ids = {r[0] for r in con.execute(f"SELECT chunk_id FROM read_parquet('{new}')").fetchall()}
-    new_docs = {r[0] for r in con.execute(f"SELECT DISTINCT doc_id FROM read_parquet('{new}')").fetchall()}
+    new_docs = {
+        r[0] for r in con.execute(f"SELECT DISTINCT doc_id FROM read_parquet('{new}')").fetchall()
+    }
     old = [(c, d) for c, d in before if d in new_docs]  # points of reloaded papers before the run
     after_new_docs = {c for c, d in after if d in new_docs}
-    result.update({
-        "load_counts": load["counts"], "load_seconds": load["seconds"],
-        "run_documents": len(new_docs), "run_chunks": len(new_ids),
-        "documents_already_in_index": len({d for _, d in old}),
-        "their_old_points": len(old),
-        "new_documents": len(new_docs) - len({d for _, d in old}),
-        "expected_points_after": len(before) - len(old) + len(new_ids),
-        "stale_chunks_of_reloaded_docs": len(after_new_docs - new_ids),
-        "missing_new_chunks": len(new_ids - after_new_docs),
-    })
-    result["PASS"] = (len(after) == result["expected_points_after"]
-                      and result["duplicate_chunk_ids"] == 0
-                      and result["stale_chunks_of_reloaded_docs"] == 0
-                      and result["missing_new_chunks"] == 0)
+    result.update(
+        {
+            "load_counts": load["counts"],
+            "load_seconds": load["seconds"],
+            "run_documents": len(new_docs),
+            "run_chunks": len(new_ids),
+            "documents_already_in_index": len({d for _, d in old}),
+            "their_old_points": len(old),
+            "new_documents": len(new_docs) - len({d for _, d in old}),
+            "expected_points_after": len(before) - len(old) + len(new_ids),
+            "stale_chunks_of_reloaded_docs": len(after_new_docs - new_ids),
+            "missing_new_chunks": len(new_ids - after_new_docs),
+        }
+    )
+    result["PASS"] = (
+        len(after) == result["expected_points_after"]
+        and result["duplicate_chunk_ids"] == 0
+        and result["stale_chunks_of_reloaded_docs"] == 0
+        and result["missing_new_chunks"] == 0
+    )
     return result, after, state
+
 
 before1 = all_points()
 print(len(before1), "points before the first run")
