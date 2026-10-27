@@ -121,6 +121,13 @@ Manual protocol (written so that a second annotator can apply it):
    - *not checkable*: no factual content.
 3. Numbers and names must match exactly; paraphrase is allowed.
 4. Record the label, a one-line reason for every *not supported*, and the annotator.
+5. Several citations in one sentence (`[1][2]`): the cited chunks count together. The sentence is *supported* if the chunks taken together state every element; otherwise write in the reason which `[n]` is missing.
+6. A sentence with factual content and no `[n]` is *not supported*. A citation `[n]` with no source `n` is marked `INVALID` in the sheet: there is no chunk to check against, so a sentence that cites only invalid numbers is *not supported*.
+7. A sentence with two claims, one supported and one not, is *not supported*; write the unsupported claim in `reason` and put "partial" in `partial_note`.
+8. Hedging is part of the claim: a source that says a method "suggests" or "may" and a sentence that says it "proves" or "always" is *not supported*.
+9. A lead-in such as "According to the sources," is not a claim; judge the rest. A lead-in that only announces a list ("Two ways are:") and a sentence made only of citation markers are *not checkable*.
+10. A refusal sentence ("the evidence is insufficient") is *not checkable*. If the same answer also states facts, label those sentences as usual in the sheet; whether the answer is scored is decided by section 4.2 (refused answers are not scored, and their factual sentences are counted and reported).
+11. Sentences come from `evaluation/pilot/faithfulness/` `make-sheet` (rules in `answers.py`). If a sentence is cut in the wrong place, label each piece as it stands and write "split" in `partial_note`; do not merge or re-cut sentences by hand, because the judge sees the same pieces.
 
 LLM judge: same input and the same three labels, one sentence per call, with a fixed prompt stored in `evaluation/`. Settings: temperature 0. The judge model must differ from the generator; DAT chooses it in ADR 0006 (D06), the candidate being the hosted API fallback of ADR 0001, and it is named in `evaluation/SNAPSHOT.md`.
 

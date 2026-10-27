@@ -1,4 +1,5 @@
-"""Command line: `retrieval --config <yaml>`, `compare <run> <run> ...` and `check-golden`."""
+"""Command line: `retrieval`, `compare`, `check-golden`, and the faithfulness pilot tools
+`make-sheet` and `check-labels`."""
 
 from __future__ import annotations
 
@@ -7,6 +8,7 @@ import json
 import sys
 from pathlib import Path
 
+from scitech_eval.answers import check_labels, make_sheet
 from scitech_eval.compare import compare_runs, format_comparison, load_run
 from scitech_eval.golden import GoldenError, check_golden, read_corpus_doc_ids
 from scitech_eval.runner import run_from_config
@@ -28,7 +30,34 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--corpus", type=Path, help="JSONL corpus file to check doc ids against")
     g.add_argument("--id-field", default="doc_id", help="field holding the doc id in --corpus")
 
+    m = sub.add_parser("make-sheet", help="write the labelling sheet for an answers.jsonl")
+    m.add_argument("answers", type=Path, help="answers.jsonl of the faithfulness pilot")
+    m.add_argument("--out-dir", type=Path, default=Path("evaluation/pilot/faithfulness"))
+
+    k = sub.add_parser("check-labels", help="check a filled labelling sheet")
+    k.add_argument("sheet", type=Path, help="labels-<annotator>.csv")
+
     args = parser.parse_args(argv)
+
+    if args.command == "make-sheet":
+        try:
+            sheet, chunks = make_sheet(args.answers, args.out_dir)
+        except (OSError, KeyError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        print(f"wrote {sheet} and {chunks}")
+        return 0
+
+    if args.command == "check-labels":
+        try:
+            problems = check_labels(args.sheet)
+        except (OSError, KeyError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        for p in problems:
+            print(p)
+        print(f"{args.sheet}: {'OK' if not problems else f'{len(problems)} problem(s)'}")
+        return 1 if problems else 0
 
     if args.command == "compare":
         if len(args.runs) < 2:

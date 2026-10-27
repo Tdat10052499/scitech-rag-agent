@@ -16,6 +16,7 @@ from scitech_eval.metrics import bootstrap_ci, mean
 
 LABELS = string.ascii_uppercase
 TIE = 1e-9
+UNSPECIFIED = "unspecified"
 
 
 def load_run(path: Path) -> dict:
@@ -86,6 +87,19 @@ def compare_runs(runs: list[dict], resamples: int = 1000, seed: int = 0) -> dict
                 f"{d['label']} searched with query={d['query']}, {base['label']} with "
                 f"query={base['query']}."
             )
+        for field in ("index_snapshot", "dataset_snapshot"):
+            if d[field] != base[field]:
+                warnings.append(
+                    f"{d['label']} has {field} {d[field]}, {base['label']} has {base[field]}; "
+                    "the runs did not search the same data."
+                )
+    for d in described:
+        missing = [f for f in ("index_snapshot", "dataset_snapshot") if d[f] == UNSPECIFIED]
+        if missing:
+            warnings.append(
+                f"{d['label']} did not record {' and '.join(missing)} (still 'unspecified' in "
+                "its config), so it cannot be checked against the other runs."
+            )
 
     names = [n for n in runs[0]["metrics"] if all(n in r["metrics"] for r in runs[1:])]
     if not names:
@@ -112,8 +126,12 @@ def compare_runs(runs: list[dict], resamples: int = 1000, seed: int = 0) -> dict
         for name in names:
             diffs = [_value(rows[i], name) - _value(base_rows[i], name) for i in common]
             low, high = bootstrap_ci(diffs, resamples=resamples, seed=seed)
+            mean_diff = mean(diffs)
             entry["metrics"][name] = {
-                "mean_diff": mean(diffs),
+                "mean_diff": mean_diff,
+                # Mean difference of a recall times the number of questions: how many questions'
+                # worth of relevant documents were gained (+) or lost (-). Not defined for MRR.
+                "questions_diff": None if name == "mrr" else mean_diff * len(common),
                 "ci95": [low, high],
                 "wins": sum(d > TIE for d in diffs),
                 "losses": sum(d < -TIE for d in diffs),
@@ -166,10 +184,12 @@ def format_comparison(result: dict) -> str:
         rows = []
         for name, m in entry["metrics"].items():
             low, high = m["ci95"]
+            questions = m["questions_diff"]
             rows.append(
                 [
                     name,
                     f"{m['mean_diff']:+.3f}",
+                    "-" if questions is None else f"{questions:+.1f}",
                     f"[{low:+.3f}, {high:+.3f}]",
                     str(m["wins"]),
                     str(m["losses"]),
@@ -180,7 +200,10 @@ def format_comparison(result: dict) -> str:
             "",
             f"{entry['label']} against {entry['baseline']}, {entry['n']} questions in common "
             f"(difference {entry['label']} - {entry['baseline']}; wins and losses are "
-            f"{entry['label']}'s)",
+            f"{entry['label']}'s; 'questions' is the mean difference times {entry['n']}, "
+            "recall rows only)",
         ]
-        lines += _table(["metric", "mean diff", "95% interval", "wins", "losses", "ties"], rows)
+        lines += _table(
+            ["metric", "mean diff", "questions", "95% interval", "wins", "losses", "ties"], rows
+        )
     return "\n".join(lines) + "\n"

@@ -1,0 +1,4 @@
+fraction,documents,chunks,load_seconds,bm25_build_seconds,qdrant_collection_mib,bm25_index_mib,qdrant_memory_mib,dense_p50_ms,dense_p95_ms,bm25_p50_ms,bm25_p95_ms,hybrid_p50_ms,hybrid_p95_ms
+0.1,12155,12162,18.2,1.8,465.0,18.2,224.4,80.61,116.06,1.16,2.46,89.55,131.02
+0.5,61039,61067,51.3,9.8,412.7,89.4,106.8,84.33,92.84,4.82,9.23,97.71,135.22
+1.0,121860,121926,135.2,36.7,609.9,177.2,106.7,93.39,101.03,8.13,15.54,120.36,134.63

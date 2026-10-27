@@ -1,0 +1,92 @@
+{
+  "run1": {
+    "run": "first run",
+    "range": [
+      "2026-10-10",
+      "2026-10-26"
+    ],
+    "fetch_counts": {
+      "harvested": 2744,
+      "deleted": 0,
+      "not_in_category": 0,
+      "kept": 2744
+    },
+    "points_before": 121926,
+    "points_after": 123718,
+    "duplicate_chunk_ids": 0,
+    "load_counts": {
+      "documents": 2744,
+      "points_before": 121926,
+      "points_deleted": 966,
+      "points_loaded": 2758,
+      "points": 123718
+    },
+    "load_seconds": 2.4,
+    "run_documents": 2744,
+    "run_chunks": 2758,
+    "documents_already_in_index": 962,
+    "their_old_points": 966,
+    "new_documents": 1782,
+    "expected_points_after": 123718,
+    "stale_chunks_of_reloaded_docs": 0,
+    "missing_new_chunks": 0,
+    "PASS": true
+  },
+  "run2": {
+    "run": "second run, same day",
+    "range": [
+      "2026-10-26",
+      "2026-10-26"
+    ],
+    "fetch_counts": {
+      "harvested": 177,
+      "deleted": 0,
+      "not_in_category": 0,
+      "kept": 177
+    },
+    "points_before": 123718,
+    "points_after": 123718,
+    "duplicate_chunk_ids": 0,
+    "load_counts": {
+      "documents": 177,
+      "points_before": 123718,
+      "points_deleted": 178,
+      "points_loaded": 178,
+      "points": 123718
+    },
+    "load_seconds": 0.3,
+    "run_documents": 177,
+    "run_chunks": 178,
+    "documents_already_in_index": 177,
+    "their_old_points": 178,
+    "new_documents": 0,
+    "expected_points_after": 123718,
+    "stale_chunks_of_reloaded_docs": 0,
+    "missing_new_chunks": 0,
+    "PASS": true
+  },
+  "watermark_after_run1": {
+    "until": "2026-10-26",
+    "from": "2026-10-10",
+    "set": "cs:cs:CL",
+    "category": "cs.CL",
+    "records": 2744,
+    "fetch_manifest": "/kaggle/working/data/raw/arxiv-oai/2026-10-10_2026-10-26.manifest.json",
+    "load_manifest": "/kaggle/working/data/processed/incremental/2026-10-10_2026-10-26/index/_load_manifest.json",
+    "points": 123718,
+    "index_snapshot": "scitech_chunks/bge-small-en-v1.5/chunked-2026-10-27T03:41:15/embedded-2026-10-27T03:50:24",
+    "updated_at": "2026-10-27T03:50:26+00:00"
+  },
+  "watermark_after_run2": {
+    "until": "2026-10-26",
+    "from": "2026-10-26",
+    "set": "cs:cs:CL",
+    "category": "cs.CL",
+    "records": 177,
+    "fetch_manifest": "/kaggle/working/data/raw/arxiv-oai/2026-10-26_2026-10-26.manifest.json",
+    "load_manifest": "/kaggle/working/data/processed/incremental/2026-10-26_2026-10-26/index/_load_manifest.json",
+    "points": 123718,
+    "index_snapshot": "scitech_chunks/bge-small-en-v1.5/chunked-2026-10-27T03:53:15/embedded-2026-10-27T03:53:54",
+    "updated_at": "2026-10-27T03:53:54+00:00"
+  }
+}
