@@ -3,7 +3,7 @@
 Tasks: W4-D5-FAO-1 (draft) and W6-D3-FAO-1 (final: incremental ingestion with the live test, scaling notes, more troubleshooting).
 Commands: `pipelines/AGENTS.md` (every option) and `pipelines/README.md` (setup, what runs where, the Kaggle recipes). Decisions: ADR 0003 (corpus), ADR 0005 (engine), ADR 0007 (embedding model), ADR 0008 (incremental ingestion).
 
-> Status: final version, 2026-10-27 (D13). Draft of 2026-10-20 (D07), updated on 2026-10-22 (D09). `run-all` is merged (#92). In review when this was written: the README's Kaggle recipes (#60), the index profile (#68), the scaling script (#96), `incremental-run` (#76) and its live test (#124). Times are the measured ones from the FAO journal (W2, W3, W5) unless marked otherwise.
+> Status: final version, 2026-10-27 (D13). Draft of 2026-10-20 (D07), updated on 2026-10-22 (D09). `run-all` (#92), the index profile (#68), `incremental-run` (#76), its live test (#124) and the scaling script (#96) are merged. Still in review: the README's Kaggle recipes (#60). Times are the measured ones from the FAO journal (W2, W3, W5) unless marked otherwise.
 
 ## 1. Before you start
 - **Python environment:** `make setup`, then `PYTHONPATH=pipelines/src:agent/src` from the repository root (PowerShell: `$env:PYTHONPATH = "pipelines/src;agent/src"`). `load` and `run-all` need `agent/src` for DAT's Qdrant store.
@@ -82,7 +82,7 @@ The counts must chain, for snapshot 307:
 - `validate --golden evaluation/golden_set/golden.jsonl` checks the documents and that every golden `relevant_doc_ids` exists. `run-all` runs it on full runs.
 - `pipelines/scripts/golden_coverage.py --chunks data/processed/chunks --qdrant` checks the same ids against the chunks and the loaded collection (#69). Run it with `PYTHONPATH=pipelines/src` (PowerShell: `$env:PYTHONPATH = "pipelines/src"`). On 2026-10-20 all 57 doc ids of the 47 items (gs-001 to gs-045, gs-u01, gs-u02; golden set of #88) were in the chunks.
 - `_load_manifest.json` holds `index_snapshot`, the id that evaluation runs cite.
-- Search speed, filters, size on disk and memory: `pipelines/scripts/index_profile.py`, with usage and the 2026-10-21 numbers in `pipelines/reports/index_profile.md` (both on #68, not on `main` until it merges). On FAO's laptop, p95 was 88 ms for dense, 14 ms for BM25 and 149 ms for hybrid.
+- Search speed, filters, size on disk and memory: `pipelines/scripts/index_profile.py`, with usage and the 2026-10-21 numbers in `pipelines/reports/index_profile.md` (#68). On FAO's laptop, p95 was 88 ms for dense, 14 ms for BM25 and 149 ms for hybrid.
 - A quick look at the store: `PYTHONPATH=agent/src python -c "from scitech_agent.store import QdrantStore; s = QdrantStore.from_env(); print(s.count())"`.
 
 ## 5. Common failures and fixes
@@ -145,7 +145,7 @@ PYTHONPATH=agent/src:pipelines/src python pipelines/scripts/scaling.py --out-dir
 - It needs the full load and BM25 build done first (it reads `processed/index/_load_manifest.json` and `index/bm25`), Qdrant in Docker (it runs `docker compose restart qdrant` before each size) and about 1.5 GiB of Qdrant storage for the three collections.
 - The subsets go to `<QDRANT_COLLECTION>_10pct` and `_50pct`, and their BM25 indexes to `data/index/bm25-10pct` and `-50pct`. Re-running reuses them; `--force` builds them again. Delete these collections when done: they are not used by the app.
 - Results of 2026-10-22 on FAO's laptop (`pipelines/reports/scaling.md`): hybrid p95 131 to 135 ms at every size; BM25 grows with the corpus (p50 1.2, 4.8, 8.1 ms); dense stays at 81 to 93 ms p50, mostly query embedding on the CPU. One run of 100 queries per size, so differences of a few ms are noise.
-- Charts: `python pipelines/scripts/scaling_charts.py` writes two SVG charts next to `scaling.csv` (W7-D2-FAO-1, #121).
+- Charts: `python pipelines/scripts/scaling_charts.py` writes two SVG charts next to `scaling.csv` (W7-D2-FAO-1, in review, #121).
 
 ## 8. Not covered yet
 - Restoring the frozen snapshot for the final evaluation (W6-D4-FAO-1, `evaluation/SNAPSHOT.md`).
