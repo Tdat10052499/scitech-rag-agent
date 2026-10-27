@@ -60,10 +60,10 @@ For each filter, the first 5 queries were run with k = 10, and every hit was che
 `scitech_agent.retrieval.matches`, the rule all retrievers share since #99. A filter passes when
 there are hits and none of them breaks it.
 
-Only the dense rows are an independent check: Qdrant applies the filter itself, and its hits are
-then checked with `matches`. BM25 filters with `matches` itself, and so does the BM25 half of
-hybrid, so their 0 violations hold by construction. Those rows only show that the filters run and
-still return hits (DAT's review).
+Only the dense rows are a fully independent check: Qdrant applies the filter itself, and its hits
+are then checked with `matches`. BM25 filters with `matches` itself, so its 0 violations hold by
+construction and only show that the filters run and still return hits. Hybrid is in between: hits
+from its dense half were filtered by Qdrant, hits from its BM25 half by `matches` (DAT's review).
 
 | Retriever | Filter | Hits | Violations | Result |
 |---|---|---:|---:|---|
