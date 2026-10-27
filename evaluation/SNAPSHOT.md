@@ -31,8 +31,9 @@ Rules for the frozen index:
   `index_snapshot` above and 121,926 points, or the runs are not comparable. `compare` warns when
   two runs name different snapshots.
 - **Golden coverage:** every `relevant_doc_ids` of the golden set must be in the collection
-  (`pipelines/scripts/golden_coverage.py --qdrant`, W7-D1-FAO-1). On 2026-10-20 all 57 ids of the
-  47 items were in the chunks (`docs/runbooks/data-pipeline.md` §4).
+  (`pipelines/scripts/golden_coverage.py --qdrant`, W7-D1-FAO-1). On 2026-10-27 all 57 ids of the
+  47 items were found both in the chunks and in Qdrant `scitech_chunks`; W7-D1 runs it again on
+  the final set (at least 60 items).
 
 How to check that a machine serves this index (repository root, Qdrant up, PowerShell):
 
@@ -45,6 +46,10 @@ $m.index_snapshot; $m.counts
 
 The id must match the table, the BM25 `chunked_at` must be `2026-10-17T05:19:12`, and the count
 must be 121926.
+
+Checked on FAO's laptop on 2026-10-27: the id matched the table, the load manifest gave 121,926
+points in 15 parts (0 resumed), the BM25 `chunked_at` was `2026-10-17T05:19:12+00:00`, and Qdrant
+counted 121,926 points.
 
 ## 2. Model, prompts and configuration (W6-D5-DAT-1)
 
