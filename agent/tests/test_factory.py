@@ -11,6 +11,7 @@ from scitech_agent.agent import Agent
 from scitech_agent.events import AgentError
 from scitech_agent.llm import OpenAICompatibleLLM
 from scitech_agent.retrieval import InMemoryRetriever
+from scitech_agent.retrieval.hybrid import HybridConfig, HybridRetriever
 
 LLM_ENV = {"LLM_BASE_URL": "http://localhost:11434/v1", "LLM_MODEL": "llama3.2:3b"}
 
@@ -60,3 +61,42 @@ def test_llm_is_not_needed_to_check_the_llm_settings_first(
     with pytest.raises(AgentError) as info:
         factory.agent_from_env({"LLM_MODEL": "x"})
     assert info.value.code == "llm_unavailable"
+
+
+@pytest.mark.parametrize(
+    ("min_score", "builds"), [("0.03", True), ("0.033", False), ("0.5", False)]
+)
+def test_threshold_must_be_reachable_by_the_hybrid_retriever(
+    monkeypatch: pytest.MonkeyPatch, min_score: str, builds: bool
+) -> None:
+    # RRF with rrf_k 60: the best hit (rank 1 in both lists) scores 2 / 61, about 0.0328.
+    hybrid = HybridRetriever(InMemoryRetriever([]), InMemoryRetriever([]))
+    monkeypatch.setattr(factory, "retriever_from_env", lambda env: hybrid)
+    env = {**LLM_ENV, "RETRIEVAL_MIN_SCORE": min_score}
+    if builds:
+        assert factory.agent_from_env(env).config.min_score == float(min_score)
+    else:
+        with pytest.raises(AgentError) as info:
+            factory.agent_from_env(env)
+        assert info.value.code == "internal"
+
+
+def test_score_ceiling_per_retriever() -> None:
+    assert factory.score_ceiling(InMemoryRetriever([])) is None
+    hybrid = HybridRetriever(InMemoryRetriever([]), InMemoryRetriever([]), HybridConfig(rrf_k=0))
+    assert factory.score_ceiling(hybrid) == 2.0
+
+
+@pytest.mark.parametrize(
+    "env",
+    [
+        {"AGENT_SELF_CHECK": "maybe"},
+        {"AGENT_MAX_LLM_CALLS": "0"},
+        {"AGENT_MAX_LLM_CALLS": "four"},
+        {"AGENT_TIMEOUT_S": "0"},
+    ],
+)
+def test_invalid_agent_limits_stop_the_build(env: dict[str, str]) -> None:
+    with pytest.raises(AgentError) as info:
+        factory.agent_from_env({**LLM_ENV, **env})
+    assert info.value.code == "internal"

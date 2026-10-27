@@ -187,7 +187,7 @@ def test_history_is_kept_per_session_and_given_to_rewrite() -> None:
     seen: list[list[Turn]] = []
 
     class RecordingAgent(Agent):
-        def rewrite(self, message, history):
+        def rewrite(self, message, history, budget=None):
             seen.append(history)
             return message
 
