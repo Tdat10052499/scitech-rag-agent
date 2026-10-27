@@ -143,11 +143,28 @@ One real day (2026-10-16) went through fetch, clean, validate and chunk: 276 rec
 request, 0 dropped, all 13 checks passed (ADR 0008, live day). The whole run, with the watermark,
 is `incremental-run` (W5-D2-FAO-1, #76).
 
-<!-- TODO(W5-D4-FAO-1): live test results from pipelines/reports/incremental_test.md: range,
-records fetched, papers new vs. already indexed, points before/after, duplicates (0), re-run
-unchanged, time per step. Or, if cut-list item 6 was applied, the reason. -->
+**Live test** (W5-D4-FAO-1, 2026-10-27; `pipelines/reports/incremental_test.md`, #124). The whole
+command ran twice in a Kaggle CPU notebook against a copy of the full index:
 
-<!-- TODO(W5-D4-FAO-1): scheduling (Task Scheduler or cron), as recorded in ADR 0008. -->
+| | First run | Same day again |
+|---|---:|---:|
+| Range | 2026-10-10 to 2026-10-26 | 2026-10-26 |
+| Papers fetched / chunks | 2,744 / 2,758 | 177 / 178 |
+| Papers already indexed (old points deleted) | 962 (966) | 177 (178) |
+| Points before -> after | 121,926 -> 123,718 | 123,718 -> 123,718 |
+| Duplicate, stale or missing chunks | 0 | 0 |
+| Wall time (of which embedding on CPU) | 10 min 45 s (549 s) | 1 min 13 s (39 s) |
+
+The index grew by exactly the chunks of the 1,782 new papers, every reloaded paper kept only its
+new chunks, and repeating the last day changed nothing. Each run was checked by comparing the whole
+collection before and after with the run's chunks, independently of the load's own count check.
+Embedding is 85% of the time; a single day of a few hundred papers takes about a minute on a CPU.
+
+**Scheduling** (ADR 0008, point 6): for v1.0 the update is one manual command run on demand. The
+machine that serves the demo has no Java 17 for Spark, a Kaggle notebook cannot reach its Qdrant,
+and the index is frozen for evaluation from W6-D4 until the final gate anyway. One run catches up
+all missed days in a single range. On a machine with Java 17+ the daily schedule is one cron line
+(recorded in the ADR, not tested).
 
 Known limits: deleted records stay in the index until the next full rebuild, and the BM25 index
 is not yet rebuilt with incremental chunks (#119).
