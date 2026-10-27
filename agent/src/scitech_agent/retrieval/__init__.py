@@ -9,9 +9,10 @@ harness can wrap the same retriever. `InMemoryRetriever` is a deterministic fake
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timezone
+from functools import lru_cache
 from typing import Any, Protocol
 
 Filters = Mapping[str, Any]
@@ -49,18 +50,28 @@ class Retriever(Protocol):
 def matches(chunk: ScoredChunk, filters: Filters | None) -> bool:
     """True if `chunk` has every filtered value; a list field (categories) must contain it.
     A `{"gte", "lte", "gt", "lt"}` mapping is a range checked with `check_range`'s rules, as in
-    the vector store (`scitech_agent.store`)."""
-    for name, wanted in (filters or {}).items():
+    the vector store (`scitech_agent.store`). To test many chunks, use `compile_filters` once."""
+    return compile_filters(filters)(chunk)
+
+
+def compile_filters(filters: Filters | None) -> Callable[[Any], bool]:
+    """Check `filters` and return a test for one chunk with the rules of `matches`. Bad bounds
+    raise ValueError here, once, and the bounds are parsed once rather than for every chunk."""
+    tests = [
+        _range_test(name, wanted) if isinstance(wanted, Mapping) else _value_test(name, wanted)
+        for name, wanted in (filters or {}).items()
+    ]
+    return lambda chunk: all(test(chunk) for test in tests)
+
+
+def _value_test(name: str, wanted: Any) -> Callable[[Any], bool]:
+    def test(chunk: Any) -> bool:
         value = getattr(chunk, name, None)
-        if isinstance(wanted, Mapping):
-            if value is None or not _in_range(name, value, wanted):
-                return False
-        elif isinstance(value, (tuple, list)):
-            if wanted not in value:
-                return False
-        elif value != wanted:
-            return False
-    return True
+        if isinstance(value, (tuple, list)):
+            return wanted in value
+        return value == wanted
+
+    return test
 
 
 def year_range(start: int | None = None, end: int | None = None) -> dict[str, dict[str, str]]:
@@ -86,35 +97,45 @@ _ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 def check_range(name: str, bounds: Mapping[str, Any]) -> None:
     """Raise ValueError unless `bounds` is a range Qdrant accepts: keys among gte, lte, gt, lt,
-    and each bound a number or an ISO date or datetime string (`2024-01-01`,
+    and every bound a number, or every bound an ISO date or datetime string (`2024-01-01`,
     `2024-01-01T00:00:00Z`). A bare year such as `"2024"` is refused: Qdrant rejects it (HTTP
-    400), and comparing it as a string would silently drop dates; use `year_range`."""
+    400), and comparing it as a string would silently drop dates; use `year_range`. Numbers and
+    dates in one range are refused too: no value can match both."""
     unknown = set(bounds) - set(RANGE_OPS)
     if unknown or not bounds:
         raise ValueError(f"filter {name!r}: a range takes gte, lte, gt or lt, got {sorted(bounds)}")
+    kinds = set()
     for op, bound in bounds.items():
-        if _number(bound) is None and _datetime(bound) is None:
+        if _number(bound) is not None:
+            kinds.add("number")
+        elif _datetime(bound) is not None:
+            kinds.add("date")
+        else:
             raise ValueError(
                 f"filter {name!r}: {op} bound {bound!r} is not a number or an ISO date "
                 "(YYYY-MM-DD or RFC 3339); for whole years use year_range"
             )
+    if len(kinds) > 1:
+        raise ValueError(
+            f"filter {name!r}: a range mixes numbers and dates ({dict(bounds)}); use one kind"
+        )
 
 
-def _in_range(name: str, value: Any, bounds: Mapping[str, Any]) -> bool:
+def _range_test(name: str, bounds: Mapping[str, Any]) -> Callable[[Any], bool]:
     """Numbers compare as numbers; dates and datetimes as UTC instants, like Qdrant's datetime
     index (a date is midnight UTC, so `gte "2024-01-01T00:00:00Z"` keeps `2024-01-01`). A value
-    of another kind than its bound never matches."""
+    of another kind than its bounds, or none, never matches."""
     check_range(name, bounds)
-    for op, bound in bounds.items():
-        if _number(bound) is not None:
-            left, right = _number(value), _number(bound)
-        else:
-            left, right = _datetime(value), _datetime(bound)
-        if left is None or right is None:
-            return False
-        if not _COMPARE[op](left, right):
-            return False
-    return True
+    numeric = _number(next(iter(bounds.values()))) is not None
+    convert = _number if numeric else _datetime
+    limits = [(_COMPARE[op], convert(bound)) for op, bound in bounds.items()]
+
+    def test(chunk: Any) -> bool:
+        value = getattr(chunk, name, None)
+        left = None if value is None else convert(value)
+        return left is not None and all(compare(left, right) for compare, right in limits)
+
+    return test
 
 
 _COMPARE = {
@@ -137,13 +158,21 @@ def _datetime(value: Any) -> datetime | None:
         moment = value
     elif isinstance(value, date):
         moment = datetime(value.year, value.month, value.day)
-    elif isinstance(value, str) and _ISO_DATE.match(value):
-        text = value[:-1] + "+00:00" if value.endswith(("Z", "z")) else value
-        try:
-            moment = datetime.fromisoformat(text)
-        except ValueError:
-            return None
+    elif isinstance(value, str):
+        return _parse_iso(value)
     else:
+        return None
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
+@lru_cache(maxsize=65536)  # chunks share dates: a corpus has a few thousand distinct values
+def _parse_iso(value: str) -> datetime | None:
+    if not _ISO_DATE.match(value):
+        return None
+    text = value[:-1] + "+00:00" if value.endswith(("Z", "z")) else value
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
         return None
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
@@ -169,9 +198,10 @@ class InMemoryRetriever:
             raise ValueError(f"k must be positive, got {k}")
         self.calls.append((query, k, filters))
         terms = _words(query)
+        keep = compile_filters(filters)
         hits = []
         for chunk in self.chunks:
-            if not matches(chunk, filters) or not terms:
+            if not keep(chunk) or not terms:
                 continue
             overlap = len(terms & _words(f"{chunk.title} {chunk.text}"))
             if overlap:

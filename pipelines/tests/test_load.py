@@ -8,6 +8,7 @@ from scitech_pipelines.embed import embed_chunks
 from scitech_pipelines.load import (
     LOAD_MANIFEST,
     LOAD_STATE,
+    in_subset,
     index_snapshot,
     load_index,
     point_id,
@@ -164,6 +165,53 @@ def test_unfinished_embedding_is_refused(data, tmp_path: Path):
     (vectors / "_embed_manifest.json").unlink()
     with pytest.raises(FileNotFoundError):
         load_index(chunks, vectors, FakeStore(), tmp_path / "index")
+
+
+def test_subset_keeps_whole_documents_and_is_nested(data, tmp_path: Path):
+    chunks, vectors = data
+    loaded = {}
+    for fraction in (0.3, 0.6, 1.0):
+        store = FakeStore(f"sub_{fraction}")
+        manifest = load_index(
+            chunks, vectors, store, tmp_path / f"index-{fraction}", fraction=fraction, log=print
+        )
+        loaded[fraction] = {payload["chunk_id"] for _, payload in store.points.values()}
+        assert manifest["counts"]["points"] == len(loaded[fraction])
+        docs = {payload["doc_id"] for _, payload in store.points.values()}
+        assert all(in_subset(d, manifest["fraction"]) for d in docs)
+    every = set(read_vectors(vectors))
+    assert loaded[1.0] == every  # 1.0 is the full load
+    assert loaded[0.3] <= loaded[0.6] <= every  # nested
+    assert 0 < len(loaded[0.3]) < len(loaded[0.6]) < len(every)
+    # a document's chunks are all in or all out
+    for chunk_id in every:
+        doc = chunk_id.split("#")[0]
+        assert (chunk_id in loaded[0.3]) == in_subset(doc, 0.3)
+
+
+def test_subset_manifest_and_resume(data, tmp_path: Path):
+    chunks, vectors = data
+    store = FakeStore("sub")
+    manifest = load_index(chunks, vectors, store, tmp_path / "index", fraction=0.5)
+    assert manifest["fraction"] == 0.5
+    assert manifest["index_snapshot"].endswith("/subset-0.5")
+    full = load_index(chunks, vectors, FakeStore(), tmp_path / "full", log=lambda _: None)
+    assert full["fraction"] is None and "/subset-" not in full["index_snapshot"]
+    state = json.loads((tmp_path / "full" / LOAD_STATE).read_text())
+    assert "fraction" not in state["settings"]  # resume states of full loads are unchanged
+    with pytest.raises(ValueError, match="other settings"):
+        load_index(chunks, vectors, store, tmp_path / "index", fraction=0.3)
+    for bad in (0, -0.1, 1.5):
+        with pytest.raises(ValueError, match="fraction"):
+            load_index(chunks, vectors, FakeStore(), tmp_path / "bad", fraction=bad)
+
+
+def test_in_subset_is_stable():
+    ids = [f"2401.{i:05d}" for i in range(2000)]
+    share = sum(in_subset(d, 0.1) for d in ids) / len(ids)
+    assert 0.07 < share < 0.13
+    assert in_subset("2401.00001", None)
+    assert [in_subset(d, 0.1) for d in ids] == [in_subset(d, 0.1) for d in ids]
 
 
 class FakeQdrant:
