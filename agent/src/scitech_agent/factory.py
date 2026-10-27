@@ -6,6 +6,10 @@ stops the agent from being built raises `AgentError` with the contract code the 
 (`llm_unavailable` for the LLM settings, `retrieval_failed` for the retriever, `internal` for the
 agent settings); the cause goes to the log only. Nothing here contacts Qdrant or the LLM server,
 and the embedding model loads on the first search.
+
+`RETRIEVAL_MIN_SCORE` is on the scale of the retriever in use (ADR 0009): a threshold that no hit
+can reach (above 1 for dense cosine, above `2 / (RRF_K + 1)` for hybrid) would refuse every
+question, so it stops the build (`internal`).
 """
 
 from __future__ import annotations
@@ -17,7 +21,9 @@ from collections.abc import Mapping
 from scitech_agent.agent import ERROR_MESSAGES, Agent, AgentConfig
 from scitech_agent.events import AgentError
 from scitech_agent.llm import LLMConfigError, OpenAICompatibleLLM
-from scitech_agent.retrieval.hybrid import retriever_from_env
+from scitech_agent.retrieval import Retriever
+from scitech_agent.retrieval.dense import DenseRetriever
+from scitech_agent.retrieval.hybrid import HybridRetriever, retriever_from_env
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +45,25 @@ def agent_from_env(env: Mapping[str, str] | None = None) -> Agent:
     except Exception as exc:  # unknown RETRIEVER, missing or unreadable BM25 index ...
         llm.close()
         raise _startup_error("retrieval_failed", "retriever", exc) from exc
+    ceiling = score_ceiling(retriever)
+    if ceiling is not None and config.min_score > ceiling:
+        llm.close()
+        exc = ValueError(
+            f"RETRIEVAL_MIN_SCORE={config.min_score} is above the best score of "
+            f"{type(retriever).__name__} ({ceiling:.4f}): every question would be refused"
+        )
+        raise _startup_error("internal", "agent settings", exc) from exc
     logger.info("agent ready: retriever %s, LLM %s", type(retriever).__name__, llm.describe())
     return Agent(retriever, llm, config)
+
+
+def score_ceiling(retriever: Retriever) -> float | None:
+    """Best score `retriever` can give a hit, or `None` when unbounded (BM25) or unknown."""
+    if isinstance(retriever, HybridRetriever):
+        return 2.0 / (retriever.config.rrf_k + 1)  # rank 1 in both lists
+    if isinstance(retriever, DenseRetriever):
+        return 1.0  # cosine of L2-normalised vectors
+    return None
 
 
 def _startup_error(code: str, what: str, exc: Exception) -> AgentError:
