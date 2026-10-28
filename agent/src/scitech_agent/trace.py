@@ -113,6 +113,7 @@ class RequestTrace:
         self.answer_raw: str | None = None
         self.answer_parts: list[str] = []
         self.citations: list[str] = []
+        self.number_check: list[dict[str, Any]] | None = None
         self.followups: list[str] = []
         self.insufficient_evidence: bool | None = None
         self.llm_calls = 0
@@ -178,6 +179,7 @@ class RequestTrace:
             "answer_raw": self.answer_raw,
             "answer": "".join(self.answer_parts),
             "citations": self.citations,
+            "number_check": self.number_check,
             "insufficient_evidence": self.insufficient_evidence,
             "followups": self.followups,
             "llm_calls": self.llm_calls,

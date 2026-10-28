@@ -28,6 +28,7 @@ Since W5-D4-DAT-1 the agent writes one JSON line per question to `data/logs/trac
 | `answer_raw` | string or null | LLM answer text before the citation filter (invalid `[n]` still there); null when no answer call was made. |
 | `answer` | string | Text streamed to the user (filtered markers, refusal hint included). |
 | `citations` | list | `chunk_id`s cited by the answer, in order of first use. |
+| `number_check` | list or null | Numbers that none of the sources citing them contains (#115): `{sentence, number, cited, found_in}` (`sentence` 0-based; `cited` = the run of markers right after the number in its sentence, or all the sentence's markers for text after the last one; `found_in` = other sources that contain it). Checked: decimals, percentages and integers from 10; uncited sentences are not checked; a number moved to another comparison within the same source is not detected. Empty list: nothing found; null when no answer call was made. Detection only, the shown answer is not changed. |
 | `insufficient_evidence` | bool or null | `done.insufficient_evidence`; null when the request did not finish. |
 | `followups` | list | Suggested follow-up questions sent to the user. |
 | `llm_calls` | int | LLM calls made (rewrite, self-check, answer, follow-ups). |
