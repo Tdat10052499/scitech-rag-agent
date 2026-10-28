@@ -29,6 +29,7 @@ from scitech_agent.answer import (
     answer_messages,
     answer_user_message,
     answer_words,
+    check_numbers,
     format_sources,
     parse_citations,
 )
@@ -287,6 +288,10 @@ class Agent:
         answer = "".join(parts)
         cited = tuple(c.chunk_id for c in parse_citations(answer, evidence))
         trace.citations = list(cited)
+        mismatches = check_numbers(answer, evidence)
+        trace.number_check = [m.to_dict() for m in mismatches]
+        if mismatches:
+            logger.info("cited sources do not contain %d number(s) of the answer", len(mismatches))
         if not answer_words(answer):
             logger.warning("answer has no words outside citation markers")
         # Only an uncited answer that says the evidence is insufficient is a refusal (contract:

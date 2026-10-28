@@ -158,6 +158,75 @@ def strip_citations(text: str) -> str:
     return _MARKER.sub(strip, text)
 
 
+# --- Number check (#115) ------------------------------------------------------------------------
+
+# A sentence ends at . ! or ? followed by a space; markers right after it ("... X. [2]") are
+# moved before it first, so they stay with the sentence they cite for.
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+_MARKERS_AFTER_END = re.compile(r"([.!?])((?:\s*\[[^\]\n]*\])+)")
+# 6.16%, 17.25, 1,891, 57.4 %, 2024; not part of a word or of a longer number.
+_NUMBER = re.compile(r"(?<![\w.,])\d+(?:[.,]\d+)*(?:\s*%)?(?![\w])")
+
+
+def _number_value(token: str) -> str | None:
+    """The value of a number token as compared between answer and source (`1,891` -> `1891`,
+    `6.16 %` -> `6.16`), or None for a token too common to check: an integer below 10."""
+    value = token.rstrip("% ").rstrip()
+    value = re.sub(r",(?=\d{3}(?:\D|$))", "", value)
+    if "%" not in token and re.fullmatch(r"\d", value):
+        return None
+    return value
+
+
+def _values(text: str) -> dict[str, str]:
+    """Checked values of `text` with their first spelling."""
+    found: dict[str, str] = {}
+    for match in _NUMBER.finditer(text):
+        value = _number_value(match.group(0))
+        if value is not None:
+            found.setdefault(value, match.group(0).strip())
+    return found
+
+
+@dataclass(frozen=True)
+class NumberMismatch:
+    """A number of a cited sentence that none of the sentence's cited sources contains."""
+
+    sentence: int  # 0-based position of the sentence in the answer
+    number: str  # as written in the answer
+    cited: tuple[int, ...]  # source numbers the sentence cites
+    found_in: tuple[int, ...]  # other sources that contain it (the likely right citation)
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "sentence": self.sentence,
+            "number": self.number,
+            "cited": list(self.cited),
+            "found_in": list(self.found_in),
+        }
+
+
+def check_numbers(answer: str, evidence: Sequence[ScoredChunk]) -> list[NumberMismatch]:
+    """Numbers (decimals, percentages, integers from 10) of each cited sentence of `answer`
+    that are in none of the sources the sentence cites (#115). Uncited sentences are not
+    checked. Detection only: the answer is already streamed, so nothing is changed."""
+    texts = [_values(f"{chunk.title}. {chunk.text}") for chunk in evidence]
+    mismatches: list[NumberMismatch] = []
+    text = _MARKERS_AFTER_END.sub(r" \2\1", answer.strip())
+    for i, sentence in enumerate(_SENTENCE_END.split(text)):
+        cited = tuple(c.number for c in parse_citations(sentence, evidence))
+        if not cited:
+            continue
+        for value, spelling in _values(strip_citations(sentence)).items():
+            if any(value in texts[n - 1] for n in cited):
+                continue
+            others = tuple(
+                n for n in range(1, len(evidence) + 1) if n not in cited and value in texts[n - 1]
+            )
+            mismatches.append(NumberMismatch(i, spelling, cited, others))
+    return mismatches
+
+
 def answer_words(text: str) -> int:
     """Words of `text` outside citation markers; 0 means the answer is only `[n]` markers."""
     return len(re.findall(r"\w+", strip_citations(text)))

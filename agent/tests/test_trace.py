@@ -61,6 +61,7 @@ FIELDS = {
     "answer_raw",
     "answer",
     "citations",
+    "number_check",
     "insufficient_evidence",
     "followups",
     "llm_calls",
@@ -118,6 +119,7 @@ def test_answered_request_writes_one_complete_trace() -> None:
     assert trace["answer_raw"] == RAW  # before the citation filter dropped [9]
     assert trace["answer"] == SHOWN == "".join(e.text for e in events if isinstance(e, TokenEvent))
     assert trace["citations"] == ["2409.02060#0", "1810.04805#0"]
+    assert trace["number_check"] == []  # "1B" and "7B" are not checked numbers
     assert trace["insufficient_evidence"] is False
     assert trace["followups"] == ["How was OLMoE pretrained?"]
     assert trace["llm_calls"] == 2
@@ -150,6 +152,7 @@ def test_self_check_refusal_is_traced() -> None:
     assert trace["evidence"]["decision"] == "refuse_self_check"
     assert trace["sources"] == [] and len(trace["retrieved"]) == 2
     assert trace["answer_raw"] is None and trace["insufficient_evidence"] is True
+    assert trace["number_check"] is None  # no answer call
     assert trace["llm_calls"] == 1 and "answer" not in trace["latency_ms"]
 
 
@@ -291,3 +294,17 @@ def test_batch_item_turns_pair_user_and_assistant() -> None:
     assert item.turns() == [Turn("a", "b")]
     with pytest.raises(ValueError):
         BatchItem.of({"id": "x"}, default_id="q1")
+
+
+def test_number_cited_to_the_wrong_source_is_traced() -> None:
+    chunks = [
+        ScoredChunk("a#0", "a", 0.0, "LongRAG A", "LongRAG A beats RAG by 6.16%.", "arxiv", 0),
+        ScoredChunk("b#0", "b", 0.0, "LongRAG B", "LongRAG B improves recall.", "arxiv", 0),
+    ]
+    raw = "LongRAG beats RAG by 6.16% [2]. It improves recall [2]."
+    agent, _, tracer = make_agent([raw, FOLLOWUPS], retriever=InMemoryRetriever(chunks))
+    list(agent.run("s1", "How much does LongRAG beat RAG?"))
+
+    assert tracer.traces[0]["number_check"] == [
+        {"sentence": 0, "number": "6.16%", "cited": [2], "found_in": [1]}
+    ]
