@@ -232,3 +232,20 @@ def test_check_numbers_keeps_a_marker_after_the_full_stop_with_its_sentence() ->
     answer = "It beats RAG by 6.16%. [1] The benchmark has 1,891 samples. [1][2]\nIn 2024. [1]"
     [mismatch] = check_numbers(answer, NUMBERED)
     assert mismatch.to_dict() == {"sentence": 2, "number": "2024", "cited": [1], "found_in": []}
+
+
+def test_check_numbers_checks_each_number_against_the_marker_that_follows_it() -> None:
+    # #115, gs-010 on Kaggle 2026-10-28: both numbers are in source 1, 6.16% was cited to 2.
+    answer = "LongRAG beats RAG by 6.16% [2] and long-context LLMs by 6.94% [1]."
+    [mismatch] = check_numbers(answer, NUMBERED)
+    assert mismatch.to_dict() == {"sentence": 0, "number": "6.16%", "cited": [2], "found_in": [1]}
+
+
+def test_check_numbers_treats_adjacent_markers_as_one_citation() -> None:
+    assert check_numbers("It beats RAG by 6.16% [2][1] over 11 LLMs [2].", NUMBERED) == []
+
+
+def test_check_numbers_checks_text_after_the_last_marker_against_all_markers() -> None:
+    [mismatch] = check_numbers("It helps [1], with 1,891 samples.", NUMBERED)
+    assert (mismatch.number, mismatch.cited, mismatch.found_in) == ("1,891", (1,), (2,))
+    assert check_numbers("It helps [1][2], with 1,891 samples.", NUMBERED) == []

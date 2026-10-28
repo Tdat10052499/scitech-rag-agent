@@ -206,24 +206,55 @@ class NumberMismatch:
         }
 
 
+def _claims(sentence: str, count: int) -> list[tuple[str, tuple[int, ...]]]:
+    """The parts of a sentence with the source numbers that cite them: each run of adjacent
+    markers cites the text since the previous run ("6.94% [1] and 6.16% [2]" gives two parts);
+    text after the last run is cited by every marker of the sentence."""
+    parts: list[tuple[str, tuple[int, ...]]] = []
+    last = 0
+    pending = ""  # text cited by the run being collected
+    numbers: list[int] = []
+    for match in _MARKER.finditer(sentence):
+        start = match.start() + len(match.group(1))
+        if not _is_citation(match, sentence[start - 1] if start > 0 else ""):
+            continue
+        valid = [n for n in _numbers(match.group(2)) if 1 <= n <= count]
+        between = sentence[last : match.start()]
+        if numbers and between.strip():  # text since the previous run: close that run
+            parts.append((pending, tuple(dict.fromkeys(numbers))))
+            numbers = []
+        if not numbers:
+            pending = between
+        numbers.extend(valid)
+        last = match.end()
+    if numbers:
+        parts.append((pending, tuple(dict.fromkeys(numbers))))
+    every = tuple(dict.fromkeys(n for _, cited in parts for n in cited))
+    if every and sentence[last:].strip():
+        parts.append((sentence[last:], every))
+    return parts
+
+
 def check_numbers(answer: str, evidence: Sequence[ScoredChunk]) -> list[NumberMismatch]:
-    """Numbers (decimals, percentages, integers from 10) of each cited sentence of `answer`
-    that are in none of the sources the sentence cites (#115). Uncited sentences are not
-    checked. Detection only: the answer is already streamed, so nothing is changed."""
+    """Numbers (decimals, percentages, integers from 10) of `answer` that are in none of the
+    sources that cite them (#115). A number is cited by the next run of markers in its sentence
+    ("by 6.16% [2]" is checked against source 2 only), or, after the last run, by all of the
+    sentence's markers. Uncited sentences are not checked. Detection only: the answer is
+    already streamed, so nothing is changed."""
     texts = [_values(f"{chunk.title}. {chunk.text}") for chunk in evidence]
     mismatches: list[NumberMismatch] = []
     text = _MARKERS_AFTER_END.sub(r" \2\1", answer.strip())
     for i, sentence in enumerate(_SENTENCE_END.split(text)):
-        cited = tuple(c.number for c in parse_citations(sentence, evidence))
-        if not cited:
-            continue
-        for value, spelling in _values(strip_citations(sentence)).items():
-            if any(value in texts[n - 1] for n in cited):
-                continue
-            others = tuple(
-                n for n in range(1, len(evidence) + 1) if n not in cited and value in texts[n - 1]
-            )
-            mismatches.append(NumberMismatch(i, spelling, cited, others))
+        for part, cited in _claims(sentence, len(evidence)):
+            for value, spelling in _values(part).items():
+                if any(value in texts[n - 1] for n in cited):
+                    continue
+                others = tuple(
+                    n
+                    for n in range(1, len(evidence) + 1)
+                    if n not in cited and value in texts[n - 1]
+                )
+                mismatches.append(NumberMismatch(i, spelling, cited, others))
     return mismatches
 
 
