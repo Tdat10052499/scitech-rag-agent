@@ -8,7 +8,8 @@ W5-D1-DAT-1). The answer and the follow-ups are two LLM calls per question; if n
 refuses with a fixed message and suggestions, without an answer call (agent/AGENTS.md,
 `scitech_agent.evidence`, W5-D3-DAT-1). Each request has at most `AGENT_MAX_LLM_CALLS` LLM calls
 and `AGENT_TIMEOUT_S` seconds. The answer prompt and its citation checks live in
-`scitech_agent.answer` (W4-D1-DAT-1).
+`scitech_agent.answer` (W4-D1-DAT-1). Every request leaves one trace (`scitech_agent.trace`,
+W5-D4-DAT-1), and `Agent.run_batch` answers a list of questions without the API (evaluation).
 """
 
 from __future__ import annotations
@@ -19,8 +20,8 @@ import threading
 import time
 import uuid
 from collections import OrderedDict
-from collections.abc import Callable, Iterator, Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from scitech_agent.answer import (
@@ -52,12 +53,15 @@ from scitech_agent.followups import followups_user_message, parse_followups
 from scitech_agent.llm import LLMClient, LLMError, Message, split_fragments
 from scitech_agent.retrieval import Retriever, ScoredChunk
 from scitech_agent.rewrite import rewrite_query
+from scitech_agent.trace import RequestTrace, TraceWriter
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
     "Agent",
     "AgentConfig",
+    "BatchItem",
+    "BatchResult",
     "INSUFFICIENT_ANSWER",
     "Turn",
     "answer_user_message",
@@ -152,11 +156,13 @@ class Agent:
         config: AgentConfig | None = None,
         *,
         clock: Callable[[], float] = time.monotonic,
+        tracer: TraceWriter | None = None,
     ) -> None:
         self.retriever = retriever
         self.llm = llm
         self.config = config or AgentConfig()
         self.clock = clock
+        self.tracer = tracer  # None: traces are built (run_batch) but not written
         self.answer_prompt = load_prompt("answer")
         self.followups_prompt = load_prompt("followups")
         self.rewrite_prompt = load_prompt("rewrite")
@@ -168,13 +174,96 @@ class Agent:
 
     def run(self, session_id: str, message: str) -> Iterator[AgentEvent]:
         """Answer `message` in the conversation `session_id`. Raises `AgentError` on failure."""
+        yield from self._traced(self._new_trace(session_id, message))
+
+    def run_batch(
+        self, questions: Iterable[str | BatchItem | Mapping[str, object]]
+    ) -> list[BatchResult]:
+        """Answer each question in its own new session, for evaluation without the API.
+
+        An item is a question, a `BatchItem`, or a mapping with `question` and optionally `id`
+        and `history` (golden-set items: `[{"role": "user"|"assistant", "content": ...}]`,
+        oldest first), which becomes the session's earlier turns. A failed question gives a
+        result with `error` set; the batch goes on. Traces are also written to the tracer."""
+        results = []
+        for number, raw in enumerate(questions, start=1):
+            item = BatchItem.of(raw, default_id=f"q{number}")
+            session_id = f"batch-{uuid.uuid4().hex[:12]}"
+            with self._lock:
+                self._history[session_id] = list(item.turns())
+            trace = self._new_trace(session_id, item.question)
+            error, sources = None, []
+            try:
+                for event in self._traced(trace):
+                    if isinstance(event, SourcesEvent):
+                        sources = list(event.chunks)
+            except AgentError as exc:
+                error = exc.code
+            finally:
+                with self._lock:
+                    self._history.pop(session_id, None)
+            results.append(BatchResult(item.id, item.question, error, sources, trace.to_dict()))
+        return results
+
+    def _new_trace(self, session_id: str, message: str) -> RequestTrace:
+        describe = getattr(self.llm, "describe", None)
+        config = {**asdict(self.config), "retriever": type(self.retriever).__name__}
+        return RequestTrace(
+            f"msg-{uuid.uuid4().hex[:12]}",
+            session_id,
+            message,
+            clock=self.clock,
+            model=describe() if callable(describe) else None,
+            config=config,
+        )
+
+    def _traced(self, trace: RequestTrace) -> Iterator[AgentEvent]:
+        """The pipeline's events, with what it did recorded in `trace`, which is written at the
+        end, also after an error or when the consumer stops early."""
         budget = RequestBudget(self.config.max_llm_calls, self.config.timeout_s, self.clock)
+        try:
+            for event in self._steps(trace.session_id, trace.message, trace, budget):
+                trace.observe(event)
+                yield event
+        except AgentError as exc:
+            trace.fail("error", exc.code)
+            raise
+        except GeneratorExit:
+            trace.fail("cancelled", None)
+            raise
+        except Exception:
+            trace.fail("error", "internal")
+            raise
+        finally:
+            trace.llm_calls = budget.calls
+            trace.finish()
+            if self.tracer is not None:
+                try:
+                    self.tracer.write(trace.to_dict())
+                except Exception:  # noqa: BLE001 - tracing must never fail a request
+                    logger.exception("trace %s not written", trace.trace_id)
+
+    def _steps(
+        self, session_id: str, message: str, trace: RequestTrace, budget: RequestBudget
+    ) -> Iterator[AgentEvent]:
         history = self.history(session_id)
-        query = self.rewrite(message, history, budget)
-        evidence = self.check_evidence(self.retrieve(query))
-        if evidence and not self.self_check(query, evidence, budget):
-            evidence = []
-        message_id = f"msg-{uuid.uuid4().hex[:12]}"
+        # latency_ms has only the steps that are switched on
+        with trace.step("rewrite", record=self.config.rewrite):
+            query = self.rewrite(message, history, budget)
+        trace.query = query
+        with trace.step("retrieve"):
+            hits = self.retrieve(query)
+        trace.set_retrieved(hits)
+        evidence = self.check_evidence(hits)
+        trace.evidence_count = len(evidence)
+        trace.decision = "answer" if evidence else "refuse_no_evidence"
+        if evidence:
+            with trace.step("self_check", record=self.config.self_check):
+                passed = self.self_check(query, evidence, budget, trace)
+            if not passed:
+                evidence = []
+                trace.decision = "refuse_self_check"
+        message_id = trace.trace_id
 
         if not evidence:
             yield SourcesEvent([])
@@ -191,11 +280,13 @@ class Agent:
             raise AgentError("timeout", ERROR_MESSAGES["timeout"]) from exc
         yield SourcesEvent(evidence)
         parts: list[str] = []
-        for fragment in self.answer(message, evidence, history, budget):
-            parts.append(fragment)
-            yield TokenEvent(fragment)
+        with trace.step("answer"):
+            for fragment in self.answer(message, evidence, history, budget, trace):
+                parts.append(fragment)
+                yield TokenEvent(fragment)
         answer = "".join(parts)
         cited = tuple(c.chunk_id for c in parse_citations(answer, evidence))
+        trace.citations = list(cited)
         if not answer_words(answer):
             logger.warning("answer has no words outside citation markers")
         # Only an uncited answer that says the evidence is insufficient is a refusal (contract:
@@ -210,7 +301,10 @@ class Agent:
         elif not cited:
             logger.info("answer cites no source and is not a refusal")
         # Follow-ups grounded in sources that did not answer would point to more of the same.
-        questions = [] if refused else self.followups(message, answer, evidence, history, budget)
+        questions: list[str] = []
+        if not refused:
+            with trace.step("followups"):
+                questions = self.followups(message, answer, evidence, history, budget)
         if questions:
             yield FollowupsEvent(questions)
         self._remember(session_id, Turn(message, answer, cited))
@@ -269,16 +363,29 @@ class Agent:
         return sorted((h for h in hits if h.score >= self.config.min_score), key=lambda h: -h.score)
 
     def self_check(
-        self, query: str, evidence: list[ScoredChunk], budget: RequestBudget | None = None
+        self,
+        query: str,
+        evidence: list[ScoredChunk],
+        budget: RequestBudget | None = None,
+        trace: RequestTrace | None = None,
     ) -> bool:
         """False only when `AGENT_SELF_CHECK` is on and the LLM answers NO to "can `query` be
         answered from `evidence`?". Fails open: off, no call or time to spare, an LLM error or
-        an unreadable verdict all leave the decision to the answer step."""
+        an unreadable verdict all leave the decision to the answer step. The outcome goes to
+        `trace.self_check`: off, skipped, error, unreadable, yes, partly or no."""
+        outcome = self._self_check(query, evidence, budget)
+        if trace is not None:
+            trace.self_check = outcome
+        return outcome != "no"
+
+    def _self_check(
+        self, query: str, evidence: list[ScoredChunk], budget: RequestBudget | None
+    ) -> str:
         if not self.config.self_check:
-            return True
+            return "off"
         if budget is not None and not budget.take_optional():
             logger.info("self-check skipped: request limits")
-            return True
+            return "skipped"
         try:
             text = self.llm.chat(
                 self_check_messages(self.self_check_prompt, query, evidence),
@@ -287,13 +394,13 @@ class Agent:
             )
         except LLMError as exc:
             logger.warning("self-check skipped: %s (%s)", exc, exc.code)
-            return True
+            return "error"
         verdict = parse_verdict(text)
         if verdict is None:
             logger.info("self-check verdict unreadable: %r", text[:80])
-            return True
+            return "unreadable"
         logger.info("self-check: %s (%r)", verdict, text[:80])
-        return verdict != "no"
+        return verdict
 
     def answer(
         self,
@@ -301,9 +408,11 @@ class Agent:
         evidence: list[ScoredChunk],
         history: list[Turn] | None = None,
         budget: RequestBudget | None = None,
+        trace: RequestTrace | None = None,
     ) -> Iterator[str]:
         """Streamed answer; markers that cite no source are dropped from it (`CitationFilter`).
-        Raises `AgentError("timeout")` when the request's time runs out while it streams."""
+        Raises `AgentError("timeout")` when the request's time runs out while it streams. The
+        LLM's text before that filter goes to `trace.answer_raw` (invalid-citation rate)."""
         keep = self.config.answer_history_turns
         recent = (history or [])[-keep:] if keep > 0 else []
         messages = answer_messages(self.answer_prompt, question, evidence, recent)
@@ -314,7 +423,8 @@ class Agent:
                 temperature=self.config.temperature,
                 max_tokens=self.config.answer_max_tokens,
             )
-            for fragment in CitationFilter(len(evidence)).filter(stream):
+            raw = stream if trace is None else _tee(stream, trace)
+            for fragment in CitationFilter(len(evidence)).filter(raw):
                 yield fragment
                 if budget is not None and budget.expired():
                     raise LimitExceeded("time limit reached while the answer streamed")
@@ -377,3 +487,93 @@ class Agent:
             self._history[session_id] = turns[-keep:] if keep > 0 else []
             while len(self._history) > MAX_SESSIONS:  # in-memory only: drop the oldest sessions
                 self._history.popitem(last=False)
+
+
+def _tee(stream: Iterable[str], trace: RequestTrace) -> Iterator[str]:
+    """Pass `stream` through, keeping its text in `trace.answer_raw`."""
+    trace.answer_raw = ""
+    for fragment in stream:
+        trace.answer_raw += fragment
+        yield fragment
+
+
+@dataclass(frozen=True)
+class BatchItem:
+    """One question of `Agent.run_batch`, with the earlier turns of its conversation."""
+
+    question: str
+    id: str | None = None
+    history: Sequence[Mapping[str, str]] = ()
+
+    @classmethod
+    def of(cls, item: str | BatchItem | Mapping[str, object], default_id: str) -> BatchItem:
+        if isinstance(item, BatchItem):
+            return item if item.id else cls(item.question, default_id, item.history)
+        if isinstance(item, str):
+            return cls(item, default_id)
+        question = item.get("question")
+        if not isinstance(question, str):
+            raise ValueError(f"batch item {default_id} has no question")
+        history = item.get("history") or ()
+        return cls(question, str(item.get("id") or default_id), history)  # type: ignore[arg-type]
+
+    def turns(self) -> list[Turn]:
+        """`history` as turns: each user message with the assistant message after it."""
+        turns, question = [], None
+        for entry in self.history:
+            if entry.get("role") == "user":
+                question = entry.get("content", "")
+            elif entry.get("role") == "assistant" and question is not None:
+                turns.append(Turn(question, entry.get("content", "")))
+                question = None
+        return turns
+
+
+@dataclass(frozen=True)
+class BatchResult:
+    """Outcome of one `run_batch` question. `sources` are the chunks shown (`[n]` is
+    `sources[n - 1]`); `trace` is the request's trace (`scitech_agent.trace`), which holds the
+    answer as shown (`answer`), the LLM text before the citation filter (`answer_raw`), the
+    cited chunk ids, the follow-ups and the refusal flag."""
+
+    id: str
+    question: str
+    error: str | None  # contract `Error.code` when the question failed
+    sources: list[ScoredChunk] = field(repr=False)
+    trace: dict = field(repr=False)
+
+    @property
+    def answer(self) -> str:
+        return self.trace["answer"]
+
+    @property
+    def insufficient_evidence(self) -> bool | None:
+        return self.trace["insufficient_evidence"]
+
+    def to_dict(self) -> dict:
+        """JSON-ready record: `answer_id`, `answer` and `sources` (`n`, `chunk_id`, `doc_id`,
+        `title`, `text`, `score`) as `scitech_eval.answers.read_answers` reads them, the other
+        answer fields, and the trace under `trace`."""
+        t = self.trace
+        return {
+            "answer_id": self.id,
+            "question": self.question,
+            "error": self.error,
+            "answer": t["answer"],
+            "answer_raw": t["answer_raw"],
+            "sources": [
+                {
+                    "n": n,
+                    "chunk_id": c.chunk_id,
+                    "doc_id": c.doc_id,
+                    "title": c.title,
+                    "text": c.text,
+                    "score": c.score,
+                }
+                for n, c in enumerate(self.sources, start=1)
+            ],
+            "citations": t["citations"],
+            "followups": t["followups"],
+            "insufficient_evidence": t["insufficient_evidence"],
+            "trace": t,
+        }

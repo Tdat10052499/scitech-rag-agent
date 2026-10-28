@@ -28,6 +28,13 @@ def test_builds_the_agent_from_the_environment(monkeypatch: pytest.MonkeyPatch) 
     assert (agent.config.top_k, agent.config.min_score) == (7, 0.01)
 
 
+def test_traces_follow_agent_traces(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    monkeypatch.setattr(factory, "retriever_from_env", lambda env: InMemoryRetriever([]))
+    path = tmp_path / "t.jsonl"
+    assert factory.agent_from_env({**LLM_ENV, "AGENT_TRACES": str(path)}).tracer.path == path
+    assert factory.agent_from_env({**LLM_ENV, "AGENT_TRACES": "off"}).tracer is None
+
+
 @pytest.mark.parametrize(
     ("env", "code"),
     [
