@@ -45,7 +45,7 @@ Same 30 questions, difference of per-question scores. "Questions" = difference �
 |---|---|---|---|---|
 | recall@1 | −0.067 (−2.0 q) [−0.167, 0.000] | 0 / 2 | +0.033 (+1.0 q) [−0.083, +0.133] | 3 / 1 |
 | recall@5 | −0.050 (−1.5 q) [−0.183, +0.067] | 1 / 3 | +0.017 (+0.5 q) [−0.083, +0.117] | 2 / 1 |
-| recall@10 | −0.067 (−2.0 q) [−0.183, +0.017] | 1 / 3 | +0.017 (+0.5 q) | 2 / 1 |
+| recall@10 | −0.067 (−2.0 q) [−0.183, +0.017] | 1 / 3 | +0.017 (+0.5 q) [−0.083, +0.117] | 2 / 1 |
 | MRR | −0.049 [−0.113, +0.003] | 2 / 5 | +0.069 [−0.033, +0.189] | 4 / 3 |
 
 Every interval includes 0.
@@ -68,7 +68,7 @@ Measured fact: none of the three retrievers found any relevant paper in the top 
 
 - At recall@5, hybrid found a relevant paper and dense did not on gs-005, gs-008, gs-020; dense found one and hybrid did not on gs-030.
 - At recall@5, BM25 found one and hybrid did not on gs-007, gs-012; hybrid found one and BM25 did not on gs-020.
-- Counting items with at least one relevant paper in the top 5: hybrid 11, dense 9, BM25 12, union of all three 13 of 30. In 16 of 30 items none of the three found anything at k = 5.
+- Counting items with at least one relevant paper in the top 5: hybrid 11, dense 9, BM25 12, union of all three 14 of 30. In 16 of 30 items none of the three found anything at k = 5.
 
 These are counts of questions, not explanations. Why each question was missed is not established here.
 
@@ -86,7 +86,7 @@ Separate measurement by FAO (`index_profile.md`, 100 queries, k = 10), p50/p95: 
 ## 4. What the numbers do and do not show
 
 Measured:
-- All three retrievers find a relevant paper in the top 10 for at most 13 of 30 questions. Absolute retrieval quality on this set is low for all of them.
+- Each retriever finds a relevant paper in the top 10 for at most 13 of 30 questions (BM25 13, hybrid 12, dense 11); the three together find one for 15. Absolute retrieval quality on this set is low for all of them.
 - No difference between retrievers is distinguishable from noise: every paired interval includes 0.
 - The point estimates order BM25 ≥ hybrid ≥ dense on every metric.
 
@@ -103,7 +103,7 @@ Hypotheses (not measured):
 - Relevance labels may be incomplete: a paper not marked relevant may still be a good answer, which would lower all recalls.
 - The decision rule was applied to the same dev data the numbers were measured on (selection on the evaluation data, see `evaluation/PLAN.md` section 7).
 - Chunks contain title + abstract only, so the results do not transfer to full-text retrieval.
-- Simplified system (`evaluation/PLAN.md` section 7). Questions were searched as asked; whether `follow_up` and `multi_hop` need components not in this version is a hypothesis, not tested.
+- Simplified system (`evaluation/PLAN.md` section 7). Questions were searched as asked; whether `follow_up` and `multi_hop` need components not in this version is a hypothesis, not tested. The `follow_up` items were searched as typed; query rewriting (`AGENT_REWRITE`, #126) has merged since these runs, so the W7 runs may change that row, and 0.0 on `follow_up` is not a final result.
 - Dataset snapshot is from 2026-10-10 and is cs.CL only; year bias is possible.
 
 ## 6. Dense misses and likely causes
