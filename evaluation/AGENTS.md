@@ -60,3 +60,23 @@ python -m scitech_eval compare evaluation/runs/<hybrid>.json evaluation/runs/<de
 ```
 
 What to send back: the whole text printed by `compare` (it has the setup of each run, the warnings and the tables) and the three run files. A run with a WARNING about `index_snapshot`, golden file or `unspecified` is not a valid run for the report. In the output, B is dense and C is bm25, each against A = hybrid: the `wins` and `losses` columns are the other retriever's, and the `questions` column is the difference of recall in questions, which is what the ADR 0009 rule reads (a single retriever beats hybrid on recall@5 if `questions` is at least +2 with an `mrr` mean diff that is not negative). The p95 latency guard is not in `compare` (it prints the median search time only); the per-question times are in the run files under `search_seconds`.
+
+## Answers run (W5-D4-LDN-1)
+
+`python -m scitech_eval answers --config <yaml>` answers golden questions with the agent (`Agent.run_batch`) and labels every sentence of each answer with an LLM judge (procedure: `PLAN.md` section 5, prompt: `evaluation/prompts/faithfulness-judge.md`). It needs the agent's environment as in `.env.example` (full index, Kaggle LLM up) and the judge variables `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `JUDGE_MODEL` (decided on #142: `qwen2.5:7b`, temperature 0, one sentence per call; the values stay in the local `.env`, never in the repository). The config `configs/answers-pilot10.yaml` runs the first 10 dev items; fill the `TODO` fields first (`generator.digest` and `generator.max_tokens` from `SNAPSHOT.md`, `judge.max_tokens`, `judge.context_tokens`, `notes`). Run from the repository root:
+
+```powershell
+# Windows PowerShell
+$env:PYTHONPATH = "evaluation/src;agent/src"
+python -m scitech_eval answers --config evaluation/configs/answers-pilot10.yaml --out-dir evaluation/runs
+```
+
+```bash
+# macOS / Linux
+export PYTHONPATH=evaluation/src:agent/src
+python -m scitech_eval answers --config evaluation/configs/answers-pilot10.yaml --out-dir evaluation/runs
+```
+
+It writes three files in `--out-dir`: `<timestamp>-<name>.json` (the run file: counts, metrics, per-sentence labels, judge and generator settings), `<timestamp>-<name>.answers.jsonl` (one record per question with the answer, sources and trace; `make-sheet` reads it) and `<timestamp>-<name>.traces.jsonl` (the agent's own trace file for this run, set through `AGENT_TRACES`; `traces_path: off` in the config switches it off). The run file holds no tunnel URL.
+
+How to read it: refusals and failed questions are counted separately and are never sent to the judge; an answer that opens with the refusal sentence but still answers (`insufficient_evidence` false) is judged like any other. A judge reply the parser cannot read, or a failed judge call, is stored as `judge_error` on that sentence, not retried and not counted as a label (`judge.errors` and `counts.judge_error` give the numbers). Check `judge.prompt_fits_context`: if it is false, sentences were cut by the server. Never compare runs made with different judges or different prompt hashes.
