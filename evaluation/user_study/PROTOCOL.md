@@ -2,7 +2,7 @@
 
 Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). Items marked **[TBC]** need a decision or a check before the first session. Drafted with AI assistance (Claude); LDN is responsible for the final text.
 
-Decisions this draft follows: issue #134 (DAT, 2026-10-27: option A, moderated sessions; FAO confirmed his laptop as host) and DAT's answers on #111 (UI version, logged fields, no screen recording).
+Decisions this draft follows: issue #134 (DAT, 2026-10-27: option A, moderated sessions; FAO confirmed his laptop as host), DAT's answers on #111 (UI version, logged fields, no screen recording) and the reviews of FAO and DAT on this PR (trace file, operator, schedule wording).
 
 Planned sessions: D18 (Mon 2026-11-02) and D19 (Tue 2026-11-03), in the evening (Vietnam time). The first confirmed participants are scheduled back to back on Tue 2026-11-03 from 22:30 (section 12).
 
@@ -26,7 +26,7 @@ Read aloud at the start of each session, and sent in the invitation (short form)
 
 > Thank you for helping. You will try a question-answering tool for research papers (computer science, language processing) for about 30 minutes. You will tell us what you want to ask, we will type it, and then you answer a short questionnaire.
 >
-> What we record: the questions you ask, the answers and follow-up suggestions you see, your ratings, the questionnaire answers and the observer's notes. The system keeps these in two log files (`traces.jsonl` and `feedback.jsonl`) without your name or contact details; you are identified only by a code such as P03. **[TBC: exact field list of `traces.jsonl`, to be given by DAT when the W5-D4-DAT-1 PR is open.]** The session is **not** screen-recorded.
+> What we record: the questions you ask and the time of each question, the answers and follow-up suggestions you see, your ratings, the questionnaire answers and the observer's notes. The system keeps the questions, answers and suggestions in a log file that holds no names, no IP addresses and no browser data. Your questionnaire answers and the observer's notes are kept under a code such as P03. The session is **not** screen-recorded.
 >
 > The results are used only for the course report, as group summaries. We may quote short comments without your name. Contact details you gave us are used only to schedule the session and are deleted afterwards.
 >
@@ -38,13 +38,14 @@ Ask: "Do you agree to take part under these conditions?" Note yes/no on the obse
 
 Participants never open the system themselves. The system runs on one host machine (FAO's laptop, as decided on #134). The participant watches the shared screen (online, or in person on the host machine where possible) and tells the operator what to ask.
 
-Roles: **[TBC: who is operator (types what the participant says) and who is observer (fills the sheet); proposed: FAO operates the host laptop, LDN observes. Both are in the call.]**
+Roles (FAO confirmed on #134): FAO is the operator and types what the participant says on the host laptop; LDN is the observer and fills the sheet. Both are in the call.
 
 Checklist, run 15 minutes before the first session of each day:
 
 - FAO starts the Kaggle LLM session about 10 minutes before each block of sessions and stops it after the block (to save GPU quota). The tunnel URL stays only in FAO's local `.env`; it is never written in the repository, in issues or in chat.
-- Qdrant, backend and frontend are running on the host laptop; run the snapshot check of `evaluation/SNAPSHOT.md` (same index id, 121,926 points) and one test question that returns an answer with sources.
-- UI version: tag `v0.6-rc` (DAT, #111). **[TBC: the tag does not exist yet (only `v0.4-mvp` and `data-2026-10-17`); confirm that DAT creates it by the freeze on D16, and which UI it contains, old UI or #102.]**
+- Qdrant, backend and frontend are running on the host laptop; run the snapshot check of `evaluation/SNAPSHOT.md` (same index id, 121,926 points).
+- Start the backend with `AGENT_TRACES=data/logs/study-<date>.jsonl`. Ask the test question (it should return an answer with sources), and check that the file now has one line. Then delete the file before the first participant; the next question creates it again. This keeps test questions, the pilot and evaluation runs out of the study data.
+- UI version: tag `v0.6-rc` (DAT, #111), created at the D16 gate (W6-D5-DAT-1, 2026-10-30). If the gate slips, the commit hash used is recorded on the observer sheet before the first session.
 - The laptop is plugged in with sleep turned off; free disk space before D18 (FAO).
 - Note the git commit or tag, the index snapshot id and the model name (from `evaluation/SNAPSHOT.md`) on the observer sheet.
 - Observer sheet and questionnaire are ready (sections 6 and 7). Close other windows on the shared screen and turn off notifications.
@@ -115,7 +116,7 @@ In-page rating buttons (W6-D2-LDN-1): with moderated sessions the participant as
 
 ## 8. Data handling
 
-- Raw sheets, the contact list and the `traces.jsonl` and `feedback.jsonl` of the session days (they contain the question texts) are stored in a private location, not in the repository. **[TBC: where; proposed: a private folder of LDN, copied from FAO's laptop after each day.]**
+- Raw sheets, the contact list and the study trace file of each session day (`data/logs/study-<date>.jsonl`; it contains the question texts) are stored in a private folder of LDN, not in the repository. FAO copies the study trace file to LDN after each day and then deletes it from the host laptop. Until `POST /feedback` exists there is no `feedback.jsonl`; if it exists by D18, it is copied the same way.
 - The repository gets only anonymised summaries (codes, counts, ratings, short quotes without names).
 - Delete the contact list after the sessions.
 
@@ -145,5 +146,5 @@ In-page rating buttons (W6-D2-LDN-1): with moderated sessions the participant as
 ## 12. Schedule and participants (no names)
 
 - Invitations sent 2026-10-27; replies until 2026-10-29; Gate W6 on D16 (2026-10-30).
-- Tue 2026-11-03: sessions back to back from 22:30 (22:30, 23:15, and 00:00 if there is a third participant). Further slots: Mon 2026-11-02 and Tue 2026-11-03 at 21:00, 21:45 and 22:30 (Vietnam time).
+- Tue 2026-11-03: sessions back to back from 22:30 (22:30, 23:15, and 00:00 (night of 3 to 4 Nov) if there is a third participant). Further slots: Mon 2026-11-02 and Tue 2026-11-03 at 21:00, 21:45 and 22:30 (Vietnam time).
 - Slots are confirmed by FAO on #134. Names and contact details are kept outside the repository (section 8).
