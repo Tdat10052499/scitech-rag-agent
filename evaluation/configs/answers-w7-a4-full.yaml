@@ -1,0 +1,34 @@
+# W7-D2-DAT-1 / W7-D2-LDN-1, run A4 (evaluation/RUNS.md): agent ablation, condition "full agent: AGENT_REWRITE=on, AGENT_SELF_CHECK=on".
+# The four answers-w7-*.yaml files differ only in name and notes. The condition itself is set by the
+# two environment variables below, not by this file: set them in the shell before the run, keep the
+# rest of the .env as in evaluation/SNAPSHOT.md section 2, and afterwards check that
+# `generator.agent_config` in the run file shows the same flags (RUNS.md, "After every run").
+# Run (needs agent/src and evaluation/src on PYTHONPATH, the full index, Qdrant, Ollama up, and
+# JUDGE_BASE_URL, JUDGE_API_KEY, JUDGE_MODEL=qwen2.5:7b in the environment):
+#   python -m scitech_eval answers --config evaluation/configs/answers-w7-a4-full.yaml
+# Never write a URL or key here.
+name: answers-w7-a4-full
+golden_path: evaluation/golden_set/golden.jsonl
+split: all           # dev and test items; the report also gives the test items alone (PLAN.md 3.4)
+language: en
+dataset_snapshot: kaggle-arxiv-v307-cs.CL-2026-10-10
+index_snapshot: scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37
+notes: "W7 ablation A4, full agent: AGENT_REWRITE=on, AGENT_SELF_CHECK=on. Host: DAT's laptop, local Ollama (decision on #156); everything else as evaluation/SNAPSHOT.md."
+bootstrap:
+  resamples: 1000
+  seed: 0
+agent:
+  factory: scitech_agent.factory:agent_from_env
+# What the trace does not record about the generator (evaluation/SNAPSHOT.md section 2).
+generator:
+  digest: a80c4f17acd5     # llama3.2:3b Q4_K_M; W7-D1-DAT-1 re-reads it on the laptop before the first run
+  max_tokens: 512          # answer step (AgentConfig)
+judge:
+  prompt_path: evaluation/prompts/faithfulness-judge.md
+  digest: 845dbda0ea48     # qwen2.5:7b Q4_K_M (issue #142)
+  temperature: 0
+  max_tokens: 200          # the judge reply is a short JSON object; same value in all four runs
+  # Context window (tokens) the judge really uses: `ollama ps`, column CONTEXT, while qwen2.5:7b is
+  # loaded on the evaluation host (DAT). Write the integer here in all four files before the first
+  # run; null = not measured and the run file reports prompt_fits_context: null.
+  context_tokens: null
