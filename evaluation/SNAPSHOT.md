@@ -4,7 +4,7 @@ What every Week 7 run uses. After the feature freeze (W6-D4, D16, Fri 2026-10-30
 changes until D22 unless the team approves it in the tracking issue. W7-D1-DAT-1 checks the
 stack against this file before the first run.
 
-<!-- The index section is final as of D16 (2026-10-30); section 2 is DAT's (W6-D5-DAT-1). -->
+<!-- Final as of D16 (2026-10-30): section 1 by FAO (W6-D4-FAO-1), section 2 by DAT (W6-D5-DAT-1, text from #129). -->
 
 ## 1. Index (W6-D4-FAO-1)
 
@@ -53,6 +53,48 @@ the user-study host serves this exact index.
 
 ## 2. Model, prompts and configuration (W6-D5-DAT-1)
 
+### Generator (ADR 0006)
+
+| Field | Value | Source |
+|---|---|---|
+| Model | `llama3.2:3b` (Ollama default tag), `Q4_K_M`, 3.2B parameters, digest `a80c4f17acd5` | ADR 0006, `ollama show` / `ollama list` on 2026-10-21 |
+| Server | Ollama on Kaggle (2 × T4) through the tunnel; version 0.40.7 read on 2026-10-21. The notebook installs the current release, so W7-D1-DAT-1 reads `ollama --version` and the digest again before the first run and writes them here; a different digest stops the runs | ADR 0006, `docs/runbooks/llm-serving.md` |
+| Fallback (demo only) | the same tag on the laptop CPU; never used for a W7 run | ADR 0006 |
+| Pilot host (not for W7) | DAT's laptop, Ollama 0.40.13, same digests, 2026-10-30 | #153 |
+| Call settings | temperature 0; `max_tokens` answer 512, follow-ups 192, rewrite 96; `LLM_TIMEOUT=60`, `LLM_MAX_RETRIES=2`; `num_ctx` is the Ollama server default, read on the run day with the version | `agent/src/scitech_agent/agent.py` (`AgentConfig`), `.env.example` |
+
+### Prompts
+
+| Field | Value |
+|---|---|
+| Prompt files | `agent/prompts/answer.md`, `rewrite.md`, `followups.md` (`self_check.md` unused, flag off) |
+| Commit | last change `8fab50d` (2026-10-27); unchanged in the `v0.6-rc` tag. Each run file records the commit it ran at; a different one is a different condition |
+
+### Retrieval and agent configuration (`.env` of the evaluation host)
+
+| Variable | Value | Note |
+|---|---|---|
+| `RETRIEVER` | `hybrid` | ADR 0009; dense and BM25 are the W7 retrieval conditions only |
+| `RRF_K` / `HYBRID_DENSE_TOP_K` / `HYBRID_KEYWORD_TOP_K` | empty = 60 / 50 / 50 | defaults in `retrieval/hybrid.py` |
+| `RETRIEVAL_TOP_K` | 5 | sources passed to the answer prompt |
+| `RETRIEVAL_MIN_SCORE` | 0.0 (no threshold) | the refusal comes from the prompt, not a score cut |
+| `QDRANT_SEARCH_EXACT` | `true` | section 1 |
+| `EMBEDDING_MODEL` / `EMBEDDING_QUERY_PREFIX` | `BAAI/bge-small-en-v1.5` / the prefix in section 1 | must match the index |
+| `AGENT_REWRITE` | `on` (3 latest turns) | #126; the "+rewrite" ablation turns it off |
+| `AGENT_SELF_CHECK` | `off` | #127: `llama3.2:3b` refused 6/6 test questions with it on |
+| `AGENT_MAX_LLM_CALLS` | 4 | #127 |
+| `AGENT_TIMEOUT_S` | 120 | #127 |
+| `AGENT_MODE` | `real` | |
+| Follow-up filter | at most 20 words, no copied "et al." references | #150 (#116), in the tag |
+
+### Release
+
+| Field | Value |
+|---|---|
+| Tag | `v0.6-rc` on `b61001d` (annotated tag `53075ad`): `main` after #146 (one-command stack, `POST /feedback`, contract 0.3.0) and #102 (new UI with ratings) |
+| Stack | `make up`: Qdrant 1.19.2, backend, frontend (nginx) |
+| Bug bash | #153, D16: 0 P0 |
+
 ### Faithfulness judge (decided on #142, 2026-10-27)
 
 | Field | Value | Source |
@@ -62,7 +104,3 @@ the user-study host serves this exact index.
 | How the runner calls it | `OpenAICompatibleLLM` with its own variables `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `JUDGE_MODEL` (values only in local `.env`) | #142 |
 | Settings | temperature 0, one sentence per call, prompt `evaluation/prompts/faithfulness-judge.md`; `max_tokens` and the prompt commit are recorded in each run file; an unreadable reply is `judge_error`, not retried, not counted | #142 |
 | Switch rule | only if a hosted key arrives before D17: switch once, re-run the 10 pilot questions, recompute agreement; never mix judges across W7 conditions | #142 |
-
-<!-- TODO(W6-D5-DAT-1): generator model, tag, quantisation and Ollama version (ADR 0006); judge
-model; prompts commit; RETRIEVER, RETRIEVAL_TOP_K, RETRIEVAL_MIN_SCORE and other flags; tag
-v0.6-rc. -->
