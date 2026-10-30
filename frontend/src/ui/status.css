@@ -1,4 +1,4 @@
-/* Backend status indicator and disabled follow-up suggestions (W6-D1-LDN-1, after review of 2026-10-21).
+/* Backend status indicator, rating buttons and disabled follow-up suggestions (W6-D1-LDN-1, W6-D2-LDN-1).
    Uses only existing tokens; the colour pairs are the ones already checked in contrast.ts. */
 
 /* ---------- Backend status ---------- */
@@ -46,4 +46,21 @@
   color: var(--color-text-disabled);
   background: transparent;
   cursor: not-allowed;
+}
+
+/* ---------- Rating buttons under an answer ---------- */
+.ui-rating {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.ui-rating .ui-label {
+  margin-right: var(--space-2);
+}
+
+.ui-rating .ui-icon-button--ghost.is-selected {
+  background: var(--color-bg-selected);
+  color: var(--color-text);
 }

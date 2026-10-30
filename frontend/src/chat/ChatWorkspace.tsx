@@ -19,6 +19,7 @@ import {
 } from "../ui";
 import type { ActiveCitation, ThemePreference } from "../ui";
 import { BREAKPOINTS, prefersReducedMotion } from "../ui/useMediaQuery";
+import { feedbackKey } from "../feedback";
 import { healthLabel } from "../health";
 import { lastAnswer, liveStatus } from "./chatState";
 import type { ChatController } from "./chatState";
@@ -42,6 +43,7 @@ export function ChatWorkspace({ chat, initialTheme }: Props) {
   const { messages, phase } = chat;
   const [theme, setTheme] = useThemePreference(initialTheme);
   const [draft, setDraft] = useState("");
+  const [ratings, setRatings] = useState<Record<string, "up" | "down">>({}); // latest thumb per answer
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [panelTurnId, setPanelTurnId] = useState<string | null>(null);
   const [active, setActive] = useState<ActiveCitation | null>(null);
@@ -94,14 +96,24 @@ export function ChatWorkspace({ chat, initialTheme }: Props) {
 
   // A follow-up suggestion is sent at once as the next question of the same conversation. The draft
   // in the composer is kept. While another answer is being written the suggestions are disabled.
-  function sendFollowup(q: string) {
+  function sendFollowup(q: string, owner: AssistantTurn) {
     if (phase !== "idle") return;
+    if (owner.messageId) chat.sendFeedback?.({ messageId: owner.messageId, target: "followup", rating: "click", followup: q });
     chat.send(q);
+  }
+
+  // A thumb on an answer. Shown as pressed at once; changing it later sends one more line (the
+  // analysis takes the last one per answer, issue #147).
+  function rate(turn: AssistantTurn, rating: "up" | "down") {
+    if (!turn.messageId) return;
+    setRatings((prev) => ({ ...prev, [feedbackKey({ messageId: turn.messageId!, target: "answer" })]: rating }));
+    chat.sendFeedback?.({ messageId: turn.messageId, target: "answer", rating });
   }
 
   function newConversation() {
     chat.newConversation();
     setDraft("");
+    setRatings({});
   }
 
   const firstQuestion = messages.find((m) => m.role === "user")?.text;
@@ -164,8 +176,10 @@ export function ChatWorkspace({ chat, initialTheme }: Props) {
               onCite={(index) => cite(m.id, index)}
               onShowSources={() => showSources(m.id)}
               onRetry={isLatest && m.status === "error" && phase === "idle" ? chat.retry : undefined}
-              onFollowup={m === followupOwner ? sendFollowup : undefined}
+              onFollowup={m === followupOwner ? (q) => sendFollowup(q, m) : undefined}
               followupDisabled={phase !== "idle"}
+              rating={m.messageId ? (ratings[feedbackKey({ messageId: m.messageId, target: "answer" })] ?? null) : null}
+              onRate={chat.sendFeedback && m.messageId ? (r) => rate(m, r) : undefined}
             />
           );
         })}

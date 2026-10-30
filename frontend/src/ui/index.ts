@@ -16,6 +16,8 @@ export { ThemeToggle } from "./ThemeToggle";
 export { Tooltip } from "./Tooltip";
 
 // Research
+export { AnswerRating } from "./AnswerRating";
+export type { AnswerRatingValue } from "./AnswerRating";
 export { AssistantMessage } from "./AssistantMessage";
 export { CitationMarker } from "./CitationMarker";
 export { EmptyConversationState } from "./EmptyConversationState";

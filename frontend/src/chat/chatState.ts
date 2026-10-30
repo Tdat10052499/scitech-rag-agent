@@ -1,6 +1,7 @@
 // Pure state rules of a conversation, shared by the real chat (useChat) and the showcase simulator.
 // No React and no network here, so the rules are tested with Node (chatState.test.ts).
 import type { ChatEvent } from "../api";
+import type { FeedbackItem } from "../feedback";
 import type { BackendHealth } from "../health";
 import type { AssistantMessage, Message, UserMessage } from "../types";
 
@@ -15,6 +16,7 @@ export type ChatController = {
   retry: () => void; // resend the last question after a failed answer (see retryPlan)
   newConversation: () => void;
   health?: BackendHealth; // the real chat reports GET /health; the showcase simulator leaves it out
+  sendFeedback?: (item: FeedbackItem) => void; // POST /feedback; without it the screen shows no rating buttons
 };
 
 export function newTurn(n: number, text: string): [UserMessage, AssistantMessage] {

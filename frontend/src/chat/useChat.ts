@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatTransportError, streamChat } from "../api";
+import { buildFeedback, postFeedback } from "../feedback";
+import type { FeedbackItem } from "../feedback";
 import type { AssistantMessage, Message } from "../types";
 import { applyEvent, newTurn, phaseOf, retryPlan } from "./chatState";
 import type { ChatController } from "./chatState";
@@ -62,6 +64,16 @@ export function useChat(): ChatController {
     void send(plan.question);
   }, [send]);
 
+  // Ratings and clicks go to POST /feedback with the session of this conversation. A failed request is
+  // ignored (the rating stays on screen), which is also the stub while the endpoint is not deployed.
+  const sendFeedback = useCallback(
+    (item: FeedbackItem) => {
+      const request = buildFeedback(sessionId, item);
+      if (request) void postFeedback(request);
+    },
+    [sessionId],
+  );
+
   const newConversation = useCallback(() => {
     abort.current?.abort();
     abort.current = null;
@@ -70,5 +82,5 @@ export function useChat(): ChatController {
     setSessionId(newSessionId());
   }, []);
 
-  return { messages, phase: phaseOf(messages, busy), send: (t) => void send(t), retry, newConversation, health };
+  return { messages, phase: phaseOf(messages, busy), send: (t) => void send(t), retry, newConversation, health, sendFeedback };
 }
