@@ -82,7 +82,10 @@ make lint test
 ### Windows (PowerShell, without `make`)
 
 `make` is not installed on Windows by default. Run the Makefile commands directly
-(Python 3.10+; CI uses 3.11; a virtual environment is recommended). Tested on Windows with Python 3.11.9.
+(Python 3.10+; CI uses 3.11; a virtual environment is recommended). Tested on Windows with Python 3.11.9;
+the clean-clone check of 2026-10-30 (W8-D2-DAT-1) also installed and ran everything below on Python 3.15.
+Every new PowerShell window needs `.\.venv\Scripts\Activate.ps1` again; without it `python` is the
+system interpreter and reports `No module named uvicorn`.
 
 ```powershell
 git clone https://github.com/Tdat10052499/scitech-rag-agent.git
@@ -101,6 +104,44 @@ python -m uvicorn app.main:app --app-dir backend/src --reload --port 8000   # ma
 In a second terminal, check the backend: `Invoke-RestMethod http://localhost:8000/health` returns `status : ok`
 (or open http://localhost:8000/health in a browser: `{"status":"ok"}`). Stop the server with `Ctrl+C`.
 Qdrant alone needs Docker Desktop: `docker compose up -d qdrant` (`make up-qdrant`); it is not needed for `/health`.
+
+#### Run the real app on Windows without Docker
+
+`/health` works without an index or an LLM, but `/chat` in the default `AGENT_MODE=real` needs all
+of the following. Without them the UI shows "The answer service is unavailable" and the backend
+log says why (`cannot build the agent ...`).
+
+1. **Ollama** with the generator: `ollama pull llama3.2:3b`.
+2. **Qdrant 1.19.2**, either `docker compose up -d qdrant` or the native Windows binary from the
+   Qdrant releases page, started in its own window **from the same folder every time** (it keeps
+   its data in `./storage` of the current folder). The collection `scitech_chunks` must hold the
+   index: build and load it with [docs/runbooks/data-pipeline.md](docs/runbooks/data-pipeline.md)
+   (`clean` needs Java 17, so WSL2, Linux or Kaggle), or restore a teammate's Qdrant storage.
+   Check: the count below must be 121926 for the evaluated index (`evaluation/SNAPSHOT.md`).
+3. **BM25 index** in `data\index\bm25` (`postings.npz` and `_bm25_manifest.json`), built from the
+   same chunks (runbook section 2) or copied from the machine that built them.
+4. **Embedding dependencies** (sentence-transformers and PyTorch, several GB), not part of
+   `make setup`: `python -m pip install -r agent/requirements-embed.txt`.
+5. **`.env` values in the shell.** The Python code does not read `.env` (only Docker Compose
+   does), so load it into each PowerShell window that runs the backend.
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+Get-Content .env | Where-Object { $_ -match "^[A-Z_]+=" } | ForEach-Object { $k, $v = $_ -split "=", 2; Set-Item "env:$k" $v }
+$env:PYTHONPATH = "agent/src"
+(Invoke-RestMethod -Method Post -Uri http://127.0.0.1:6333/collections/scitech_chunks/points/count -ContentType application/json -Body '{"exact": true}').result.count
+python -m uvicorn app.main:app --app-dir backend/src --port 8000
+```
+
+The first question loads the embedding model (downloaded once into the Hugging Face cache). Then the UI, in a
+second window with Node 22:
+
+```powershell
+cd frontend
+npm install
+$env:VITE_BACKEND_URL = "http://127.0.0.1:8000"
+npm run dev                            # open http://localhost:5173
+```
 
 ## Working on this repo
 Start with [AGENTS.md](AGENTS.md) (also the entry point for AI coding agents) and [CONTRIBUTING.md](CONTRIBUTING.md). Design decisions are recorded as ADRs in [docs/decisions/](docs/decisions/).
