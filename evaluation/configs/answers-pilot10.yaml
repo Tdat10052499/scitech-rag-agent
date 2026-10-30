@@ -1,0 +1,32 @@
+# W5-D4-LDN-1: answer 10 golden questions with the real stack and judge them (PLAN.md sections 4.2, 5).
+# Run (needs agent/src and evaluation/src on PYTHONPATH, the full index, Qdrant and the Kaggle LLM up):
+#   python -m scitech_eval answers --config evaluation/configs/answers-pilot10.yaml
+# Environment: the agent's (.env.example: LLM_*, RETRIEVER, QDRANT_*, ...) plus JUDGE_BASE_URL,
+# JUDGE_API_KEY and JUDGE_MODEL=qwen2.5:7b (issue #142). Never write the tunnel URL here.
+name: answers-pilot10
+golden_path: evaluation/golden_set/golden.jsonl
+split: dev
+language: en
+limit: 10            # the first 10 dev items; or list `ids:` instead
+dataset_snapshot: kaggle-arxiv-v307-cs.CL-2026-10-10
+index_snapshot: scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37
+notes: "TODO: what this run is for (pilot of the runner on 10 questions)"
+bootstrap:
+  resamples: 1000
+  seed: 0
+agent:
+  factory: scitech_agent.factory:agent_from_env
+# What the trace does not record about the generator (copy from evaluation/SNAPSHOT.md).
+generator:
+  digest: TODO
+  max_tokens: TODO
+judge:
+  prompt_path: evaluation/prompts/faithfulness-judge.md
+  digest: 845dbda0ea48        # qwen2.5:7b Q4_K_M, Ollama digest (issue #142)
+  temperature: 0
+  max_tokens: 200             # TODO(LDN): choose; the judge reply is a short JSON object
+  # Context window (tokens) the Kaggle Ollama session really uses for the judge: read it on that session
+  # (`ollama ps`, column CONTEXT, while qwen2.5:7b is loaded; or the value of OLLAMA_CONTEXT_LENGTH set
+  # when `ollama serve` was started) and write the integer here before the run. null = not measured:
+  # the run file then reports `prompt_fits_context: null` instead of a guess.
+  context_tokens: null        # TODO: measure on the Kaggle session (review of #148)

@@ -1,5 +1,5 @@
 """Command line: `retrieval`, `compare`, `check-golden`, and the faithfulness pilot tools
-`make-sheet` and `check-labels`."""
+`make-sheet` and `check-labels`, and `answers` (answers + faithfulness judge)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import json
 import sys
 from pathlib import Path
 
+from scitech_eval.answer_run import run_from_answer_config
 from scitech_eval.answers import check_labels, make_sheet
 from scitech_eval.compare import compare_runs, format_comparison, load_run
 from scitech_eval.golden import GoldenError, check_golden, read_corpus_doc_ids
@@ -30,6 +31,10 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--corpus", type=Path, help="JSONL corpus file to check doc ids against")
     g.add_argument("--id-field", default="doc_id", help="field holding the doc id in --corpus")
 
+    a = sub.add_parser("answers", help="answer golden questions with the agent and run the judge")
+    a.add_argument("--config", required=True, type=Path)
+    a.add_argument("--out-dir", type=Path, default=Path("evaluation/runs"))
+
     m = sub.add_parser("make-sheet", help="write the labelling sheet for an answers.jsonl")
     m.add_argument("answers", type=Path, help="answers.jsonl of the faithfulness pilot")
     m.add_argument("--out-dir", type=Path, default=Path("evaluation/pilot/faithfulness"))
@@ -38,6 +43,24 @@ def main(argv: list[str] | None = None) -> int:
     k.add_argument("sheet", type=Path, help="labels-<annotator>.csv")
 
     args = parser.parse_args(argv)
+
+    if args.command == "answers":
+        try:
+            run_path, answers_path = run_from_answer_config(args.config, args.out_dir)
+        except (GoldenError, OSError, ValueError, KeyError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        run = json.loads(run_path.read_text(encoding="utf-8"))
+        c, f = run["counts"], run["metrics"]["faithfulness_macro"]
+        print(f"wrote {run_path} and {answers_path}")
+        print(
+            f"  answers {c['answers']}, errors {c['errors']}, refused {c['refused_answerable']}, "
+            f"judged {c['judged_answers']}, sentences {c['sentences']}, "
+            f"judge_error {c['judge_error']}"
+        )
+        if f:
+            print(f"  faithfulness (macro, n={f['n']}) {f['mean']:.3f} CI {f['ci95']}")
+        return 0
 
     if args.command == "make-sheet":
         try:

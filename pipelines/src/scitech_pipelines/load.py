@@ -280,6 +280,13 @@ def load_index(
         log(f"load: part {i}/{len(parts)}, {n:,} points in {time.monotonic() - t:.1f} s")
 
     points = store.count()
+    if points < expected and done:
+        raise RuntimeError(
+            f"load check failed: {store.collection} holds {points} points, expected {expected}; "
+            f"{len(done)} parts were skipped as done in {state_path}. That state is from an "
+            "earlier load into another Qdrant (or a collection that was deleted since): run "
+            "again with --force, which ignores it and does not embed again"
+        )
     if points != expected:
         raise RuntimeError(
             f"load check failed: {store.collection} holds {points} points, expected {expected} "

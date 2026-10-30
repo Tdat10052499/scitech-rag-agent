@@ -10,6 +10,7 @@ from scitech_agent.answer import (
     CitationFilter,
     answer_user_message,
     answer_words,
+    check_numbers,
     clean_citations,
     parse_citations,
     strip_citations,
@@ -188,3 +189,63 @@ def test_manual_check_writes_markdown(monkeypatch, tmp_path, capsys) -> None:
 def test_answer_words_counts_text_outside_markers() -> None:
     assert answer_words("[4]") == 0 and answer_words(" [1][2, 3]\n") == 0
     assert answer_words("No, more is not always better [4].") == 6
+
+
+def numbered(n: int, text: str) -> ScoredChunk:
+    return ScoredChunk(f"d{n}#0", f"d{n}", 1.0, f"Title {n}", text, "arxiv", 0)
+
+
+NUMBERED = [
+    numbered(1, "LongRAG beats long-context LLMs by 6.94% and advanced RAG by 6.16%."),
+    numbered(2, "A benchmark of 1,891 samples over 11 LLMs."),
+]
+
+
+def test_check_numbers_finds_a_number_cited_to_the_wrong_source() -> None:
+    answer = "It beats RAG by 6.16% [2]. The benchmark has 1,891 samples [2]."
+    [mismatch] = check_numbers(answer, NUMBERED)
+    assert mismatch.to_dict() == {"sentence": 0, "number": "6.16%", "cited": [2], "found_in": [1]}
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "It beats long-context LLMs by 6.94% [1].",
+        "It beats RAG by 6.16 % [1][2].",  # one of the cited sources has it; spacing ignored
+        "The benchmark has 1891 samples [2].",  # thousands separator ignored
+        "It beats RAG by 6.16%.",  # uncited sentences are not checked
+        "Two of the 3 methods help [1].",  # integers below 10 are not checked
+        "OLMoE uses 1B of 7B parameters [2].",  # a number glued to a unit is not checked
+    ],
+)
+def test_check_numbers_accepts(answer: str) -> None:
+    assert check_numbers(answer, NUMBERED) == []
+
+
+def test_check_numbers_reports_a_number_in_no_source_and_counts_sentences() -> None:
+    answer = "It helps [1]. It beats RAG by 17.25% [1].\n\nIt uses 11 LLMs [2]."
+    [mismatch] = check_numbers(answer, NUMBERED)
+    assert (mismatch.sentence, mismatch.number, mismatch.found_in) == (1, "17.25%", ())
+
+
+def test_check_numbers_keeps_a_marker_after_the_full_stop_with_its_sentence() -> None:
+    answer = "It beats RAG by 6.16%. [1] The benchmark has 1,891 samples. [1][2]\nIn 2024. [1]"
+    [mismatch] = check_numbers(answer, NUMBERED)
+    assert mismatch.to_dict() == {"sentence": 2, "number": "2024", "cited": [1], "found_in": []}
+
+
+def test_check_numbers_checks_each_number_against_the_marker_that_follows_it() -> None:
+    # #115, gs-010 on Kaggle 2026-10-28: both numbers are in source 1, 6.16% was cited to 2.
+    answer = "LongRAG beats RAG by 6.16% [2] and long-context LLMs by 6.94% [1]."
+    [mismatch] = check_numbers(answer, NUMBERED)
+    assert mismatch.to_dict() == {"sentence": 0, "number": "6.16%", "cited": [2], "found_in": [1]}
+
+
+def test_check_numbers_treats_adjacent_markers_as_one_citation() -> None:
+    assert check_numbers("It beats RAG by 6.16% [2][1] over 11 LLMs [2].", NUMBERED) == []
+
+
+def test_check_numbers_checks_text_after_the_last_marker_against_all_markers() -> None:
+    [mismatch] = check_numbers("It helps [1], with 1,891 samples.", NUMBERED)
+    assert (mismatch.number, mismatch.cited, mismatch.found_in) == ("1,891", (1,), (2,))
+    assert check_numbers("It helps [1][2], with 1,891 samples.", NUMBERED) == []

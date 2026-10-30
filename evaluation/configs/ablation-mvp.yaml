@@ -1,0 +1,24 @@
+# W7-D2-DAT-1 agent ablation: mvp (AGENT_REWRITE=off, AGENT_SELF_CHECK=off).
+# Run with the flags above set in the environment (they are read by the agent, not by this file); see evaluation/reports/ablations-v1.md.
+name: ablation-mvp
+golden_path: evaluation/golden_set/golden.jsonl
+split: dev
+language: en
+# all golden items of the split (no limit)
+dataset_snapshot: kaggle-arxiv-v307-cs.CL-2026-10-10
+index_snapshot: scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37
+notes: "W7-D2-DAT-1 ablation mvp: AGENT_REWRITE=off AGENT_SELF_CHECK=off, v0.6-rc, DAT laptop RTX 5060 8 GB (Ollama GPU), Ollama 0.40.13, AGENT_TIMEOUT_S=600"
+bootstrap:
+  resamples: 1000
+  seed: 0
+agent:
+  factory: scitech_agent.factory:agent_from_env
+generator:
+  digest: a80c4f17acd5
+  max_tokens: 512
+judge:
+  prompt_path: evaluation/prompts/faithfulness-judge.md
+  digest: 845dbda0ea48
+  temperature: 0
+  max_tokens: 200
+  context_tokens: 4096        # ollama ps CONTEXT on DAT laptop, 2026-10-30

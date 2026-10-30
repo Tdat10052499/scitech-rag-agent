@@ -6,11 +6,11 @@ search scales. Here every query is embedded once, up front, and that time is rep
 then the same pre-computed vectors are searched in each collection with `QdrantStore.search`:
 - **exact** (`"params": {"exact": true}`, a full scan, the default since #101);
 - **HNSW** (`exact=False`), with the share of its top-k that exact search also returns (#87);
-- **exact, no gzip**: exact again, with `Accept-Encoding: identity`. `QdrantStore`'s client (httpx)
-  asks for gzip, and Qdrant then sends a chunked gzip response; on Linux each such search took
+- **exact, no gzip**: exact again, with `Accept-Encoding: identity`. httpx asks for gzip by
+  default, and Qdrant then sends a chunked gzip response; on Linux each such search took
   about 44 ms against about 1 ms without gzip (a 3,000-point test collection, 2026-10-27),
-  a pattern that fits Nagle's algorithm meeting delayed ACKs (inferred). This mode shows
-  whether FAO's laptop has the same delay;
+  a pattern that fits Nagle's algorithm meeting delayed ACKs (inferred). `QdrantStore` has sent
+  `identity` since #128; the **exact** and **HNSW** modes ask for gzip, as it did before;
 - **exact, no gzip, TCP_NODELAY**: the same, on a socket with Nagle's algorithm off.
 
 For every mode the table also gives Qdrant's own time per search (the `time` field of its
@@ -59,7 +59,7 @@ from index_profile import (  # noqa: E402
 
 class Mode(NamedTuple):
     exact: bool
-    gzip: bool = True  # httpx's default Accept-Encoding, as in QdrantStore
+    gzip: bool = True  # httpx's default Accept-Encoding, as in QdrantStore before #128
     nodelay: bool = False
 
 
@@ -226,8 +226,7 @@ def main(argv: list[str] | None = None) -> int:
             transport=httpx.HTTPTransport(socket_options=options),
         )
         # The store has no setting for these; its client is only used here.
-        if not mode.gzip:
-            store._http.headers["Accept-Encoding"] = "identity"
+        store._http.headers["Accept-Encoding"] = "gzip, deflate" if mode.gzip else "identity"
         server: list[float] = []
 
         def qdrant_time(response: httpx.Response) -> None:
