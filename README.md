@@ -39,13 +39,44 @@ Details: [docs/01-architecture.md](docs/01-architecture.md).
 | `.github/` | Issue/PR templates, CI, CODEOWNERS |
 
 ## Quick start
-### macOS / Linux (with `make`)
+### Run the app with one command (Docker)
+
+Needs Docker with Compose v2. The stack runs Qdrant, the backend and the frontend; the LLM stays
+outside it (`LLM_BASE_URL`, see [docs/runbooks/llm-serving.md](docs/runbooks/llm-serving.md)).
+
+```bash
+cp .env.example .env        # fill in LLM_*, EMBEDDING_MODEL, EMBEDDING_QUERY_PREFIX; never commit .env
+make up                     # = docker compose up -d --build (Windows: run that command)
+# open http://localhost:8080 (UI); the API is also on http://localhost:8000
+make down                   # stop; the Qdrant volume and data/ are kept
+```
+
+- **Index.** A new Qdrant volume is empty. Load the vectors and build the BM25 index once with
+  [docs/runbooks/data-pipeline.md](docs/runbooks/data-pipeline.md) (Qdrant on `localhost:6333`);
+  the backend reads the BM25 index from `./data/index/bm25`, mounted at `/app/data`.
+- **Inside the stack** `QDRANT_URL` and `DATA_DIR` are set by `docker-compose.yml`; the other
+  values come from `.env`. Traces (and later feedback) are written to `./data/logs/`. Keep
+  `BM25_INDEX_DIR` and `AGENT_TRACES` empty or relative to the repository root under `data/`
+  (for example `data/logs/study.jsonl`): an absolute host path such as `C:\...` does not exist
+  in the container.
+- **Changing `.env`:** a shell variable (`$env:AGENT_TRACES=...`) does not reach the container;
+  put it in `.env` and recreate the backend with `docker compose up -d backend`
+  (`docker compose restart backend` keeps the old values).
+- **LLM on this machine** (Ollama): `LLM_BASE_URL=http://host.docker.internal:11434/v1`. A Kaggle
+  or Colab tunnel URL works as is.
+- **Without an index or LLM** (UI work): `AGENT_MODE=demo` in `.env`.
+- The first start downloads the embedding model into the `hf_cache` volume; the backend reports
+  healthy after its warm-up, and the frontend starts after that. Check with `make logs`.
+- The frontend's nginx forwards `/chat` and `/health` to the backend, so no `CORS_ORIGINS` is needed.
+  Another UI port: `FRONTEND_PORT=3000 make up`.
+
+### Development (macOS / Linux, with `make`)
 
 ```bash
 cp .env.example .env        # fill in real values; never commit .env
 make setup                  # dev tooling + backend dependencies
-make up                     # start Qdrant via Docker
-make run                    # backend at http://localhost:8000 (GET /health)
+make up-qdrant              # start only Qdrant via Docker
+make run                    # backend at http://localhost:8000 (GET /health), auto-reload
 make lint test
 ```
 ### Windows (PowerShell, without `make`)
@@ -69,7 +100,7 @@ python -m uvicorn app.main:app --app-dir backend/src --reload --port 8000   # ma
 
 In a second terminal, check the backend: `Invoke-RestMethod http://localhost:8000/health` returns `status : ok`
 (or open http://localhost:8000/health in a browser: `{"status":"ok"}`). Stop the server with `Ctrl+C`.
-`make up` (Qdrant) needs Docker Desktop: `docker compose up -d`; it is not needed for `/health`.
+Qdrant alone needs Docker Desktop: `docker compose up -d qdrant` (`make up-qdrant`); it is not needed for `/health`.
 
 ## Working on this repo
 Start with [AGENTS.md](AGENTS.md) (also the entry point for AI coding agents) and [CONTRIBUTING.md](CONTRIBUTING.md). Design decisions are recorded as ADRs in [docs/decisions/](docs/decisions/).

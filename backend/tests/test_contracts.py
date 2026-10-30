@@ -124,6 +124,20 @@ def test_openapi_paths(openapi: dict[str, Any]) -> None:
     assert "422" in chat["responses"]
 
 
+def test_openapi_feedback_matches_backend(openapi: dict[str, Any]) -> None:
+    """Issue #147 (0.3.0): the contract's FeedbackRequest is the backend's model."""
+    from app.schemas import FeedbackRequest
+
+    feedback = openapi["paths"]["/feedback"]["post"]
+    assert set(feedback["responses"]) == {"204", "422"}
+    schema = openapi["components"]["schemas"]["FeedbackRequest"]
+    model = FeedbackRequest.model_json_schema()
+    assert set(schema["properties"]) == set(model["properties"])
+    assert set(schema["required"]) == set(model["required"])
+    assert schema["properties"]["target"]["enum"] == ["answer", "followup"]
+    assert schema["properties"]["rating"]["enum"] == ["up", "down", "click"]
+
+
 def test_openapi_frozen_schemas(openapi: dict[str, Any]) -> None:
     schemas = openapi["components"]["schemas"]
     source = schemas["Source"]["properties"]
