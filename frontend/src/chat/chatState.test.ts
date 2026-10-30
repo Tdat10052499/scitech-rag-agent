@@ -22,6 +22,13 @@ test("a normal stream: sources, tokens, follow-ups, done", () => {
   assert.equal(m.insufficientEvidence, false);
 });
 
+test("done keeps the message id; an answer that ends in an error has none", () => {
+  const done = play([{ type: "sources", sources: [] }, { type: "done", insufficientEvidence: false, messageId: "3f2a" }]);
+  assert.equal(done.messageId, "3f2a");
+  const failed = play([{ type: "token", text: "x" }, { type: "error", error: { message: "boom" } }]);
+  assert.equal(failed.messageId, undefined);
+});
+
 test("insufficient evidence is a finished answer, not an error", () => {
   const m = play([{ type: "sources", sources: [] }, { type: "token", text: "Not enough evidence." }, { type: "done", insufficientEvidence: true }]);
   assert.equal(m.status, "done");

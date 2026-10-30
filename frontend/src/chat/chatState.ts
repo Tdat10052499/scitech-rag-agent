@@ -1,6 +1,7 @@
 // Pure state rules of a conversation, shared by the real chat (useChat) and the showcase simulator.
 // No React and no network here, so the rules are tested with Node (chatState.test.ts).
 import type { ChatEvent } from "../api";
+import type { BackendHealth } from "../health";
 import type { AssistantMessage, Message, UserMessage } from "../types";
 
 /** idle: ready to send; waiting: question sent, no event yet; streaming: events are arriving. */
@@ -13,6 +14,7 @@ export type ChatController = {
   send: (text: string) => void;
   retry: () => void; // resend the last question after a failed answer (see retryPlan)
   newConversation: () => void;
+  health?: BackendHealth; // the real chat reports GET /health; the showcase simulator leaves it out
 };
 
 export function newTurn(n: number, text: string): [UserMessage, AssistantMessage] {
@@ -32,7 +34,7 @@ export function applyEvent(m: AssistantMessage, event: ChatEvent): AssistantMess
     case "followups":
       return { ...m, followups: event.questions };
     case "done":
-      return { ...m, insufficientEvidence: event.insufficientEvidence, status: "done" };
+      return { ...m, insufficientEvidence: event.insufficientEvidence, status: "done", messageId: event.messageId };
     case "error":
       return { ...m, status: "error", error: event.error };
   }

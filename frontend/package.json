@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "test": "node --experimental-strip-types --test src/api.test.ts src/markdown.test.ts src/citeGroups.test.ts src/chat/chatState.test.ts src/ui/citations.test.ts src/ui/composerKeys.test.ts src/ui/contrast.test.ts src/ui/sourceMeta.test.ts",
+    "test": "node --experimental-strip-types --test src/api.test.ts src/markdown.test.ts src/citeGroups.test.ts src/chat/chatState.test.ts src/health.test.ts src/ui/citations.test.ts src/ui/composerKeys.test.ts src/ui/contrast.test.ts src/ui/sourceMeta.test.ts",
     "showcase": "vite --open /showcase.html",
     "preview": "vite preview"
   },

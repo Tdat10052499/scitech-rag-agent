@@ -3,6 +3,7 @@ import { ChatTransportError, streamChat } from "../api";
 import type { AssistantMessage, Message } from "../types";
 import { applyEvent, newTurn, phaseOf, retryPlan } from "./chatState";
 import type { ChatController } from "./chatState";
+import { useBackendHealth } from "./useBackendHealth";
 
 // The real conversation: POST /chat through src/api.ts, one session_id per conversation. This is the
 // logic that was in App.tsx (W2-D2-LDN-1), unchanged in behaviour; retry is new.
@@ -15,6 +16,7 @@ export function useChat(): ChatController {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionId, setSessionId] = useState(newSessionId);
   const [busy, setBusy] = useState(false);
+  const health = useBackendHealth();
   const nextId = useRef(1);
   const abort = useRef<AbortController | null>(null);
   const messagesRef = useRef(messages);
@@ -68,5 +70,5 @@ export function useChat(): ChatController {
     setSessionId(newSessionId());
   }, []);
 
-  return { messages, phase: phaseOf(messages, busy), send: (t) => void send(t), retry, newConversation };
+  return { messages, phase: phaseOf(messages, busy), send: (t) => void send(t), retry, newConversation, health };
 }
