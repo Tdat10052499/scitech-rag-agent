@@ -1,10 +1,10 @@
-# User study protocol (draft 2)
+# User study protocol (draft 3)
 
-Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). Items marked **[TBC]** need a decision or a check before the first session. Drafted with AI assistance (Claude); LDN is responsible for the final text.
+Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). Items marked **[TBC]** need a decision or a check before the first session. Drafted with AI assistance (Claude); LDN is responsible for the final text
 
-Decisions this draft follows: issue #134 (DAT, 2026-10-27: option A, moderated sessions; FAO confirmed his laptop as host), DAT's answers on #111 (UI version, logged fields, no screen recording) and the reviews of FAO and DAT on this PR (trace file, operator, schedule wording).
+Decisions this draft follows: issue #134 (DAT, 2026-10-27: option A, moderated sessions; FAO confirmed his laptop as host), DAT's answers on #111 (UI version, logged fields, no screen recording), the reviews of FAO and DAT on #143 (trace file, operator, schedule wording), and the schedule FAO confirmed on #134 on 2026-10-30. Since `POST /feedback` merged (#146), the feedback log is part of the data (sections 4, 8, 10).
 
-Planned sessions: D18 (Mon 2026-11-02) and D19 (Tue 2026-11-03), in the evening (Vietnam time). The first confirmed participants are scheduled back to back on Tue 2026-11-03 from 22:30 (section 12).
+Planned sessions: all on D19 (Tue 2026-11-03), in the evening (Vietnam time), five back to back from 21:00 (section 12). Mon 2026-11-02 is not used.
 
 ## 1. Purpose and scope
 
@@ -42,11 +42,11 @@ Roles (FAO confirmed on #134): FAO is the operator and types what the participan
 
 Checklist, run 15 minutes before the first session of each day:
 
-- FAO starts the Kaggle LLM session about 10 minutes before each block of sessions and stops it after the block (to save GPU quota). The tunnel URL stays only in FAO's local `.env`; it is never written in the repository, in issues or in chat.
+- FAO starts the Kaggle LLM session at about 20:50 on 2026-11-03, 10 minutes before the first slot, and stops it after the last slot (to save GPU quota). The tunnel URL stays only in FAO's local `.env`; it is never written in the repository, in issues or in chat.
 - Qdrant, backend and frontend are running on the host laptop; run the snapshot check of `evaluation/SNAPSHOT.md` (same index id, 121,926 points).
-- Start the backend with `AGENT_TRACES=data/logs/study-<date>.jsonl`. Ask the test question (it should return an answer with sources), and check that the file now has one line. Then delete the file before the first participant; the next question creates it again. This keeps test questions, the pilot and evaluation runs out of the study data.
+- The host laptop runs the Docker stack (`make up`, or `docker compose up -d --build` on Windows). Put `AGENT_TRACES=data/logs/study-<date>.jsonl` and `FEEDBACK_LOG=data/logs/feedback-<date>.jsonl` in its `.env`, with paths relative to the repository root under `data/`, and apply them with `docker compose up -d backend`. A PowerShell `$env:AGENT_TRACES` does not reach the containers, and `docker compose restart backend` keeps the old values (FAO and DAT, #146). Ask the test question (it should return an answer with sources), and check that the trace file now has one line. If the UI has the rating buttons (section 7), click one thumb and check that the feedback file has one line. Then delete both files before the first participant; the next request creates them again. This keeps test questions, the pilot and evaluation runs out of the study data.
 - UI version: tag `v0.6-rc` (DAT, #111), created at the D16 gate (W6-D5-DAT-1, 2026-10-30). If the gate slips, the commit hash used is recorded on the observer sheet before the first session.
-- The laptop is plugged in with sleep turned off; free disk space before D18 (FAO).
+- The laptop is plugged in with sleep turned off; free disk space before 2026-11-03 (FAO).
 - Note the git commit or tag, the index snapshot id and the model name (from `evaluation/SNAPSHOT.md`) on the observer sheet.
 - Observer sheet and questionnaire are ready (sections 6 and 7). Close other windows on the shared screen and turn off notifications.
 
@@ -112,11 +112,11 @@ Open questions:
 7. What was missing, or what would you change first?
 8. Did you trust the sources shown with the answers? Why or why not?
 
-In-page rating buttons (W6-D2-LDN-1): with moderated sessions the participant asks the operator to click them. **[TBC: until `POST /feedback` works, use only the questionnaire.]**
+In-page rating buttons (W6-D2-LDN-1): thumbs up and down under each answer; a click on a follow-up suggestion is logged too. With moderated sessions the participant asks the operator to click a thumb, and the operator never suggests one. `POST /feedback` is on `main` (#146); the buttons are in the UI that includes PR #102. **[TBC: confirm before 2026-11-03 that the UI build used for the study has the rating buttons; if not, use only the questionnaire and delete the feedback-file steps from section 4.]**
 
 ## 8. Data handling
 
-- Raw sheets, the contact list and the study trace file of each session day (`data/logs/study-<date>.jsonl`; it contains the question texts) are stored in a private folder of LDN, not in the repository. FAO copies the study trace file to LDN after each day and then deletes it from the host laptop. Until `POST /feedback` exists there is no `feedback.jsonl`; if it exists by D18, it is copied the same way.
+- Raw sheets, the contact list and the study trace file of each session day (`data/logs/study-<date>.jsonl`; it contains the question texts) are stored in a private folder of LDN, not in the repository. The feedback file of the day (`data/logs/feedback-<date>.jsonl`: random session id, message id, the thumb or the clicked follow-up suggestion with its text, and the time; no names) is stored there too. FAO copies the study trace file and the feedback file to LDN after the study day and then deletes both from the host laptop.
 - The repository gets only anonymised summaries (codes, counts, ratings, short quotes without names).
 - Delete the contact list after the sessions.
 
@@ -131,6 +131,7 @@ In-page rating buttons (W6-D2-LDN-1): with moderated sessions the participant as
 
 - Number of participants and their backgrounds (counts, no names).
 - For questions 3-5: the individual ratings and the median. No significance tests.
+- Ratings and follow-up clicks (feedback file): the `message_id` of each line is the trace id of the answer, so a rating can be matched to its question in the trace file. A participant may change a thumb, so the analysis takes the last line per (`message_id`, `target`, `followup`); a `click` line is a follow-up suggestion that was clicked and sent as the next question. Count follow-up uses from the observer sheet and from these lines; if they differ, report both.
 - Task time and number of questions per participant; number of follow-up uses; number of errors and incidents observed (including tunnel drops and incomplete sessions).
 - Open comments: group by theme (for example "unclear sources", "slow", "wrong answer"); report counts per theme and a few short quotes.
 
@@ -146,5 +147,6 @@ In-page rating buttons (W6-D2-LDN-1): with moderated sessions the participant as
 ## 12. Schedule and participants (no names)
 
 - Invitations sent 2026-10-27; replies until 2026-10-29; Gate W6 on D16 (2026-10-30).
-- Tue 2026-11-03: sessions back to back from 22:30 (22:30, 23:15, and 00:00 (night of 3 to 4 Nov) if there is a third participant). Further slots: Mon 2026-11-02 and Tue 2026-11-03 at 21:00, 21:45 and 22:30 (Vietnam time).
-- Slots are confirmed by FAO on #134. Names and contact details are kept outside the repository (section 8).
+- All sessions are on Tue 2026-11-03 (Vietnam time) on FAO's laptop, FAO operating (confirmed by FAO on #134, 2026-10-30): five back-to-back slots at 21:00, 21:45, 22:30, 23:15 and 00:00 (night of 3 to 4 Nov). Kaggle starts at about 20:50. Mon 2026-11-02 is not used.
+- Each confirmed participant gets one slot. LDN posts the codes and slots on #134 (no names). If fewer than five people take part, the report states the real number (section 2).
+- Names and contact details are kept outside the repository (section 8).
