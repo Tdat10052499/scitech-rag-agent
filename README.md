@@ -55,7 +55,13 @@ make down                   # stop; the Qdrant volume and data/ are kept
   [docs/runbooks/data-pipeline.md](docs/runbooks/data-pipeline.md) (Qdrant on `localhost:6333`);
   the backend reads the BM25 index from `./data/index/bm25`, mounted at `/app/data`.
 - **Inside the stack** `QDRANT_URL` and `DATA_DIR` are set by `docker-compose.yml`; the other
-  values come from `.env`. Traces (and later feedback) are written to `./data/logs/`.
+  values come from `.env`. Traces (and later feedback) are written to `./data/logs/`. Keep
+  `BM25_INDEX_DIR` and `AGENT_TRACES` empty or relative to the repository root under `data/`
+  (for example `data/logs/study.jsonl`): an absolute host path such as `C:\...` does not exist
+  in the container.
+- **Changing `.env`:** a shell variable (`$env:AGENT_TRACES=...`) does not reach the container;
+  put it in `.env` and recreate the backend with `docker compose up -d backend`
+  (`docker compose restart backend` keeps the old values).
 - **LLM on this machine** (Ollama): `LLM_BASE_URL=http://host.docker.internal:11434/v1`. A Kaggle
   or Colab tunnel URL works as is.
 - **Without an index or LLM** (UI work): `AGENT_MODE=demo` in `.env`.
