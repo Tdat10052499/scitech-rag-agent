@@ -418,7 +418,10 @@ def run_incremental(
 ) -> dict[str, Any]:
     """Run the days from the watermark (or `start` on the first run) to yesterday, UTC (today
     with `until_today`), and move the watermark only when the load and `after_load` have
-    passed. Return the watermark state (unchanged when nothing changed)."""
+    passed. Return the watermark state (unchanged when nothing changed).
+
+    With `skip_unchanged`, the raw fetch file is deleted once the watermark is written (or when
+    nothing changed); its manifest is kept. The serving laptop has little free disk."""
     state = read_watermark(data_dir)
     if state is None and start is None:
         raise ValueError(
@@ -452,6 +455,7 @@ def run_incremental(
         log(f"incremental: {records:,} of {fetched['counts']['kept']:,} papers new or changed")
         if not records:
             shutil.rmtree(work)
+            raw.unlink(missing_ok=True)
             log("incremental: nothing changed")
             return state or {}
     load_manifest: dict[str, Any] | None = None
@@ -485,6 +489,9 @@ def run_incremental(
         _write_json(data_dir / SEEN_FILE, _line_hashes(raw))
     path = write_watermark(data_dir, new_state)
     log(f"incremental: watermark {until} -> {path}")
+    if skip_unchanged:  # the seen file holds what is needed of it; its manifest stays
+        raw.unlink(missing_ok=True)
+        (work / "changed.jsonl").unlink(missing_ok=True)
     return new_state
 
 

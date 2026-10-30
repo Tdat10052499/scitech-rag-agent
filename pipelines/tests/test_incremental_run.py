@@ -504,6 +504,7 @@ class FetchingSteps(FakeSteps):
     def __init__(self, records: list[dict], **kwargs):
         super().__init__(records=len(records), **kwargs)
         self.lines = records
+        self.cleaned_ids: list[str] = []  # read at clean time: the run deletes its input later
 
     def steps(self) -> Steps:
         base = super().steps()
@@ -514,9 +515,14 @@ class FetchingSteps(FakeSteps):
             with out.open("w", encoding="utf-8") as fh:
                 for r in self.lines:
                     fh.write(json.dumps(r) + "\n")
+            out.with_name(out.stem + ".manifest.json").write_text("{}", encoding="utf-8")
             return {"counts": {"kept": len(self.lines)}}
 
-        return Steps(fetch, base.clean, base.chunk, base.embed, base.load)
+        def clean(raw, documents):
+            self.cleaned_ids = [json.loads(line)["id"] for line in raw.read_text().splitlines()]
+            return base.clean(raw, documents)
+
+        return Steps(fetch, clean, base.chunk, base.embed, base.load)
 
 
 NOW = datetime(2026, 11, 4, 8, 0, 5, tzinfo=timezone.utc)
@@ -547,9 +553,39 @@ def test_only_new_or_changed_papers_go_to_clean(tmp_path: Path):
     state = run_incremental(tmp_path, second.steps(), now=NOW.replace(hour=10), **run)
     cleaned = second.calls[1][1]
     assert cleaned.name == "changed.jsonl"
-    assert [json.loads(line)["id"] for line in cleaned.read_text().splitlines()] == ["b", "c"]
+    assert second.cleaned_ids == ["b", "c"]
     assert state["records"] == 2
     assert set(read_seen(tmp_path)) == {"a", "b", "c"}
+
+
+def test_the_raw_fetch_file_is_deleted_after_a_successful_run_and_its_manifest_kept(
+    tmp_path: Path,
+):
+    run = {"until_today": True, "skip_unchanged": True, **quiet}
+    raw = tmp_path / "raw" / "arxiv-oai" / "2026-10-10_2026-11-04.jsonl"
+    fake = FetchingSteps([record("a")])
+    state = run_incremental(tmp_path, fake.steps(), start=SNAPSHOT_DAY, now=NOW, **run)
+    assert not raw.exists() and Path(state["fetch_manifest"]).is_file()
+    assert not (fake.calls[1][1]).exists()  # changed.jsonl, a copy of the raw lines
+    assert set(read_seen(tmp_path)) == {"a"}
+
+    again = FetchingSteps([record("a")])  # nothing changed: the raw file goes as well
+    run_incremental(tmp_path, again.steps(), now=NOW.replace(hour=10), **run)
+    assert not raw.with_name("2026-11-04_2026-11-04.jsonl").exists()
+
+
+def test_a_failed_load_keeps_the_raw_fetch_file(tmp_path: Path):
+    run = {"until_today": True, "skip_unchanged": True, **quiet}
+
+    def failing_rebuild():
+        raise RuntimeError("bm25 build failed")
+
+    fake = FetchingSteps([record("a")])
+    with pytest.raises(RuntimeError):
+        run_incremental(
+            tmp_path, fake.steps(), start=SNAPSHOT_DAY, now=NOW, after_load=failing_rebuild, **run
+        )
+    assert (tmp_path / "raw" / "arxiv-oai" / "2026-10-10_2026-11-04.jsonl").is_file()
 
 
 def test_a_run_with_nothing_changed_skips_every_step_and_keeps_the_watermark(tmp_path: Path):
