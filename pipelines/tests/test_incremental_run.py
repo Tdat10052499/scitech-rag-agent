@@ -1,5 +1,7 @@
 import json
-from datetime import date
+import os
+import time
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -7,14 +9,20 @@ import pytest
 from scitech_pipelines.chunk import chunk_documents
 from scitech_pipelines.embed import embed_chunks
 from scitech_pipelines.incremental_run import (
+    LOCK_FILE,
+    SEEN_FILE,
     STATE_FILE,
     QdrantReplaceStore,
+    RunLocked,
     Steps,
     check_index_model,
+    check_not_frozen,
     default_steps,
+    read_seen,
     read_watermark,
     replace_documents,
     run_incremental,
+    run_lock,
 )
 from scitech_pipelines.load import load_index, point_id
 
@@ -481,3 +489,290 @@ def test_incremental_run_command_wires_store_model_and_watermark(
         main(["--data-dir", str(tmp_path), "incremental-run"])
     with pytest.raises(SystemExit):
         main([*args, "--start", "10/10/2026"])
+
+
+# --- scheduled runs (W7-D6-FAO-1, ADR 0011) -----------------------------------------------------
+
+
+def record(doc_id: str, abstract: str = "An abstract.") -> dict:
+    return {"id": doc_id, "title": f"Paper {doc_id}", "abstract": abstract}
+
+
+class FetchingSteps(FakeSteps):
+    """FakeSteps whose fetch writes `records` as JSON lines, like `incremental-fetch`."""
+
+    def __init__(self, records: list[dict], **kwargs):
+        super().__init__(records=len(records), **kwargs)
+        self.lines = records
+
+    def steps(self) -> Steps:
+        base = super().steps()
+
+        def fetch(f, u, out):
+            self._step("fetch", f, u, out)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            with out.open("w", encoding="utf-8") as fh:
+                for r in self.lines:
+                    fh.write(json.dumps(r) + "\n")
+            return {"counts": {"kept": len(self.lines)}}
+
+        return Steps(fetch, base.clean, base.chunk, base.embed, base.load)
+
+
+NOW = datetime(2026, 11, 4, 8, 0, 5, tzinfo=timezone.utc)
+
+
+def test_until_today_fetches_today_and_the_next_run_starts_there(tmp_path: Path):
+    fake = FakeSteps()
+    run = {"until_today": True, **quiet}
+    state = run_incremental(tmp_path, fake.steps(), start=SNAPSHOT_DAY, now=NOW, **run)
+    assert fake.calls[0][1:3] == (SNAPSHOT_DAY, date(2026, 11, 4))
+    assert state["until"] == "2026-11-04"
+    work = tmp_path / "processed" / "incremental" / "2026-10-10_2026-11-04_080005"
+    assert fake.calls[-1][3] == work / "index"  # one folder per run, so none is removed
+
+    later = FakeSteps()
+    run_incremental(tmp_path, later.steps(), now=NOW.replace(hour=10), **run)
+    assert later.calls[0][1:3] == (date(2026, 11, 4), date(2026, 11, 4))
+    assert later.calls[-1][3] == work.with_name("2026-11-04_2026-11-04_100005") / "index"
+
+
+def test_only_new_or_changed_papers_go_to_clean(tmp_path: Path):
+    run = {"until_today": True, "skip_unchanged": True, **quiet}
+    first = FetchingSteps([record("a"), record("b")])
+    run_incremental(tmp_path, first.steps(), start=SNAPSHOT_DAY, now=NOW, **run)
+    assert set(read_seen(tmp_path)) == {"a", "b"}
+
+    second = FetchingSteps([record("a"), record("b", "A new abstract."), record("c")])
+    state = run_incremental(tmp_path, second.steps(), now=NOW.replace(hour=10), **run)
+    cleaned = second.calls[1][1]
+    assert cleaned.name == "changed.jsonl"
+    assert [json.loads(line)["id"] for line in cleaned.read_text().splitlines()] == ["b", "c"]
+    assert state["records"] == 2
+    assert set(read_seen(tmp_path)) == {"a", "b", "c"}
+
+
+def test_a_run_with_nothing_changed_skips_every_step_and_keeps_the_watermark(tmp_path: Path):
+    run = {"until_today": True, "skip_unchanged": True, **quiet}
+    lines = [record("a"), record("b")]
+    run_incremental(tmp_path, FetchingSteps(lines).steps(), start=SNAPSHOT_DAY, now=NOW, **run)
+    before = (tmp_path / STATE_FILE).read_text(encoding="utf-8")
+    seen = (tmp_path / SEEN_FILE).read_text(encoding="utf-8")
+
+    again = FetchingSteps(lines)
+    logged: list[str] = []
+    run_incremental(
+        tmp_path, again.steps(), now=NOW.replace(hour=10), **{**run, "log": logged.append}
+    )
+    assert again.names() == ["fetch"]
+    assert "incremental: nothing changed" in logged
+    assert (tmp_path / STATE_FILE).read_text(encoding="utf-8") == before
+    assert (tmp_path / SEEN_FILE).read_text(encoding="utf-8") == seen
+    assert not (tmp_path / "processed" / "incremental" / "2026-11-04_2026-11-04_100005").exists()
+
+
+def test_after_load_runs_before_the_watermark_moves_and_a_failure_repeats_the_run(
+    tmp_path: Path,
+):
+    run = {"until_today": True, "skip_unchanged": True, **quiet}
+    calls: list[str] = []
+
+    def failing_rebuild():
+        calls.append("rebuild")
+        raise RuntimeError("bm25 build failed")
+
+    fake = FetchingSteps([record("a")])
+    with pytest.raises(RuntimeError, match="bm25 build failed"):
+        run_incremental(
+            tmp_path, fake.steps(), start=SNAPSHOT_DAY, now=NOW, after_load=failing_rebuild, **run
+        )
+    assert fake.names()[-1] == "load" and calls == ["rebuild"]
+    assert read_watermark(tmp_path) is None and read_seen(tmp_path) == {}
+
+    retry = FetchingSteps([record("a")])
+    state = run_incremental(
+        tmp_path,
+        retry.steps(),
+        start=SNAPSHOT_DAY,
+        now=NOW,
+        after_load=lambda: calls.append("rebuild"),
+        **run,
+    )
+    assert retry.names() == ["fetch", "clean", "chunk", "embed", "load"]
+    assert calls == ["rebuild", "rebuild"] and state["until"] == "2026-11-04"
+
+
+def test_after_load_is_not_called_without_a_load(tmp_path: Path):
+    called = []
+    run_incremental(
+        tmp_path,
+        FakeSteps(records=0).steps(),
+        start=SNAPSHOT_DAY,
+        today=TODAY,
+        after_load=lambda: called.append(1),
+        **quiet,
+    )
+    assert called == []
+
+
+def test_the_frozen_collection_is_refused():
+    check_not_frozen("scitech_chunks_live")
+    check_not_frozen("scitech_chunks", "")  # no frozen collection named: no check
+    with pytest.raises(ValueError, match="frozen evaluation collection"):
+        check_not_frozen("scitech_chunks")
+    with pytest.raises(ValueError, match="frozen"):
+        check_not_frozen("other", "other")
+
+
+def test_a_second_run_stops_while_the_lock_is_held(tmp_path: Path):
+    with run_lock(tmp_path, **quiet) as path:
+        assert path == tmp_path / LOCK_FILE and path.exists()
+        with pytest.raises(RunLocked, match="another incremental run"):
+            with run_lock(tmp_path, **quiet):
+                pass
+    assert not (tmp_path / LOCK_FILE).exists()
+
+
+def write_lock(data_dir: Path, **held) -> None:
+    (data_dir / LOCK_FILE).parent.mkdir(parents=True, exist_ok=True)
+    (data_dir / LOCK_FILE).write_text(json.dumps(held), encoding="utf-8")
+
+
+def test_a_lock_of_a_process_that_is_gone_is_taken_over(tmp_path: Path):
+    import socket
+
+    write_lock(tmp_path, host=socket.gethostname(), pid=2**22 + 12345, started=time.time())
+    with run_lock(tmp_path, **quiet):
+        held = json.loads((tmp_path / LOCK_FILE).read_text(encoding="utf-8"))
+        assert held["pid"] == os.getpid()
+
+
+def test_a_lock_of_another_host_is_taken_over_only_when_old(tmp_path: Path):
+    write_lock(tmp_path, host="old-container", pid=1, started=time.time() - 60)
+    with pytest.raises(RunLocked):
+        with run_lock(tmp_path, **quiet):
+            pass
+    write_lock(tmp_path, host="old-container", pid=1, started=time.time() - 4 * 3600)
+    with run_lock(tmp_path, **quiet):
+        pass
+
+
+def test_the_lock_is_released_when_the_run_fails(tmp_path: Path):
+    with pytest.raises(RuntimeError):
+        with run_lock(tmp_path, **quiet):
+            raise RuntimeError("run failed")
+    assert not (tmp_path / LOCK_FILE).exists()
+
+
+class ScrollingQdrant(DeletingQdrant):
+    """DeletingQdrant plus `POST /collections/<name>/points/scroll`, two points per page."""
+
+    def __call__(self, request):
+        import httpx
+
+        parts = request.url.path.strip("/").split("/")
+        if request.method == "POST" and parts[2:] == ["points", "scroll"]:
+            body = json.loads(request.content)
+            assert body["with_vector"] is False
+            ids = sorted(self.collections[parts[1]]["points"])
+            start = ids.index(body["offset"]) if body.get("offset") is not None else 0
+            page = ids[start : start + body["limit"]]
+            nxt = ids[start + body["limit"]] if start + body["limit"] < len(ids) else None
+            fields = body["with_payload"]
+            points = [
+                {
+                    "id": i,
+                    "payload": {
+                        k: v
+                        for k, v in self.collections[parts[1]]["points"][i]["payload"].items()
+                        if k in fields
+                    },
+                }
+                for i in page
+            ]
+            return httpx.Response(
+                200, json={"result": {"points": points, "next_page_offset": nxt}}
+            )
+        return super().__call__(request)
+
+
+def test_qdrant_replace_store_scrolls_every_payload(tmp_path: Path):
+    httpx = pytest.importorskip("httpx")
+    from scitech_agent.store import QdrantStore, StoreConfig
+
+    qdrant = ScrollingQdrant()
+    transport = httpx.MockTransport(qdrant)
+    chunks, vectors = build(tmp_path, "bulk", fixture_documents())
+    with QdrantStore(StoreConfig(collection="live"), transport=transport) as store:
+        load_index(chunks, vectors, store, tmp_path / "bulk" / "index", **quiet)
+        with QdrantReplaceStore(store, transport=transport) as replace_store:
+            payloads = list(replace_store.scroll_payloads(["chunk_id", "text"], page_size=7))
+    stored = qdrant.collections["live"]["points"]
+    assert len(payloads) == len(stored) > 7
+    assert {p["chunk_id"] for p in payloads} == {p["payload"]["chunk_id"] for p in stored.values()}
+    assert all(set(p) == {"chunk_id", "text"} for p in payloads)
+
+
+def test_incremental_run_command_refuses_the_frozen_collection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    import scitech_pipelines.embed
+    from scitech_pipelines.cli import main
+
+    monkeypatch.setattr(  # refused before the model is loaded
+        scitech_pipelines.embed, "SentenceTransformerEncoder", lambda *a, **k: pytest.fail()
+    )
+    monkeypatch.setenv("FROZEN_COLLECTION", "")  # empty in .env: still scitech_chunks
+    args = ["--data-dir", str(tmp_path), "incremental-run", "--model", "some/model"]
+    with pytest.raises(ValueError, match="frozen evaluation collection"):
+        main([*args, "--collection", "scitech_chunks"])
+    monkeypatch.setenv("FROZEN_COLLECTION", "my_frozen")
+    with pytest.raises(ValueError, match="frozen evaluation collection"):
+        main([*args, "--collection", "my_frozen"])
+    assert not (tmp_path / LOCK_FILE).exists()
+
+
+def test_incremental_run_command_passes_the_scheduled_options(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    pytest.importorskip("httpx")
+    import scitech_agent.store
+    import scitech_pipelines.bm25_live
+    import scitech_pipelines.embed
+    import scitech_pipelines.incremental_run
+    from scitech_pipelines.cli import main
+
+    seen: dict = {}
+
+    class Store(FakeStore):
+        def __init__(self, config):
+            super().__init__(config.collection)
+            self.config = config
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            pass
+
+    def fake_run(data_dir, steps, **kwargs):
+        seen.update(kwargs, locked=(data_dir / LOCK_FILE).exists())
+        kwargs["after_load"]()
+        return {}
+
+    monkeypatch.setattr(scitech_agent.store, "QdrantStore", Store)
+    monkeypatch.setattr(
+        scitech_pipelines.embed, "SentenceTransformerEncoder", lambda *a, **k: FakeEncoder()
+    )
+    monkeypatch.setattr(scitech_pipelines.incremental_run, "run_incremental", fake_run)
+    monkeypatch.setattr(
+        scitech_pipelines.bm25_live,
+        "rebuild_bm25",
+        lambda store, out: seen.update(rebuilt=(store.collection, out)),
+    )
+    args = ["--data-dir", str(tmp_path), "incremental-run", "--model", "some/model"]
+    live = tmp_path / "bm25-live"
+    main([*args, "--collection", "live", "--until", "today", "--rebuild-bm25", str(live)])
+    assert seen["until_today"] is True and seen["skip_unchanged"] is True
+    assert seen["rebuilt"] == ("live", live) and seen["locked"]
+    assert not (tmp_path / LOCK_FILE).exists()
