@@ -492,6 +492,20 @@ def build_agent(spec: dict) -> Any:
     return getattr(importlib.import_module(module_name), attr)()
 
 
+def traces_target(config: Mapping[str, Any], out_dir: Path, stamp: str) -> str:
+    """Value of `AGENT_TRACES` for this run: the run's own file by default, `off` to switch off.
+
+    YAML reads an unquoted `off` as the boolean False, so False means "off" too (otherwise the
+    run would silently write to the default file). True or a missing value means the default.
+    """
+    value = config.get("traces_path")
+    if value is False:
+        return "off"
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return str(Path(out_dir) / f"{stamp}-{config['name']}.traces.jsonl")
+
+
 def run_from_answer_config(config_path: Path, out_dir: Path) -> tuple[Path, Path]:
     config = load_answer_config(config_path)
     items = select_items(config, load_golden(Path(config["golden_path"])))
@@ -499,9 +513,7 @@ def run_from_answer_config(config_path: Path, out_dir: Path) -> tuple[Path, Path
     judge = judge_from_env()
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     # One trace file per run (docs/runbooks/traces.md); `traces_path: off` switches traces off.
-    traces = config.get("traces_path") or str(
-        Path(out_dir) / f"{stamp}-{config['name']}.traces.jsonl"
-    )
+    traces = traces_target(config, out_dir, stamp)
     with _environ({"AGENT_TRACES": traces}):
         agent = build_agent(config["agent"])
         record, answers = run_answers(config, items, agent, judge, template, prompt_info)

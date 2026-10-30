@@ -25,4 +25,8 @@ judge:
   digest: 845dbda0ea48        # qwen2.5:7b Q4_K_M, Ollama digest (issue #142)
   temperature: 0
   max_tokens: 200             # TODO(LDN): choose; the judge reply is a short JSON object
-  context_tokens: 4096        # TODO(LDN): context window of the judge session (num_ctx)
+  # Context window (tokens) the Kaggle Ollama session really uses for the judge: read it on that session
+  # (`ollama ps`, column CONTEXT, while qwen2.5:7b is loaded; or the value of OLLAMA_CONTEXT_LENGTH set
+  # when `ollama serve` was started) and write the integer here before the run. null = not measured:
+  # the run file then reports `prompt_fits_context: null` instead of a guess.
+  context_tokens: null        # TODO: measure on the Kaggle session (review of #148)

@@ -20,6 +20,7 @@ from scitech_eval.answer_run import (
     parse_judgement,
     run_answers,
     select_items,
+    traces_target,
 )
 from scitech_eval.golden import load_golden
 
@@ -366,3 +367,20 @@ def test_half_refusal_is_judged_like_an_answer(tmp_path):
     result, _, judge, _ = run(tmp_path, records, replies, ["gs-001"])
     assert result["counts"]["refused_answerable"] == 0 and len(judge.calls) == 2
     assert result["per_answer"][0]["faithfulness"] == 1.0
+
+
+def test_traces_path_off_written_unquoted_in_yaml_switches_traces_off(tmp_path):
+    # YAML reads `off` as the boolean False; it must not fall back to the default trace file.
+    unquoted = yaml.safe_load("name: t\ntraces_path: off\n")
+    quoted = yaml.safe_load('name: t\ntraces_path: "off"\n')
+    assert unquoted["traces_path"] is False
+    assert traces_target(unquoted, tmp_path, "S") == "off"
+    assert traces_target(quoted, tmp_path, "S") == "off"
+
+
+def test_traces_path_default_and_explicit(tmp_path):
+    default = str(tmp_path / "S-t.traces.jsonl")
+    assert traces_target({"name": "t"}, tmp_path, "S") == default
+    assert traces_target({"name": "t", "traces_path": None}, tmp_path, "S") == default
+    assert traces_target({"name": "t", "traces_path": ""}, tmp_path, "S") == default
+    assert traces_target({"name": "t", "traces_path": "x/y.jsonl"}, tmp_path, "S") == "x/y.jsonl"
