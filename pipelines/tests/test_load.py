@@ -134,6 +134,17 @@ def test_other_collection_needs_force(data, tmp_path: Path):
     assert other.count() == n_chunks(chunks)
 
 
+def test_resume_state_of_another_qdrant_names_force(data, tmp_path: Path):
+    # Same settings, new empty Qdrant: every part looks done, nothing would be loaded (#157).
+    chunks, vectors = data
+    load_index(chunks, vectors, FakeStore(), tmp_path / "index", log=lambda _: None)
+    fresh = FakeStore()
+    with pytest.raises(RuntimeError, match=r"holds 0 points.*skipped as done.*--force"):
+        load_index(chunks, vectors, fresh, tmp_path / "index", log=lambda _: None)
+    load_index(chunks, vectors, fresh, tmp_path / "index", force=True, log=lambda _: None)
+    assert fresh.count() == n_chunks(chunks)
+
+
 def test_leftover_points_fail_the_count_check(data, tmp_path: Path):
     chunks, vectors = data
     store = FakeStore()
