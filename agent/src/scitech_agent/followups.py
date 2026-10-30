@@ -25,6 +25,8 @@ from scitech_agent.retrieval import ScoredChunk
 
 SNIPPET_CHARS = 300  # start of each source text shown to the prompt
 MAX_QUESTION_CHARS = 200  # longer "questions" are explanations, not chips
+MAX_QUESTION_WORDS = 20  # the prompt's limit, enforced here (#116: pasted paper titles)
+_CITATION_NAME = re.compile(r"\bet al\b", re.IGNORECASE)  # "Artexte et al. (2018b)" (#116)
 
 _BULLET = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s*")
 _FENCE = re.compile(r"```[a-zA-Z]*")
@@ -99,6 +101,15 @@ def _as_text(item: Any) -> str:
     return item if isinstance(item, str) else ""
 
 
+def _chip_sized(question: str) -> bool:
+    """Short enough for a chip and without a reference copied from a source ("X et al.")."""
+    return (
+        len(question) <= MAX_QUESTION_CHARS
+        and len(question.split()) <= MAX_QUESTION_WORDS
+        and not _CITATION_NAME.search(question)
+    )
+
+
 def parse_followups(text: str, limit: int, asked: Iterable[str] = ()) -> list[str]:
     """At most `limit` clean, distinct questions from the LLM output; `[]` if none can be read.
     `asked` are the questions of the conversation, which are never suggested again."""
@@ -114,7 +125,7 @@ def parse_followups(text: str, limit: int, asked: Iterable[str] = ()) -> list[st
         question = strip_citations(_BULLET.sub("", _as_text(item))).strip().strip("\"'").strip()
         question = re.sub(r"\s+", " ", question)
         key = _key(question)
-        if not key or key in seen or len(question) > MAX_QUESTION_CHARS:
+        if not key or key in seen or not _chip_sized(question):
             continue
         seen.add(key)
         questions.append(question)
