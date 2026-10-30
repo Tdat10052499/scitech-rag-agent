@@ -53,6 +53,16 @@ counted 121,926 points.
 
 ## 2. Model, prompts and configuration (W6-D5-DAT-1)
 
+### Faithfulness judge (decided on #142, 2026-10-27)
+
+| Field | Value | Source |
+|---|---|---|
+| Judge model | `qwen2.5:7b`, Q4_K_M, Ollama digest `845dbda0ea48` (read on D08) | ADR 0006 table note, #142 |
+| Served by | the same Kaggle Ollama session as the generator (`llama3.2:3b`); a different model family, as `evaluation/PLAN.md` section 5 requires | #142 |
+| How the runner calls it | `OpenAICompatibleLLM` with its own variables `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `JUDGE_MODEL` (values only in local `.env`) | #142 |
+| Settings | temperature 0, one sentence per call, prompt `evaluation/prompts/faithfulness-judge.md`; `max_tokens` and the prompt commit are recorded in each run file; an unreadable reply is `judge_error`, not retried, not counted | #142 |
+| Switch rule | only if a hosted key arrives before D17: switch once, re-run the 10 pilot questions, recompute agreement; never mix judges across W7 conditions | #142 |
+
 <!-- TODO(W6-D5-DAT-1): generator model, tag, quantisation and Ollama version (ADR 0006); judge
 model; prompts commit; RETRIEVER, RETRIEVAL_TOP_K, RETRIEVAL_MIN_SCORE and other flags; tag
 v0.6-rc. -->
