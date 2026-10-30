@@ -25,7 +25,8 @@ reports it as `retrieval_failed`. `InMemoryStore` is a fake with the same method
 
 Filters are the same as for every `Retriever`: `{"field": value}` keeps points whose field equals
 the value or, for a list field such as `categories`, contains it; `{"field": {"gte": a, "lte": b}}`
-is an inclusive range (`gt`/`lt` for exclusive), e.g. on `published_at` with ISO dates.
+is an inclusive range (`gt`/`lt` for exclusive), e.g. on `published_at` with ISO dates
+(`retrieval.check_range` refuses other bounds; `retrieval.year_range` builds whole years).
 """
 
 from __future__ import annotations
@@ -38,7 +39,13 @@ from typing import Any, Protocol
 
 import httpx
 
-from scitech_agent.retrieval import Filters, RetrievalError, ScoredChunk, matches
+from scitech_agent.retrieval import (
+    Filters,
+    RetrievalError,
+    ScoredChunk,
+    check_range,
+    compile_filters,
+)
 
 DISTANCE = "Cosine"
 DEFAULT_BATCH_SIZE = 256
@@ -50,7 +57,6 @@ PAYLOAD_INDEXES = {
     "doc_id": "keyword",
     "published_at": "datetime",
 }
-RANGE_KEYS = frozenset({"gte", "lte", "gt", "lt"})
 # Payload fields that `ScoredChunk` needs (required in chunk.schema.json).
 REQUIRED_FIELDS = ("chunk_id", "doc_id", "title", "text", "source", "chunk_index")
 
@@ -116,11 +122,7 @@ def to_qdrant_filter(filters: Filters | None) -> dict[str, Any] | None:
     must = []
     for name, wanted in filters.items():
         if isinstance(wanted, Mapping):
-            unknown = set(wanted) - RANGE_KEYS
-            if unknown or not wanted:
-                raise ValueError(
-                    f"filter {name!r}: a range takes gte, lte, gt or lt, got {sorted(wanted)}"
-                )
+            check_range(name, wanted)  # before Qdrant answers a bad bound with HTTP 400
             must.append({"key": name, "range": dict(wanted)})
         elif isinstance(wanted, (str, int, bool)):
             must.append({"key": name, "match": {"value": wanted}})
@@ -170,8 +172,13 @@ class QdrantStore:
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.config = config or StoreConfig()
+        # No gzip: Qdrant answers a gzip request with a chunked gzip response, and on Linux each
+        # such search waited about 44 ms instead of about 1 ms (#128). Answers here are small.
         self._http = httpx.Client(
-            base_url=self.config.url, timeout=self.config.timeout, transport=transport
+            base_url=self.config.url,
+            timeout=self.config.timeout,
+            transport=transport,
+            headers={"Accept-Encoding": "identity"},
         )
 
     @classmethod
@@ -333,7 +340,8 @@ class InMemoryStore:
         return total
 
     def count(self, filters: Filters | None = None) -> int:
-        return len([c for c in self._chunks(0.0) if matches(c, filters)])
+        keep = compile_filters(filters)
+        return len([c for c in self._chunks(0.0) if keep(c)])
 
     def _chunks(self, score: float) -> list[ScoredChunk]:
         return [to_scored_chunk(payload, score) for _, payload in self.points.values()]
@@ -347,13 +355,14 @@ class InMemoryStore:
         if len(query) != self.dimension:
             raise StoreError(f"query has {len(query)} dimensions, expected {self.dimension}")
         self.searches.append((query, k, filters))
+        keep = compile_filters(filters)
         norm = math.sqrt(sum(x * x for x in query)) or 1.0
         hits = []
         for stored, payload in self.points.values():
             stored_norm = math.sqrt(sum(x * x for x in stored)) or 1.0
             score = sum(a * b for a, b in zip(query, stored, strict=True)) / (norm * stored_norm)
             chunk = to_scored_chunk(payload, round(score, 6))
-            if matches(chunk, filters):
+            if keep(chunk):
                 hits.append(chunk)
         hits.sort(key=lambda c: (-c.score, c.chunk_id))
         return hits[:k]

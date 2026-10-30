@@ -65,6 +65,7 @@ These are defaults so tasks can be concrete. They change only through an ADR in 
 | 0008 | Incremental ingestion design | FAO | D13 (2026-10-27) |
 | 0009 | Default retrieval configuration | DAT (with LDN numbers) | D09 (2026-10-22), accepted by D10 09:00 at the latest |
 | 0010 | Compressed schedule and scope cuts | DAT | D01 (2026-10-13) |
+| 0011 | Scheduled incremental ingestion every 2 hours (exception to the feature freeze) | DAT (with FAO) | D17 (2026-10-31) |
 
 ## Cut list
 
@@ -75,7 +76,7 @@ Applied on 2026-10-13 (ADR 0010):
 3. UI extras (data page, `GET /stats`, step/status display, debug view): **cut**
 4. Query decomposition: **cut** (keep rewriting and evidence check)
 5. User study size: **applied**, 5-6 participants
-6. Incremental ingestion: **decision at the Week 5 gate (D14)**; if cut, keep the batch pipeline and describe the design in the report
+6. Incremental ingestion: **decision at the Week 5 gate (D14)**; if cut, keep the batch pipeline and describe the design in the report. Kept (ADR 0008); scheduled every 2 hours from D20 (ADR 0011), first thing to switch off if the soak test fails
 
 Additional cuts (outside the original list, proposed in ADR 0010): follow-ups v2, response caching.
 
