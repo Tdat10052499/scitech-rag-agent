@@ -1,6 +1,7 @@
 # 2. Data
 
-<!-- Draft (W7-D4-FAO-1, written early on D13). Every number cites the file or run it comes from.
+<!-- Draft (W7-D4-FAO-1, written early on D13, updated on D16 for ADR 0011 and the final
+snapshot). Every number cites the file or run it comes from.
 Open items are marked TODO with the task that fills them. Page budget: set by the outline
 (docs/report/00-outline.md, W7-D5-DAT-1); trim in W8-D1-FAO-1. -->
 
@@ -56,7 +57,7 @@ and the index tier holds only `cs.CL`. This is the "big data" part of the pipeli
 flowchart LR
     K[Kaggle snapshot<br/>3.2M records, 5.61 GB] --> D[download]
     D --> C["clean<br/>(PySpark, local mode)"]
-    O[arXiv OAI-PMH<br/>cs:cs:CL, daily] --> F[incremental-fetch]
+    O[arXiv OAI-PMH<br/>cs:cs:CL, every 2 h] --> F[incremental-run]
     F --> C
     C --> V["validate<br/>(DuckDB)"]
     V --> CH[chunk]
@@ -160,14 +161,34 @@ new chunks, and repeating the last day changed nothing. Each run was checked by 
 collection before and after with the run's chunks, independently of the load's own count check.
 Embedding is 85% of the time; a single day of a few hundred papers takes about a minute on a CPU.
 
-**Scheduling** (ADR 0008, point 6): for v1.0 the update is one manual command run on demand. The
-machine that serves the demo has no Java 17 for Spark, a Kaggle notebook cannot reach its Qdrant,
-and the index is frozen for evaluation from W6-D4 until the final gate anyway. One run catches up
-all missed days in a single range. On a machine with Java 17+ the daily schedule is one cron line
-(recorded in the ADR, not tested).
+**Scheduling** (ADR 0011, which replaces ADR 0008 point 6). The course asks for data collected in
+near real time, so `incremental-run` runs every 2 hours by itself, in an `ingest` container next to
+Qdrant (`INGEST_EVERY_HOURS=2`, a Python loop in `scitech_pipelines.schedule`). The container
+carries Java 17, so the serving laptop's Java 8 no longer matters. Each run:
 
-Known limits: deleted records stay in the index until the next full rebuild, and the BM25 index
-is not yet rebuilt with incremental chunks (#119).
+- fetches up to today (UTC) instead of yesterday, so a record is picked up within 2 hours of its
+  OAI-PMH datestamp;
+- sends only the ids whose `(id, datestamp)` changed since the last run to `clean`, `embed` and
+  `load`, and stops with "nothing changed" when none is left, which is most runs;
+- takes a lock, so two runs never overlap;
+- after a successful load, rebuilds BM25 into a new directory and switches to it atomically
+  (`--rebuild-bm25`); the backend reloads it (`BM25_RELOAD_SECONDS`), so both halves of hybrid
+  search see new papers (#119).
+
+The schedule writes only to a separate serving index, `scitech_chunks_live` with
+`data/index/bm25-live`, created as a copy of the frozen one. It refuses the frozen collection
+(`--frozen-collection`), so the evaluation index of §2.7 never changes. Freshness is bounded by
+arXiv, which announces new papers once a day: the 2-hour interval picks them up within 2 hours of
+that, not as they are submitted. The code was built on a branch during Week 7 (#152, #155) and
+merged after Gate W7, so no evaluation run saw it.
+
+<!-- TODO(W8-D6-FAO-1): soak result from D20 to D22: runs logged in data/logs/incremental.log,
+failed or overlapping runs, papers added, time per run, BM25 switch. If the soak fails, ADR 0011
+falls back to the manual command; rewrite this paragraph then. -->
+
+Known limits: deleted records stay in the index until the next full rebuild; a replaced paper has
+no points for 0.3 to 2.4 s during its load; the schedule runs only while the serving laptop is
+awake; and a run without `--rebuild-bm25` leaves BM25 as it was (#119).
 
 ## 2.6 Scaling
 
@@ -201,7 +222,8 @@ search.
   At a million chunks exact search would take about 110 ms (an extrapolation), so HNSW would then
   be the better choice, with its recall checked again (#87).
 - **Retrieval is not the bottleneck.** Hybrid retrieval stays under 135 ms at p95 at every size,
-  far below the LLM's time to first token (0.44 s, #91).
+  far below the LLM's time to first token (p50 0.42 s on the Week 7 host,
+  `docs/runbooks/performance.md`, #161).
 
 All sizes were cut from the index that is frozen for evaluation (§2.7), so these numbers belong
 to that snapshot.
@@ -224,7 +246,12 @@ Every evaluation run uses one index, recorded in `evaluation/SNAPSHOT.md` (W6-D4
 
 The id names the collection, the model and the times of chunking and embedding, and every
 evaluation run records it, so runs on different indexes cannot be compared by mistake. Incremental
-loads are never pointed at this collection before the final gate (its live test ran on a copy).
+loads never write to this collection: its live test ran on a copy, and the scheduled run refuses
+it (ADR 0011).
 On 2026-10-27 the machine that serves it was checked against the file: same id, 121,926 points in
 Qdrant, and all 57 relevant documents of the golden set present.
-<!-- TODO(W6-D4-FAO-1): confirm after the bug bash (W6-D4-DAT-1) that the data did not change. -->
+On 2026-10-30, after the feature freeze, both machines that serve it were checked again: FAO's
+laptop through the Docker stack (#146), the user-study host, and DAT's laptop with a native Qdrant,
+the Week 7 host. Both counted 121,926 points, and DAT's laptop also matched the id and the BM25
+`chunked_at` (`evaluation/SNAPSHOT.md` §1, #164).
+<!-- TODO(W7-D1-FAO-1): golden coverage on the final golden set (at least 60 items). -->
