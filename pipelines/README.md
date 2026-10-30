@@ -14,7 +14,7 @@ The `load` into Qdrant came with W3-D3-FAO-1 (#67); its times below are from a f
 | 4. profile (optional) | `profile --clean-peak-mb <MB>` | `pipelines/reports/data_profile.md` and `.json` | where the raw snapshot is (DuckDB) | 22.4 s on FAO's laptop | none |
 | 5. chunk | `chunk` | `data/processed/chunks/chunks.parquet` + `_chunk_manifest.json` | anywhere (DuckDB) | 14.1 s on Kaggle, 18.4 s on FAO's laptop | 101 MB |
 | 6. embed | `embed --model <EMBEDDING_MODEL>` | `data/processed/embeddings/part-*.parquet` + `_embed_manifest.json` | GPU notebook (Kaggle T4); CPU only for small runs | T4: 14.4 min (`bge-small-en-v1.5`), 43.8 min (`bge-base-en-v1.5`) | 198 MB (small), 385 MB (base) |
-| 7. load | `load` | Qdrant collection `QDRANT_COLLECTION` + `data/processed/index/_load_manifest.json` | where Qdrant runs (`make up`, or the release binary on Kaggle) | 135.2 s for 121,926 bge-small vectors on FAO's laptop, Docker Qdrant 1.19.2 (7.6-11.2 s per part); 106.3 s on a Kaggle CPU notebook, Qdrant 1.19.2 binary | Qdrant storage 609.9 MiB (`pipelines/reports/index_profile.md`) |
+| 7. load | `load` | Qdrant collection `QDRANT_COLLECTION` + `data/processed/index/_load_manifest.json` | where Qdrant runs (`make up-qdrant`, or the release binary on Kaggle) | 135.2 s for 121,926 bge-small vectors on FAO's laptop, Docker Qdrant 1.19.2 (7.6-11.2 s per part); 106.3 s on a Kaggle CPU notebook, Qdrant 1.19.2 binary | Qdrant storage 609.9 MiB (`pipelines/reports/index_profile.md`) |
 | 8. BM25 index | `PYTHONPATH=agent/src python -m scitech_agent.retrieval.keyword build` | `data/index/bm25/` | anywhere; needed by the default retriever (hybrid) | 36.7 s on FAO's laptop, 15.8-20.3 s on DAT's | 177.2 MB |
 
 Full corpus: arXiv `cs.CL`, Kaggle snapshot version 307: 3,205,432 records in, 121,860 documents, 121,926 chunks (2026-10-16/17 runs; journal `docs/journal/FAO/W2.md`). On a CPU, embedding the full corpus would take about 12 h with bge-small and 38 h with bge-base (estimate from 2.8 and 0.9 records/s on a Colab CPU, `docs/03-data-sources.md`), so use a GPU.
@@ -40,7 +40,7 @@ python -m scitech_pipelines clean            # Java 17+: see "clean on Kaggle" b
 python -m scitech_pipelines validate --golden evaluation/golden_set/golden.jsonl
 python -m scitech_pipelines chunk
 python -m scitech_pipelines embed --model "$EMBEDDING_MODEL"   # GPU notebook: see below
-make up                                      # Qdrant (docker compose), then:
+make up-qdrant                               # Qdrant only (docker compose), then:
 PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines load
 ```
 
@@ -123,6 +123,6 @@ The small `load` goes into its own collection (`--collection`), so it never mixe
 - Data files never go into git (`data/` is ignored); share them through Kaggle.
 
 ## After the first build
-- **New papers since the snapshot:** `incremental-run` adds the arXiv records published after a date watermark to the same collection and replaces the points of papers that come back (ADR 0008, #76). It is run by hand when needed. The steps, the live test (#124) and how to check a run are in `docs/runbooks/data-pipeline.md` §6.
+- **New papers since the snapshot:** `incremental-run` adds the arXiv records published after a date watermark to the same collection and replaces the points of papers that come back (ADR 0008, #76). It is run by hand when needed. The steps, the live test (#124) and how to check a run are in `docs/runbooks/data-pipeline.md` §6. ADR 0011 adds a schedule: an `ingest` service runs it every 2 hours against the separate serving collection `scitech_chunks_live`, never the frozen `scitech_chunks` (#152, merged after Gate W7).
 - **Problems:** `docs/runbooks/data-pipeline.md` §5 lists the common failures with their fixes.
 - **Index profile and scaling:** `pipelines/reports/index_profile.md` (#68) and `pipelines/reports/scaling.md` (#96) measure the built index.
