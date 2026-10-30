@@ -99,6 +99,7 @@ The counts must chain, for snapshot 307:
 | `load`: connection refused | Qdrant not running, or a wrong `QDRANT_URL` | `make up`, or start the binary; check `curl $QDRANT_URL/healthz` |
 | `load` refuses the vectors | Vectors from other chunks (`chunked_at` differs), an `embed --limit` run, or an unfinished embed run | Re-run `embed` on the current chunks, without `--limit` |
 | `load`: "other settings" | Resume state from a load with other vectors, chunks or collection | `--force`, or another `--out` |
+| `load`: "load check failed ... parts were skipped as done" (often 0 points) | `_load_state.json` from an earlier load into another Qdrant instance or a deleted collection, with the same settings, marks every part as done | `load --force`: it ignores the saved progress; the vectors are not embedded again |
 | `load`: "load check failed ... holds N points" | Points from an older load in the same collection | Recreate the collection (another `QDRANT_COLLECTION`, or delete it), then `load --force` |
 | Dense recall lower than ADR 0007 through Qdrant | `QDRANT_SEARCH_EXACT=false`: approximate HNSW search, where gs-016 drops out (#87) | Check that `QDRANT_SEARCH_EXACT` is not `false`; exact search is the default since #101 |
 | `load` (or its tests) fails with an `AttributeError` about `fetch_arrow_table` | duckdb 2.0 removed `fetch_arrow_table`, and a fresh `make setup` installs 2.0 | Fixed in #107 (`to_arrow_table` first); on an older branch, merge `main` |
