@@ -1,0 +1,572 @@
+{
+  "schema_version": 1,
+  "kind": "answers",
+  "name": "ablation-full",
+  "timestamp": "20261030T085934Z",
+  "git_commit": "fa1c765fe2df024aef63ffd7702995da74600090+dirty",
+  "dataset_snapshot": "kaggle-arxiv-v307-cs.CL-2026-10-10",
+  "index_snapshot": "scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37",
+  "notes": "W7-D2-DAT-1 ablation full: AGENT_REWRITE=on AGENT_SELF_CHECK=on, v0.6-rc, DAT laptop RTX 5060 8 GB (Ollama GPU), Ollama 0.40.13, AGENT_TIMEOUT_S=600",
+  "golden": {
+    "path": "evaluation/golden_set/golden.jsonl",
+    "sha256": "88c86717b96494b1c4ebe8eea391318bbbc6c33c86e7f35a421c015796e82c4b",
+    "split": "dev",
+    "language": "en",
+    "n_items": 32,
+    "n_answerable": 30,
+    "n_unanswerable": 2
+  },
+  "generator": {
+    "model": "llama3.2:3b",
+    "trace_model": {
+      "model": "llama3.2:3b",
+      "timeout": 300.0,
+      "max_retries": 2
+    },
+    "agent_config": {
+      "top_k": 5,
+      "min_score": 0.0,
+      "max_followups": 4,
+      "history_turns": 10,
+      "answer_history_turns": 3,
+      "temperature": 0.0,
+      "answer_max_tokens": 512,
+      "followups_max_tokens": 192,
+      "rewrite": true,
+      "rewrite_history_turns": 3,
+      "rewrite_max_tokens": 96,
+      "self_check": true,
+      "self_check_max_tokens": 8,
+      "max_llm_calls": 4,
+      "timeout_s": 600.0,
+      "retriever": "HybridRetriever"
+    },
+    "digest": "a80c4f17acd5",
+    "max_tokens": 512
+  },
+  "judge": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48",
+    "temperature": 0,
+    "max_tokens": 200,
+    "prompt": {
+      "path": "evaluation\\prompts\\faithfulness-judge.md",
+      "sha256": "c910b2e939c8426b891c427d4a8bc372ffe252758c63a7cd803d6eb447035bb6",
+      "commit": "6789b1f1391fe14c48845702f1b4db2aae6be05b"
+    },
+    "context_tokens": 4096,
+    "max_prompt_chars": 0,
+    "approx_max_prompt_tokens": 0,
+    "prompt_fits_context": true,
+    "errors": {},
+    "n_judge_error": 0,
+    "fixed_refusal_sentences": 0
+  },
+  "counts": {
+    "answers": 32,
+    "errors": 0,
+    "refused_answerable": 30,
+    "judged_answers": 0,
+    "sentences": 0,
+    "supported": 0,
+    "not_supported": 0,
+    "not_checkable": 0,
+    "judge_error": 0,
+    "unanswerable_refused": 2,
+    "unanswerable_answered_anyway": 0
+  },
+  "answered_anyway": [],
+  "timings": {
+    "warm_up_seconds": 5.854,
+    "answer_seconds": 8.721,
+    "judge_seconds": 0.0
+  },
+  "metrics": {
+    "faithfulness_macro": null,
+    "faithfulness_micro": null,
+    "share_faithfulness_1": null,
+    "cited_doc_recall": null,
+    "retrieved_doc_recall": null,
+    "invalid_citation_rate": null,
+    "over_refusal_rate": 1.0
+  },
+  "per_answer": [
+    {
+      "id": "gs-001",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "self_check": 2375.0,
+        "first_token": 2391.0,
+        "total": 2391.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-002",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "self_check": 109.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-003",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-004",
+      "type": "comparison",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "self_check": 93.0,
+        "first_token": 109.0,
+        "total": 109.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-005",
+      "type": "comparison",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "self_check": 94.0,
+        "first_token": 110.0,
+        "total": 110.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-006",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 78.0,
+        "first_token": 109.0,
+        "total": 109.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-007",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-008",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-009",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-010",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-011",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-012",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 15.0,
+        "self_check": 110.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-013",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 109.0,
+        "first_token": 140.0,
+        "total": 140.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-014",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 32.0,
+        "self_check": 93.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-015",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "self_check": 109.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-016",
+      "type": "comparison",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 32.0,
+        "self_check": 109.0,
+        "first_token": 141.0,
+        "total": 141.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-017",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "self_check": 93.0,
+        "first_token": 109.0,
+        "total": 109.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-018",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 235.0,
+        "retrieve": 15.0,
+        "self_check": 344.0,
+        "first_token": 594.0,
+        "total": 594.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-019",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 235.0,
+        "retrieve": 15.0,
+        "self_check": 391.0,
+        "first_token": 641.0,
+        "total": 641.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-020",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-021",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-022",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 203.0,
+        "retrieve": 31.0,
+        "self_check": 297.0,
+        "first_token": 531.0,
+        "total": 531.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-023",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 266.0,
+        "retrieve": 31.0,
+        "self_check": 328.0,
+        "first_token": 625.0,
+        "total": 625.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-024",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 281.0,
+        "retrieve": 32.0,
+        "self_check": 390.0,
+        "first_token": 703.0,
+        "total": 703.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-025",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "self_check": 109.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-026",
+      "type": "comparison",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 110.0,
+        "first_token": 141.0,
+        "total": 141.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-027",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-028",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-029",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-030",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "self_check": 94.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-u01",
+      "type": "unanswerable",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 15.0,
+        "self_check": 94.0,
+        "first_token": 109.0,
+        "total": 109.0
+      },
+      "n_sources": 0
+    },
+    {
+      "id": "gs-u02",
+      "type": "unanswerable",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "self_check": 109.0,
+        "first_token": 125.0,
+        "total": 125.0
+      },
+      "n_sources": 0
+    }
+  ],
+  "config": {
+    "name": "ablation-full",
+    "golden_path": "evaluation/golden_set/golden.jsonl",
+    "split": "dev",
+    "language": "en",
+    "dataset_snapshot": "kaggle-arxiv-v307-cs.CL-2026-10-10",
+    "index_snapshot": "scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37",
+    "notes": "W7-D2-DAT-1 ablation full: AGENT_REWRITE=on AGENT_SELF_CHECK=on, v0.6-rc, DAT laptop RTX 5060 8 GB (Ollama GPU), Ollama 0.40.13, AGENT_TIMEOUT_S=600",
+    "bootstrap": {
+      "resamples": 1000,
+      "seed": 0
+    },
+    "agent": {
+      "factory": "scitech_agent.factory:agent_from_env"
+    },
+    "generator": {
+      "digest": "a80c4f17acd5",
+      "max_tokens": 512
+    },
+    "judge": {
+      "prompt_path": "evaluation/prompts/faithfulness-judge.md",
+      "digest": "845dbda0ea48",
+      "temperature": 0,
+      "max_tokens": 200,
+      "context_tokens": 4096
+    }
+  },
+  "note": "The judge is a 7B model that has not been validated against human labels; the pilot kappa (evaluation/pilot/faithfulness) is the first evidence. Faithfulness means supported by the cited passages, not true. One run per condition; never compare runs with different judges.",
+  "traces_path": "evaluation\\runs\\20261030T085934Z-ablation-full.traces.jsonl"
+}
