@@ -1,0 +1,219 @@
+/*
+ * SciTech RAG design tokens. Status: approved baseline 2026-10-21 (docs: frontend/docs/design-system/).
+ *
+ * Three layers:
+ *   1. Primitives  (--paper-*, --ink-*, --sage-*, --amber-*, --red-*, --blue-*, sizes): raw values.
+ *      Components never use them directly.
+ *   2. Semantic    (--color-*, --font-*, --space-*, --radius-*, ...): roles. Components and layouts
+ *      use only these.
+ *   3. Component   (--composer-*, --citation-*, ...): only where a component needs a value that is
+ *      not a general role.
+ *
+ * Theme: every semantic color is `light-dark(<light>, <dark>)`, resolved by the `color-scheme` of the
+ * element. `data-theme="light" | "dark"` on any element forces a scheme for that subtree; without it
+ * the OS preference applies. Contrast of the pairs in use is tested in src/ui/contrast.test.ts.
+ */
+
+:root {
+  /* ---------- 1. Primitives ---------- */
+
+  /* Warm paper neutrals (light theme surfaces and text). */
+  --paper-0: #ffffff;
+  --paper-50: #faf9f5;
+  --paper-100: #f2f1eb;
+  --paper-150: #ecebe5;
+  --paper-200: #e9e8e1;
+  --paper-300: #dddfd6;
+  --paper-500: #838b83; /* added: control borders need 3:1 (WCAG 1.4.11); #dddfd6 is 1.3:1 */
+  --paper-600: #7f877f;
+  --paper-700: #626a63;
+  --paper-900: #242824;
+
+  /* Green-black ink (dark theme surfaces and text). */
+  --ink-950: #191c19;
+  --ink-900: #222722;
+  --ink-875: #262b26;
+  --ink-850: #2a302a;
+  --ink-800: #313831;
+  --ink-700: #3c453c;
+  --ink-500: #6f776f;
+  --ink-450: #76807a; /* added: control borders in dark, 3.3:1 on the elevated surface */
+  --ink-300: #adb5ab;
+  --ink-50: #f0f1ea;
+
+  /* Sage accent. */
+  --sage-100: #e7eee8;
+  --sage-150: #e0eae2; /* added: highlight flash on light; darker would drop metadata below 4.5:1 */
+  --sage-300: #b9d2bf;
+  --sage-400: #a6c3ad;
+  --sage-600: #49685d;
+  --sage-700: #3d594f;
+  --sage-850: #2d3d32;
+  --sage-800: #364a3c; /* added: highlight flash on dark */
+  --sage-950: #18251c;
+
+  /* Status hues, only for status roles. A `-d` suffix marks a value tuned for the dark theme. */
+  --amber-50: #fbf2dc;
+  --amber-300: #d9bb72;
+  --amber-500: #d9b565;
+  --amber-600: #8a6312;
+  --amber-800: #6a4b0c;
+  --amber-100-d: #eed9a2;
+  --amber-700-d: #6b5a2c;
+  --amber-900-d: #2f2817;
+  --red-50: #faece8;
+  --red-300: #dda79d;
+  --red-800: #8e2e22;
+  --red-200-d: #f3b9ae;
+  --red-700-d: #7a4038;
+  --red-900-d: #34201c;
+  --blue-50: #e9f0f2;
+  --blue-300: #b9ccd6;
+  --blue-800: #2c5061;
+  --blue-200-d: #b4d0dc;
+  --blue-700-d: #3a505b;
+  --blue-900-d: #1d2a30;
+
+  /* ---------- 2. Semantic: color ---------- */
+  color-scheme: light dark;
+
+  /* Backgrounds */
+  --color-bg-canvas: light-dark(var(--paper-50), var(--ink-950)); /* page */
+  --color-bg-surface: light-dark(var(--paper-100), var(--ink-900)); /* sidebar, user turn, code */
+  --color-bg-elevated: light-dark(var(--paper-0), var(--ink-850)); /* composer, drawer, popover */
+  --color-bg-hover: light-dark(var(--paper-200), var(--ink-800));
+  --color-bg-selected: light-dark(var(--sage-100), var(--sage-850));
+  --color-bg-highlight: light-dark(var(--sage-150), var(--sage-800)); /* start of the cited-source flash */
+  --color-bg-disabled: light-dark(var(--paper-150), var(--ink-875));
+  --color-bg-backdrop: light-dark(rgb(36 40 36 / 0.32), rgb(0 0 0 / 0.55));
+
+  /* Text */
+  --color-text: light-dark(var(--paper-900), var(--ink-50));
+  --color-text-secondary: light-dark(var(--paper-700), var(--ink-300));
+  --color-text-disabled: light-dark(var(--paper-600), var(--ink-500));
+  --color-text-on-accent: light-dark(var(--paper-0), var(--sage-950));
+  --color-text-link: light-dark(var(--sage-600), var(--sage-400));
+
+  /* Borders */
+  --color-border: light-dark(var(--paper-300), var(--ink-700)); /* dividers, decorative */
+  --color-border-strong: light-dark(var(--paper-500), var(--ink-450)); /* control boundaries, >= 3:1 */
+
+  /* Accent */
+  --color-accent: light-dark(var(--sage-600), var(--sage-400));
+  --color-accent-hover: light-dark(var(--sage-700), var(--sage-300));
+  --color-accent-soft: light-dark(var(--sage-100), var(--sage-850));
+  --color-focus-ring: light-dark(var(--sage-600), var(--sage-400));
+
+  /* Status: each has background, border, text and icon. */
+  --color-warning-bg: light-dark(var(--amber-50), var(--amber-900-d));
+  --color-warning-border: light-dark(var(--amber-300), var(--amber-700-d));
+  --color-warning-text: light-dark(var(--amber-800), var(--amber-100-d));
+  --color-warning-icon: light-dark(var(--amber-600), var(--amber-500));
+  --color-error-bg: light-dark(var(--red-50), var(--red-900-d));
+  --color-error-border: light-dark(var(--red-300), var(--red-700-d));
+  --color-error-text: light-dark(var(--red-800), var(--red-200-d));
+  --color-error-icon: light-dark(var(--red-800), var(--red-200-d));
+  --color-info-bg: light-dark(var(--blue-50), var(--blue-900-d));
+  --color-info-border: light-dark(var(--blue-300), var(--blue-700-d));
+  --color-info-text: light-dark(var(--blue-800), var(--blue-200-d));
+  --color-info-icon: light-dark(var(--blue-800), var(--blue-200-d));
+
+  /* ---------- 2. Semantic: typography ---------- */
+  /* Loaded by src/ui/fonts.ts (self-hosted, OFL-1.1). The names after the first are fallbacks. */
+  --font-display: "Newsreader Variable", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  /* Each step: size / line-height. Weights are separate tokens. */
+  --text-display-size: 1.875rem; /* 30px: empty-state greeting */
+  --text-display-line: 1.2;
+  --text-title-size: 1.125rem; /* 18px: panel and section headings */
+  --text-title-line: 1.35;
+  --text-answer-size: 1rem; /* 16px: answer body */
+  --text-answer-line: 1.7;
+  --text-body-size: 0.875rem; /* 14px: UI text, user turns, source titles */
+  --text-body-line: 1.55;
+  --text-meta-size: 0.8125rem; /* 13px: metadata, hints */
+  --text-meta-line: 1.45;
+  --text-caption-size: 0.75rem; /* 12px: labels, badges */
+  --text-caption-line: 1.4;
+  --text-code-size: 0.8125rem;
+  --text-code-line: 1.6;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --tracking-display: -0.01em;
+  --tracking-label: 0.04em;
+
+  /* ---------- 2. Semantic: space, radius, elevation ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --radius-sm: 6px; /* badges, citation markers, inline code */
+  --radius-md: 8px; /* buttons, inputs */
+  --radius-lg: 12px; /* cards, callouts, source items */
+  --radius-xl: 16px; /* composer */
+  --radius-full: 999px;
+
+  --border-width: 1px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  --shadow-sm: 0 1px 2px light-dark(rgb(36 40 36 / 0.06), rgb(0 0 0 / 0.3));
+  --shadow-md: 0 8px 24px light-dark(rgb(36 40 36 / 0.12), rgb(0 0 0 / 0.45));
+
+  /* ---------- 2. Semantic: motion ---------- */
+  --duration-fast: 120ms; /* hover, press */
+  --duration-base: 200ms; /* tooltip, small reveals */
+  --duration-slow: 280ms; /* drawer */
+  --duration-highlight: 1600ms; /* cited source flash */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+
+  /* ---------- 2. Semantic: layout and stacking ---------- */
+  --layout-sidebar: 232px;
+  --layout-header: 56px;
+  --layout-reading: 760px;
+  --layout-sources: 352px;
+  --layout-drawer: min(92vw, 400px);
+  --layout-gutter: var(--space-6);
+
+  --z-sticky: 10;
+  --z-overlay: 30;
+  --z-tooltip: 50;
+
+  /* ---------- 3. Component tokens ---------- */
+  --citation-bg: var(--color-accent-soft);
+  --citation-text: var(--color-text-link);
+}
+
+/* Forced themes. Works on the root and on any subtree (the showcase renders both side by side). */
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --text-display-size: 1.625rem; /* 26px */
+    --layout-gutter: var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+    --duration-highlight: 0ms;
+  }
+}

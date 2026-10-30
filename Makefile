@@ -1,4 +1,4 @@
-.PHONY: setup test lint run up down frontend-setup frontend-check frontend-dev
+.PHONY: setup test lint run up up-qdrant down logs frontend-setup frontend-check frontend-dev
 
 PYTHON ?= python
 
@@ -12,11 +12,17 @@ test:  ## Run all tests
 lint:  ## Static checks
 	ruff check .
 
-up:  ## Start local infrastructure (Qdrant)
-	docker compose up -d
+up:  ## Build and start the whole stack: Qdrant, backend (:8000), frontend (:8080); needs .env
+	docker compose up -d --build
 
-down:  ## Stop local infrastructure
+up-qdrant:  ## Start Qdrant only (pipelines `load`, or the backend with `make run`)
+	docker compose up -d qdrant
+
+down:  ## Stop the stack (data in the qdrant_data volume and in data/ is kept)
 	docker compose down
+
+logs:  ## Follow the logs of the stack
+	docker compose logs -f
 
 run:  ## Run the backend API locally with auto-reload
 	PYTHONPATH=agent/src $(PYTHON) -m uvicorn app.main:app --app-dir backend/src --reload --port 8000
