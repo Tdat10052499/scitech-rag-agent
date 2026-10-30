@@ -1,6 +1,6 @@
 # User study protocol (draft 3)
 
-Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). Items marked **[TBC]** need a decision or a check before the first session. Drafted with AI assistance (Claude); LDN is responsible for the final text
+Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). Items marked **[TBC]** need a decision or a check before the first session. Drafted with AI assistance (Claude); LDN is responsible for the final text.
 
 Decisions this draft follows: issue #134 (DAT, 2026-10-27: option A, moderated sessions; FAO confirmed his laptop as host), DAT's answers on #111 (UI version, logged fields, no screen recording), the reviews of FAO and DAT on #143 (trace file, operator, schedule wording), and the schedule FAO confirmed on #134 on 2026-10-30. Since `POST /feedback` merged (#146), the feedback log is part of the data (sections 4, 8, 10).
 
