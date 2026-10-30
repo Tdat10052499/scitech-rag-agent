@@ -8,6 +8,7 @@ Goal: all experiments are run on the frozen system (`v0.6-rc` + `evaluation/SNAP
 Gate (D19, Tue 2026-11-03; checked at the latest D20 10:00): every experiment in `evaluation/RUNS.md` has a stored run file; user study completed (n >= 5); `evaluation/reports/final.md` draft merged with all tables, error analysis and threats to validity.
 
 Rule this phase: no feature work. Only P0 bug fixes, and every fix after a run means the affected runs are repeated and the commit hash is recorded.
+**Replan (2026-10-30, ADR 0011):** one controlled exception: scheduled ingestion every 2 hours (W7-D6-DAT-1, W7-D6-FAO-1, W7-D7-DAT-1). It is built on branches only, against a separate serving collection, and merged after Gate W7 (W8-D6-FAO-1), so no Week 7 run sees it. Evaluation tasks keep priority: if they slip, these tasks wait.
 
 ## D17
 Saturday 2026-10-31
@@ -25,6 +26,12 @@ Saturday 2026-10-31
 - **Replan:** the "+decompose" condition is removed (decomposition cut). Start the runs right after W7-D1-DAT-1; GPU sessions can end, so run one condition at a time and commit each run file as it finishes.
 - Done when: run files committed and listed in `RUNS.md` (the last condition may finish during the Sunday buffer).
 - Depends on: W7-D1-DAT-1
+
+#### W7-D6-DAT-1 ADR 0011 accepted and issue for scheduled ingestion
+- Module: `docs/decisions/`, GitHub issue
+- Do: get FAO's review of ADR 0011 (scheduled ingestion every 2 hours on `scitech_chunks_live`); set it to accepted; open one issue for the shared-file changes (`docker-compose.yml`, `Makefile`, `.env.example`) linking the two briefs `docs/tasks/W7-D6-FAO-1-scheduled-ingestion.md` and `docs/tasks/W7-D7-DAT-1-bm25-reload-and-ingest-service.md`.
+- Done when: ADR 0011 accepted on `main`; issue open and linked from the Week 7 tracking issue.
+- Depends on: none
 
 ### FAO (@F4ol4n)
 
@@ -72,6 +79,13 @@ Monday 2026-11-02
 - Done when: section added to `final.md`; manual labels handed to LDN.
 - Depends on: W7-D1-LDN-1
 
+#### W7-D6-FAO-1 Scheduled ingestion in the pipeline (branch only)
+- Module: `pipelines/`, `docker/ingest/`
+- Brief: `docs/tasks/W7-D6-FAO-1-scheduled-ingestion.md`
+- Do (D18-D19, after W7-D3-FAO-1): `incremental-run --until today`, "nothing changed" short-cut, run lock, refuse the frozen collection, `--rebuild-bm25` with an atomic switch; setup of `scitech_chunks_live` and `data/index/bm25-live`; `ingest` image with Java 17.
+- Done when: PR open with the brief's acceptance criteria checked and one real run recorded; **not merged before Gate W7**.
+- Depends on: W7-D6-DAT-1
+
 ### LDN (@Yui-Mika)
 
 #### W7-D2-LDN-1 Faithfulness evaluation with manual check
@@ -99,6 +113,13 @@ Tuesday 2026-11-03 · Gate day
 - Do: check every run in `RUNS.md` has results; review `final.md`; create `docs/report/00-outline.md` with chapters, owners and page budget (Markdown chapters exported to PDF, see the brief).
 - Done when: gate status recorded; outline merged.
 - Depends on: W7-D4-LDN-1, W7-D4-DAT-1
+
+#### W7-D7-DAT-1 BM25 reload and `ingest` compose service (branch only)
+- Module: `agent/src/scitech_agent/retrieval/`, `backend/`, `docker-compose.yml`, `Makefile`
+- Brief: `docs/tasks/W7-D7-DAT-1-bm25-reload-and-ingest-service.md`
+- Do (after W7-D4-DAT-1): reload the BM25 index when `BM25_RELOAD_SECONDS` > 0 (default 0, frozen behaviour); `ingest` service started by `make up` only with `INGEST_ENABLED=1`.
+- Done when: PR open with the brief's acceptance criteria checked; **not merged before Gate W7**.
+- Depends on: W7-D6-DAT-1; W7-D6-FAO-1 for the image
 
 ### FAO (@F4ol4n)
 
@@ -129,3 +150,4 @@ Tuesday 2026-11-03 · Gate day
 
 ## Cut or merged in the replan
 None in Week 7 (W6-D2-DAT-1 moved here; W6-D5-FAO-1 merged into W7-D4-FAO-1).
+Added on 2026-10-30 (ADR 0011): W7-D6-DAT-1, W7-D6-FAO-1, W7-D7-DAT-1.
