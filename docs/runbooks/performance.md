@@ -20,7 +20,7 @@ Inputs: the answers runner (#148), `evaluation/SNAPSHOT.md`, the golden set on `
   - `ollama ps` shows 100% GPU, context 4096.
   - There is no network hop to the LLM.
   - The judge `qwen2.5:7b` (`845dbda0ea48`) runs after all answers, so its time is not in the latency figures.
-- Index: Qdrant 1.19.2 native, `scitech_chunks` at 121,926 points, same index snapshot as SNAPSHOT.
+- Index: Qdrant 1.19.2 native, `scitech_chunks` at 121,926 points. The laptop setup on 2026-10-30 checked the exact point count and the load manifest's index snapshot against `evaluation/SNAPSHOT.md` section 1, and both run files record the same `index_snapshot`.
 - Phases, in ms, from the run file's `per_answer[].latency_ms`:
   - `first_token` and `answer` (answer complete) are measured from the start of the request;
   - `total` includes the follow-up suggestions, which the UI shows after the answer;
@@ -51,7 +51,7 @@ Phase breakdown of run B, in ms:
 
 | Phase | n | p50 | p95 | max |
 |---|---|---|---|---|
-| rewrite (follow-up turns only) | 5 > 0 | 0 | 1356 | 2266 |
+| rewrite (n = 30, non-zero only on the 5 follow-up turns, hence p50 0) | 30 | 0 | 1356 | 2266 |
 | retrieve | 30 | 31 | 47 | 47 |
 | followups | 25 | 2859 | 3044 | 3266 |
 
@@ -76,6 +76,7 @@ The explanation consistent with this is that Windows resolves `localhost` to IPv
 
 ## 6. Limits
 - n = 30 and one run per condition. With n = 30, p95 sits between the 28th and 29th sorted values, so a single outlier moves it, and the A/B comparison has no repetition.
+- These numbers are L1 of the laptop only, not the user-study latency. The study runs on FAO's laptop with the backend in Docker and the LLM over the Kaggle tunnel (`evaluation/user_study/PROTOCOL.md` section 5), so it will be slower.
 - One host, a local GPU with no network hop and a single user at a time. The numbers do not carry over to the Kaggle endpoint (ADR 0006), to FAO's laptop (the user-study host), or to concurrent users.
 - Timer resolution: the values cluster on multiples of about 15.6 ms (15, 31, 47, 203, …). This matches the default Windows clock tick, so phases under about 16 ms are not resolved.
 - The runner measures in-process. Browser, nginx and SSE overhead of the real UI are not included.
