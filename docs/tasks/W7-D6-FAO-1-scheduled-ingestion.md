@@ -15,7 +15,7 @@ New arXiv `cs.CL` papers reach the serving index automatically, at most about 2 
 ## Inputs and outputs
 - Inputs: watermark `data/state/incremental.json`; live collection `scitech_chunks_live`; live BM25 dir `data/index/bm25-live`.
 - Outputs:
-  - `incremental-run` options: `--until today|yesterday` (default `yesterday`, as now), `--rebuild-bm25 <dir>`, a lock file `data/state/incremental.lock`, a "nothing changed" short-cut.
+  - `incremental-run` options: `--until today|yesterday` (default `yesterday`, as now), `--rebuild-bm25 <dir>`, a lock file `data/state/incremental.lock`, a per-record filter against the last run's `(id, datestamp)` pairs.
   - A one-time setup command or script that creates `scitech_chunks_live` and `data/index/bm25-live` as copies of the frozen collection and BM25 index.
   - `docker/ingest/Dockerfile` (Python, Java 17 JRE, cron runner) and its entry script; the compose service itself is added by DAT (shared file).
   - `docs/runbooks/data-pipeline.md` section 6 updated (schedule, logs, how to stop it).
@@ -26,7 +26,8 @@ New arXiv `cs.CL` papers reach the serving index automatically, at most about 2 
 
 ## Acceptance criteria
 - [ ] `incremental-run --until today` fetches up to today (UTC); the next run starts at the watermark day as before (ADR 0008 point 1).
-- [ ] A run whose fetched ids and datestamps equal the last run's skips clean, embed and load, keeps the watermark, and logs `incremental: nothing changed`.
+- [ ] Only records whose `(id, datestamp)` is new or changed since the last successful run go to clean, embed and load. When none is left, the run skips those steps, keeps the watermark and logs `incremental: nothing changed`.
+- [ ] After a successful load the run's raw fetch file is deleted and its manifests are kept (C: has about 2 GB free on the serving laptop).
 - [ ] A second run started while one holds the lock exits at once with a clear message and a non-zero code; a stale lock (process gone) is taken over.
 - [ ] `--rebuild-bm25 <dir>` builds the BM25 index from the live collection's chunks (old text of replaced papers gone) into a new directory and switches to it atomically; a failed build leaves the old index in use.
 - [ ] `incremental-run` refuses `--collection` equal to `FROZEN_COLLECTION`.
@@ -43,6 +44,6 @@ PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines incremental-run \
 ```
 
 ## Notes / risks
-- Building BM25 from the live collection: either scroll the Qdrant payloads (source of truth after replacements) or merge the bulk chunks with every incremental `chunks.parquet` keeping the newest per `doc_id`. Pick one and say why in the PR.
-- Peak memory of a BM25 build is about 1.2 GB (`docs/runbooks/data-pipeline.md`); check the container limit.
+- BM25 is built by scrolling the live collection's payloads (decided on #149): after replacements they are the source of truth, and no incremental `chunks.parquet` has to be kept. Record the build time in the PR.
+- Peak memory of a BM25 build is about 1.2 GB (`docs/runbooks/data-pipeline.md`); record the Docker Desktop memory limit and the measured peak in the runbook on the first real run.
 - No merge before Gate W7 (D19): Week 7 runs must not see any change.

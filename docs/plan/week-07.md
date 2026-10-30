@@ -29,8 +29,9 @@ Saturday 2026-10-31
 
 #### W7-D6-DAT-1 ADR 0011 accepted and issue for scheduled ingestion
 - Module: `docs/decisions/`, GitHub issue
-- Do: get FAO's review of ADR 0011 (scheduled ingestion every 2 hours on `scitech_chunks_live`); set it to accepted; open one issue for the shared-file changes (`docker-compose.yml`, `Makefile`, `.env.example`) linking the two briefs `docs/tasks/W7-D6-FAO-1-scheduled-ingestion.md` and `docs/tasks/W7-D7-DAT-1-bm25-reload-and-ingest-service.md`.
-- Done when: ADR 0011 accepted on `main`; issue open and linked from the Week 7 tracking issue.
+- **Replan:** ADR 0011 was accepted on 2026-10-30 with FAO's review on #149, so only the issue is left.
+- Do: open one issue for the shared-file changes (`docker-compose.yml`, `Makefile`, `.env.example`) linking the two briefs `docs/tasks/W7-D6-FAO-1-scheduled-ingestion.md` and `docs/tasks/W7-D7-DAT-1-bm25-reload-and-ingest-service.md`.
+- Done when: issue open and linked from the Week 7 tracking issue.
 - Depends on: none
 
 ### FAO (@F4ol4n)
@@ -82,7 +83,7 @@ Monday 2026-11-02
 #### W7-D6-FAO-1 Scheduled ingestion in the pipeline (branch only)
 - Module: `pipelines/`, `docker/ingest/`
 - Brief: `docs/tasks/W7-D6-FAO-1-scheduled-ingestion.md`
-- Do (D18-D19, after W7-D3-FAO-1): `incremental-run --until today`, "nothing changed" short-cut, run lock, refuse the frozen collection, `--rebuild-bm25` with an atomic switch; setup of `scitech_chunks_live` and `data/index/bm25-live`; `ingest` image with Java 17.
+- Do (on the branch before D18 where possible, at the latest D19 after W7-D3-FAO-1): `incremental-run --until today`, per-record `(id, datestamp)` filter, run lock, refuse the frozen collection, `--rebuild-bm25` with an atomic switch; setup of `scitech_chunks_live` and `data/index/bm25-live`; `ingest` image with Java 17.
 - Done when: PR open with the brief's acceptance criteria checked and one real run recorded; **not merged before Gate W7**.
 - Depends on: W7-D6-DAT-1
 

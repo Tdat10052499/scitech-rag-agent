@@ -45,7 +45,7 @@ Wednesday 2026-11-04
 
 #### W8-D6-FAO-1 Merge and start scheduled ingestion, soak test
 - Module: `pipelines/`, `docs/runbooks/data-pipeline.md`
-- Do (after Gate W7 is recorded): merge W7-D6-FAO-1 and W7-D7-DAT-1 (DAT reviews); create `scitech_chunks_live` and `data/index/bm25-live` on the serving machine; start `make up` with `INGEST_ENABLED=1`, `BM25_RELOAD_SECONDS=60`; check the first scheduled run.
+- Do (after Gate W7 is recorded): merge W7-D6-FAO-1 and W7-D7-DAT-1 (DAT reviews); create `scitech_chunks_live` and `data/index/bm25-live` on the serving machine; start `make up` with `INGEST_ENABLED=1`, `BM25_RELOAD_SECONDS=60`; set the laptop to never sleep on power until D22; check the first scheduled run.
 - Done when: first scheduled run logged in `data/logs/incremental.log` with points before/after; the frozen `scitech_chunks` point count unchanged (121,926).
 - Depends on: W7-D6-FAO-1, W7-D7-DAT-1, W7-D5-DAT-1
 
@@ -104,7 +104,7 @@ Friday 2026-11-06 · Final gate (internal deadline)
 ### DAT (@Tdat10052499)
 
 #### W8-D6-DAT-1 Scheduled ingestion soak check and ADR 0011 result
-- Do (D22 morning, before the release): read `data/logs/incremental.log` since D20: at least 12 scheduled runs, none failed or overlapping, no backend error during a BM25 switch; ask one question about a paper announced on D21 and check it is cited. Record the numbers in ADR 0011 and in the release notes; if the check fails, set `INGEST_ENABLED=0` and record why.
+- Do (D22 morning, before the release): read `data/logs/incremental.log` since D20: at least 12 runs logged (a gap while the laptop slept counts as an uptime gap, not a failed run), none failed or overlapping, no backend error during a BM25 switch; ask one question about a paper announced on D21 and check it is cited. Record the numbers in ADR 0011 and in the release notes; if the check fails, set `INGEST_ENABLED=0` and record why.
 - Done when: result in ADR 0011 (Consequences) and the `v1.0` release notes; FAO's data chapter and slides mention the schedule (W8-D1-FAO-1, W8-D3-FAO-1).
 - Depends on: W8-D6-FAO-1
 

@@ -1,6 +1,6 @@
 # 0011. Scheduled incremental ingestion every 2 hours on a separate serving index
 
-- Status: proposed (2026-10-30, DAT)
+- Status: accepted (2026-10-30, FAO's review on #149)
 - Date: 2026-10-30
 - Deciders: DAT (author), FAO (pipelines owner, reviewer), LDN (evaluation impact)
 
@@ -20,7 +20,7 @@ Facts (sources in brackets):
 Schedule:
 1. Keep ADR 0008 point 6 (manual) and describe a schedule as future work.
 2. Daily cron after arXiv's nightly update (the line already written in ADR 0008 point 6).
-3. Cron every 2 hours, fetching up to **today** (UTC) so that records are picked up within 2 hours of their OAI-PMH datestamp, and skipping embed and load when nothing changed since the last run.
+3. Cron every 2 hours, fetching up to **today** (UTC) so that records are picked up within 2 hours of their OAI-PMH datestamp, and processing only the records that are new or changed since the last run.
 
 Where it runs:
 - a. WSL2 with Java 17 on the serving laptop, with a cron line.
@@ -33,7 +33,7 @@ Which index:
 
 ## Decision
 **Option 3 + b + ii**, as a controlled exception to the feature freeze:
-- `incremental-run` gets `--until today`, a "nothing changed" short-cut (same fetched ids and datestamps as the last run: no clean, embed or load), a lock so two runs never overlap, and an optional BM25 rebuild of the live index after a successful load (`--rebuild-bm25 <dir>`), written to a new directory and switched atomically.
+- `incremental-run` gets `--until today`, a per-record filter (only ids whose `(id, datestamp)` differs from the last run go to `clean`, embed and load; when none is left, the run stops there: "nothing changed"), a lock so two runs never overlap, and an optional BM25 rebuild of the live index after a successful load (`--rebuild-bm25 <dir>`), written to a new directory and switched atomically.
 - An `ingest` compose service runs it every 2 hours (`0 */2 * * *`, configurable with `INGEST_CRON`) against `scitech_chunks_live`. It carries Java 17, so the laptop's Java 8 no longer matters.
 - The backend reloads the BM25 index when the live index changes, only when `BM25_RELOAD_SECONDS` > 0 (default 0: today's behaviour, so the frozen evaluation setup is unchanged).
 - `incremental-run` refuses the collection named as frozen (`FROZEN_COLLECTION`, default `scitech_chunks`).
@@ -46,6 +46,8 @@ Replaces ADR 0008 point 6 once accepted; points 1 to 5 of ADR 0008 stay.
 - Evaluation numbers keep referring to the frozen `scitech_chunks` and `data/index/bm25` (`evaluation/SNAPSHOT.md`); the live index is never evaluated.
 - Cost per run: one or two OAI-PMH requests; on a day with new records about 300 papers embedded on CPU (about 2 min, ADR 0008 point 3) plus a BM25 rebuild (36.7 s on FAO's laptop, `pipelines/reports/index_profile.md`); otherwise a few seconds.
 - The `ingest` image carries PySpark (about 480 MB, ADR 0005) and a CPU build of sentence-transformers: a large image; build time and size are recorded in the runbook.
-- Two copies of the index on disk: about 610 MiB of Qdrant and 177 MiB of BM25 more (`index_profile.md` section 4).
+- Two copies of the index on disk: about 610 MiB of Qdrant and 177 MiB of BM25 more (`index_profile.md` section 4). On FAO's laptop Docker's disk is on D:, while `data/` is on C: with about 2 GB free (FAO, #149), so a run deletes its raw fetch file after a successful load and keeps only its manifests.
+- During a BM25 reload the backend briefly holds two copies of the index; a build peaks at about 1.2 GB (`docs/runbooks/data-pipeline.md`). The Docker Desktop memory limit and the measured peak go into the runbook on the first real run.
+- The schedule runs only while the serving laptop is awake: Docker Desktop's cron does not run during Windows sleep.
 - Known gaps kept from ADR 0008: deleted arXiv records stay until a full rebuild; replaced papers have no points for 0.3 to 2.4 s during a load.
-- Revisit if the soak test (2 days, at least 12 scheduled runs) shows failed runs, overlapping runs or backend errors during a BM25 switch; then fall back to option 2 (daily) or option 1.
+- Revisit if the soak test (2 days, at least 12 runs logged in `data/logs/incremental.log`; a gap while the serving laptop sleeps is an uptime gap, not a failed run) shows failed runs, overlapping runs or backend errors during a BM25 switch; then fall back to option 2 (daily) or option 1.
