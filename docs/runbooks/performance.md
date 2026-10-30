@@ -76,7 +76,7 @@ The explanation consistent with this is that Windows resolves `localhost` to IPv
 
 ## 6. Limits
 - n = 30 and one run per condition. With n = 30, p95 sits between the 28th and 29th sorted values, so a single outlier moves it, and the A/B comparison has no repetition.
-- These numbers are L1 of the laptop only, not the user-study latency. The study runs on FAO's laptop with the backend in Docker and the LLM over the Kaggle tunnel (`evaluation/user_study/PROTOCOL.md` section 5), so it will be slower.
+- These numbers describe this laptop only, not the latency participants see in the user study. The study runs on FAO's laptop with the backend in Docker and the LLM over the Kaggle tunnel (`evaluation/user_study/PROTOCOL.md` section 5), so it will be slower.
 - One host, a local GPU with no network hop and a single user at a time. The numbers do not carry over to the Kaggle endpoint (ADR 0006), to FAO's laptop (the user-study host), or to concurrent users.
 - Timer resolution: the values cluster on multiples of about 15.6 ms (15, 31, 47, 203, …). This matches the default Windows clock tick, so phases under about 16 ms are not resolved.
 - The runner measures in-process. Browser, nginx and SSE overhead of the real UI are not included.
