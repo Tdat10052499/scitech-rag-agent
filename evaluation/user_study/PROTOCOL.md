@@ -1,6 +1,6 @@
 # User study protocol (draft 3)
 
-Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). Items marked **[TBC]** need a decision or a check before the first session. Drafted with AI assistance (Claude); LDN is responsible for the final text.
+Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). No item is marked **[TBC]** any more. Drafted with AI assistance (Claude); LDN is responsible for the final text.
 
 Decisions this draft follows: issue #134 (DAT, 2026-10-27: option A, moderated sessions; FAO confirmed his laptop as host), DAT's answers on #111 (UI version, logged fields, no screen recording), the reviews of FAO and DAT on #143 (trace file, operator, schedule wording), and the schedule FAO confirmed on #134 on 2026-10-30. Since `POST /feedback` merged (#146), the feedback log is part of the data (sections 4, 8, 10).
 
@@ -44,8 +44,8 @@ Checklist, run 15 minutes before the first session of each day:
 
 - FAO starts the Kaggle LLM session at about 20:50 on 2026-11-03, 10 minutes before the first slot, and stops it after the last slot (to save GPU quota). The tunnel URL stays only in FAO's local `.env`; it is never written in the repository, in issues or in chat.
 - Qdrant, backend and frontend are running on the host laptop; run the snapshot check of `evaluation/SNAPSHOT.md` (same index id, 121,926 points).
-- The host laptop runs the Docker stack (`make up`, or `docker compose up -d --build` on Windows). Put `AGENT_TRACES=data/logs/study-<date>.jsonl` and `FEEDBACK_LOG=data/logs/feedback-<date>.jsonl` in its `.env`, with paths relative to the repository root under `data/`, and apply them with `docker compose up -d backend`. A PowerShell `$env:AGENT_TRACES` does not reach the containers, and `docker compose restart backend` keeps the old values (FAO and DAT, #146). Ask the test question (it should return an answer with sources), and check that the trace file now has one line. If the UI has the rating buttons (section 7), click one thumb and check that the feedback file has one line. Then delete both files before the first participant; the next request creates them again. This keeps test questions, the pilot and evaluation runs out of the study data.
-- UI version: tag `v0.6-rc` (DAT, #111), created at the D16 gate (W6-D5-DAT-1, 2026-10-30). If the gate slips, the commit hash used is recorded on the observer sheet before the first session.
+- The host laptop runs the Docker stack (`make up`, or `docker compose up -d --build` on Windows). Put `AGENT_TRACES=data/logs/study-<date>.jsonl` and `FEEDBACK_LOG=data/logs/feedback-<date>.jsonl` in its `.env`, with paths relative to the repository root under `data/`, and apply them with `docker compose up -d backend`. A PowerShell `$env:AGENT_TRACES` does not reach the containers, and `docker compose restart backend` keeps the old values (FAO and DAT, #146). Ask the test question (it should return an answer with sources), and check that the trace file now has one line. Click one thumb under the answer and check that the feedback file has one line. Then delete both files before the first participant; the next request creates them again. This keeps test questions, the pilot and evaluation runs out of the study data.
+- UI version: tag `v0.6-rc` (DAT, #111), set at the D16 gate (W6-D5-DAT-1, 2026-10-30) on commit `b61001d` (DAT, #153), which includes the new UI of #102 with the rating buttons. If the tag is not there, the commit hash used is recorded on the observer sheet before the first session.
 - The laptop is plugged in with sleep turned off; free disk space before 2026-11-03 (FAO).
 - Note the git commit or tag, the index snapshot id and the model name (from `evaluation/SNAPSHOT.md`) on the observer sheet.
 - Observer sheet and questionnaire are ready (sections 6 and 7). Close other windows on the shared screen and turn off notifications.
@@ -112,7 +112,7 @@ Open questions:
 7. What was missing, or what would you change first?
 8. Did you trust the sources shown with the answers? Why or why not?
 
-In-page rating buttons (W6-D2-LDN-1): thumbs up and down under each answer; a click on a follow-up suggestion is logged too. With moderated sessions the participant asks the operator to click a thumb, and the operator never suggests one. `POST /feedback` is on `main` (#146); the buttons are in the UI that includes PR #102. **[TBC: confirm before 2026-11-03 that the UI build used for the study has the rating buttons; if not, use only the questionnaire and delete the feedback-file steps from section 4.]**
+In-page rating buttons (W6-D2-LDN-1): thumbs up and down under each answer; a click on a follow-up suggestion is logged too. They are in the UI of `v0.6-rc` (#102) and post to `POST /feedback` (#146; DAT checked ratings and chip clicks reaching the log on #153). With moderated sessions the participant asks the operator to click a thumb, and the operator never suggests one.
 
 ## 8. Data handling
 
