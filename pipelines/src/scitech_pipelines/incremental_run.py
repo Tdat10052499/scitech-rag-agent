@@ -247,9 +247,11 @@ def run_lock(
     """Hold `<data>/state/incremental.lock` for the duration of a run.
 
     The lock file holds the host name, the process id and the start time. A lock left by a
-    process that is gone (same host) is taken over; a lock of another host (a container that
-    was recreated) is taken over only after `stale_seconds`, because its process cannot be
-    checked from here. Anything else raises `RunLocked`."""
+    process that is gone (same host) is taken over, and so is any lock older than
+    `stale_seconds` (a run takes about 10 minutes): a container that was restarted keeps its
+    host name and starts its process ids low again, so the old id can belong to an unrelated
+    process, or to this run or its parent (both treated as gone). Anything else raises
+    `RunLocked`."""
     path = data_dir / LOCK_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
     mine = {"host": socket.gethostname(), "pid": os.getpid(), "started": time.time()}
@@ -262,10 +264,10 @@ def run_lock(
             except (OSError, ValueError):
                 held = {}
             same_host = held.get("host") == mine["host"]
+            pid = int(held.get("pid") or 0)
             age = time.time() - float(held.get("started") or 0)
-            if (same_host and _pid_alive(int(held.get("pid") or 0))) or (
-                not same_host and age < stale_seconds
-            ):
+            gone = same_host and (pid in (os.getpid(), os.getppid()) or not _pid_alive(pid))
+            if age < stale_seconds and not gone:
                 raise RunLocked(
                     f"another incremental run holds {path} (host {held.get('host')}, pid "
                     f"{held.get('pid')}, started {age / 60:.0f} min ago); this run stops"

@@ -135,7 +135,7 @@ python -m scitech_pipelines incremental-run --model "$EMBEDDING_MODEL"          
   The cells, with the independent check of duplicates and stale chunks, are in the report's "Reproduce" section.
 - **Never** point it at the frozen evaluation collection: it refuses `FROZEN_COLLECTION` (empty or unset: `scitech_chunks`) with "is the frozen evaluation collection". No index changes from W6-D4 to D22 unless approved.
 - **Only new or changed papers are processed.** Each fetched record is compared with the one fetched for the same paper by the last successful run (`<data-dir>/state/incremental-seen.json`); unchanged papers skip `clean`, `embed` and the load. When nothing is left, the run logs `incremental: nothing changed` and leaves the watermark as it is. To force a full re-run of the watermark range, delete that file.
-- **One run at a time:** a run holds `<data-dir>/state/incremental.lock`. A second run stops at once with "another incremental run holds ..." and exit code 1. A lock left by a process that is gone is taken over; a lock written by another host (a recreated container) is taken over after 3 hours.
+- **One run at a time:** a run holds `<data-dir>/state/incremental.lock`. A second run stops at once with "another incremental run holds ..." and exit code 1. A lock left by a process that is gone is taken over, and any lock older than 3 hours is taken over (a run takes about 10 minutes). A restarted container keeps its host name and reuses low process ids, so a lock whose id is the new run's own or its parent's counts as gone too.
 - Without `--rebuild-bm25` it does not rebuild the BM25 index, so incremental papers are found only by the dense half of hybrid retrieval, and BM25 keeps the old text of replaced papers, until the index is rebuilt (#119).
 
 ### Scheduled runs (ADR 0011, W7-D6-FAO-1; not merged before Gate W7)
@@ -143,7 +143,7 @@ The `ingest` container (`docker/ingest/`) runs `incremental-run` on the live col
 
 | Setting (`.env`) | Default | Meaning |
 |---|---|---|
-| `INGEST_EVERY_HOURS` | 2 | Hours between runs; runs start at the hours divisible by it |
+| `INGEST_EVERY_HOURS` | 2 | Hours between runs: 1, 2, 3, 4, 6, 8, 12 or 24; runs start at the hours divisible by it |
 | `INGEST_COLLECTION` | `scitech_chunks_live` | The live collection the demo backend uses |
 | `BM25_LIVE_DIR` | `data/index/bm25-live` | Its BM25 index (the backend's `BM25_INDEX_DIR` in the live setup) |
 | `FROZEN_COLLECTION` | `scitech_chunks` | Refused by `incremental-run` |
@@ -154,6 +154,10 @@ The `ingest` container (`docker/ingest/`) runs `incremental-run` on the live col
    docker compose run --rm ingest setup-live.sh
    ```
    It stops if `data/index/bm25-live` exists already, and if `INGEST_COLLECTION` is the frozen collection.
+   If the load and copy passed but the first run (the catch-up) failed, delete nothing: run the catch-up alone. It goes on from the watermark once there is one.
+   ```bash
+   docker compose run --rm ingest catch-up.sh
+   ```
 2. **Start the schedule** with the stack: `INGEST_ENABLED=1` (W7-D7-DAT-1) and `make up`, or `docker compose up -d ingest`. Each run's output is in `docker compose logs ingest` and is appended to `data/logs/incremental.log` between `=== run started <time>` and `=== run ended <time>, exit code <n>` lines.
 3. **Check a run** in the log:
    - `incremental: N of M papers new or changed`, then the usual `load:` line;

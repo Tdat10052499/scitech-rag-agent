@@ -22,11 +22,15 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+EVERY_HOURS = (1, 2, 3, 4, 6, 8, 12, 24)
+
 
 def next_run(now: datetime, every_hours: int) -> datetime:
-    """The first hour strictly after `now` that is divisible by `every_hours` (UTC)."""
-    if not 1 <= every_hours <= 24:
-        raise ValueError(f"every_hours must be 1 to 24, got {every_hours}")
+    """The first hour strictly after `now` that is divisible by `every_hours` (UTC).
+
+    `every_hours` must divide 24, so that the gap over midnight is the same as the others."""
+    if every_hours not in EVERY_HOURS:
+        raise ValueError(f"every_hours must divide 24 ({EVERY_HOURS}), got {every_hours}")
     hour = now.astimezone(timezone.utc).replace(minute=0, second=0, microsecond=0)
     while True:
         hour += timedelta(hours=1)
@@ -86,7 +90,12 @@ def loop(
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--every-hours", type=int, default=2, help="Default 2 (ADR 0011).")
+    parser.add_argument(
+        "--every-hours",
+        type=int,
+        default=2,
+        help="1, 2, 3, 4, 6, 8, 12 or 24; default 2 (ADR 0011).",
+    )
     parser.add_argument("--log", type=Path, default=Path("data/logs/incremental.log"))
     parser.add_argument("--run-now", action="store_true", help="Also run once at start-up.")
     parser.add_argument("command", nargs=argparse.REMAINDER, help="After --: the command.")

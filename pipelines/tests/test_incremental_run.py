@@ -624,18 +624,56 @@ def test_the_frozen_collection_is_refused():
         check_not_frozen("other", "other")
 
 
-def test_a_second_run_stops_while_the_lock_is_held(tmp_path: Path):
-    with run_lock(tmp_path, **quiet) as path:
-        assert path == tmp_path / LOCK_FILE and path.exists()
-        with pytest.raises(RunLocked, match="another incremental run"):
-            with run_lock(tmp_path, **quiet):
-                pass
-    assert not (tmp_path / LOCK_FILE).exists()
-
-
 def write_lock(data_dir: Path, **held) -> None:
     (data_dir / LOCK_FILE).parent.mkdir(parents=True, exist_ok=True)
     (data_dir / LOCK_FILE).write_text(json.dumps(held), encoding="utf-8")
+
+
+def test_a_second_run_stops_while_the_lock_is_held(tmp_path: Path):
+    import socket
+    import subprocess
+    import sys
+
+    other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        write_lock(tmp_path, host=socket.gethostname(), pid=other.pid, started=time.time())
+        with pytest.raises(RunLocked, match="another incremental run"):
+            with run_lock(tmp_path, **quiet):
+                pass
+        assert json.loads((tmp_path / LOCK_FILE).read_text(encoding="utf-8"))["pid"] == other.pid
+    finally:
+        other.kill()
+        other.wait()
+    with run_lock(tmp_path, **quiet) as path:  # the other process is gone now
+        assert path == tmp_path / LOCK_FILE and path.exists()
+    assert not (tmp_path / LOCK_FILE).exists()
+
+
+@pytest.mark.parametrize("pid", [os.getpid(), os.getppid()])
+def test_a_restarted_container_does_not_lock_itself_out(tmp_path: Path, pid: int):
+    # Same host name, process ids reused: the old run's id is now this run's or its parent's.
+    import socket
+
+    write_lock(tmp_path, host=socket.gethostname(), pid=pid, started=time.time() - 60)
+    with run_lock(tmp_path, **quiet):
+        pass
+
+
+def test_a_lock_older_than_3_hours_is_taken_over_on_the_same_host(tmp_path: Path):
+    import socket
+    import subprocess
+    import sys
+
+    other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        old = time.time() - 4 * 3600
+        write_lock(tmp_path, host=socket.gethostname(), pid=other.pid, started=old)
+        with run_lock(tmp_path, **quiet):
+            held = json.loads((tmp_path / LOCK_FILE).read_text(encoding="utf-8"))
+            assert held["pid"] == os.getpid()
+    finally:
+        other.kill()
+        other.wait()
 
 
 def test_a_lock_of_a_process_that_is_gone_is_taken_over(tmp_path: Path):

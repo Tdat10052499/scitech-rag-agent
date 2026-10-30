@@ -31,6 +31,8 @@ def test_interval_out_of_range_is_refused():
         next_run(at(8), 0)
     with pytest.raises(ValueError):
         next_run(at(8), 25)
+    with pytest.raises(ValueError, match="divide 24"):
+        next_run(at(8), 5)  # 20:00 then 00:00: a short gap over midnight
 
 
 def test_run_once_copies_the_output_and_the_exit_code_to_the_log(tmp_path: Path, capsys):

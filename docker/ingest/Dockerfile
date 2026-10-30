@@ -27,7 +27,7 @@ RUN pip install --retries 10 --timeout 120 --index-url https://download.pytorch.
 
 COPY pipelines/src pipelines/src
 COPY agent/src agent/src
-COPY docker/ingest/ingest.sh docker/ingest/setup-live.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/ingest.sh /usr/local/bin/setup-live.sh
+COPY docker/ingest/ingest.sh docker/ingest/setup-live.sh docker/ingest/catch-up.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/ingest.sh /usr/local/bin/setup-live.sh /usr/local/bin/catch-up.sh
 
 CMD ["ingest.sh"]
