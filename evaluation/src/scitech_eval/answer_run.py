@@ -44,7 +44,7 @@ from typing import Any, Protocol
 
 import yaml
 
-from scitech_eval.answers import LABELS, cited_numbers, split_sentences
+from scitech_eval.answers import CITATION, LABELS, cited_numbers, split_sentences
 from scitech_eval.golden import GoldenItem, load_golden
 from scitech_eval.metrics import bootstrap_ci, mean
 from scitech_eval.runner import git_commit
@@ -56,6 +56,10 @@ JUDGE_ENV = {
     "JUDGE_API_KEY": "LLM_API_KEY",
     "JUDGE_MODEL": "LLM_MODEL",
 }
+# The fixed sentence the agent is told to write when the sources do not answer the question
+# (agent/prompts/answer.md). Judge prompt rule 4 makes it "not checkable"; it is labelled here
+# without a judge call, so the label does not depend on a 7B model following rule 4 (#148).
+REFUSAL_SENTENCE = "The sources do not contain enough evidence to answer this question."
 NOTE = (
     "The judge is a 7B model that has not been validated against human labels; the pilot kappa "
     "(evaluation/pilot/faithfulness) is the first evidence. Faithfulness means supported by the "
@@ -213,13 +217,40 @@ def parse_judgement(reply: str) -> tuple[str, str] | None:
     return None
 
 
+def sentences_for_judge(text: str) -> list[str]:
+    """`split_sentences`, but a piece that is only citation markers (`[4]` after a full stop) is
+    attached to the sentence before it: the marker belongs to that sentence, and alone it would be
+    judged as a sentence without content (gs-004, #148). A marker-only first piece stays."""
+    out: list[str] = []
+    for sentence in split_sentences(text):
+        rest = CITATION.sub("", sentence).strip(" .;,")
+        only_markers = bool(cited_numbers(sentence)) and not rest
+        if only_markers and out:
+            out[-1] = f"{out[-1]} {sentence}"
+        else:
+            out.append(sentence)
+    return out
+
+
 def judge_answer(
     judge: Judge, template: str, answer: dict, settings: dict, stats: dict
 ) -> list[dict]:
     """Label every sentence of one answer. `stats` collects the longest prompt and error counts."""
     rows = []
-    for number, sentence in enumerate(split_sentences(answer["answer"]), start=1):
+    for number, sentence in enumerate(sentences_for_judge(answer["answer"]), start=1):
         cited = cited_numbers(sentence)
+        if sentence.strip() == REFUSAL_SENTENCE:
+            stats["fixed_refusal"] += 1
+            rows.append(
+                {
+                    "sentence_no": number,
+                    "sentence": sentence,
+                    "cited_n": cited,
+                    "label": "not checkable",
+                    "reason": "fixed refusal sentence (judge prompt rule 4); not sent to the judge",
+                }
+            )
+            continue
         prompt = build_judge_prompt(
             template,
             answer["question"],
@@ -299,9 +330,11 @@ def run_answers(
     template: str,
     prompt_info: dict,
     clock: Callable[[], float] = time.perf_counter,
+    stamp: str | None = None,
 ) -> tuple[dict, list[dict]]:
     """Answer and judge `items`. Returns the run record and the raw answer records (one per item,
-    `BatchResult.to_dict()`, for `make-sheet` and the traces)."""
+    `BatchResult.to_dict()`, for `make-sheet` and the traces). `stamp` (UTC `%Y%m%dT%H%M%SZ`) is
+    the prefix shared by the run, answers and traces files; it defaults to the current time."""
     resamples = config["bootstrap"].get("resamples", 1000)
     seed = config["bootstrap"].get("seed", 0)
     by_id = {i.id: i for i in items}
@@ -318,7 +351,7 @@ def run_answers(
     answers = [r.to_dict() for r in agent.run_batch(batch)]
     answer_seconds = clock() - started
 
-    stats = {"max_prompt_chars": 0, "errors": Counter()}
+    stats = {"max_prompt_chars": 0, "errors": Counter(), "fixed_refusal": 0}
     per_answer, answered_anyway = [], []
     n_error = n_refused = n_unans = n_unans_refused = 0
     judge_started = clock()
@@ -399,7 +432,7 @@ def run_answers(
         "schema_version": SCHEMA_VERSION,
         "kind": "answers",
         "name": config["name"],
-        "timestamp": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+        "timestamp": stamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         "git_commit": git_commit(),
         "dataset_snapshot": config["dataset_snapshot"],
         "index_snapshot": config["index_snapshot"],
@@ -414,7 +447,7 @@ def run_answers(
             "n_unanswerable": n_unans,
         },
         "generator": {
-            "model": (trace.get("model") or {}).get("LLM_MODEL"),
+            "model": (trace.get("model") or {}).get("model"),
             "trace_model": trace.get("model"),
             "agent_config": trace.get("config"),
             **config["generator"],  # digest, max_tokens (from SNAPSHOT.md)
@@ -431,6 +464,7 @@ def run_answers(
             "prompt_fits_context": None if context is None else prompt_tokens < context,
             "errors": dict(stats["errors"]),
             "n_judge_error": pooled["judge_error"],
+            "fixed_refusal_sentences": stats["fixed_refusal"],
         },
         "counts": {
             "answers": len(answers),
@@ -516,6 +550,8 @@ def run_from_answer_config(config_path: Path, out_dir: Path) -> tuple[Path, Path
     traces = traces_target(config, out_dir, stamp)
     with _environ({"AGENT_TRACES": traces}):
         agent = build_agent(config["agent"])
-        record, answers = run_answers(config, items, agent, judge, template, prompt_info)
+        record, answers = run_answers(
+            config, items, agent, judge, template, prompt_info, stamp=stamp
+        )
     record["traces_path"] = traces
     return write_answer_run(record, answers, out_dir)

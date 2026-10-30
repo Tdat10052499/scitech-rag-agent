@@ -13,6 +13,7 @@ import yaml
 
 from scitech_eval.__main__ import main
 from scitech_eval.answer_run import (
+    REFUSAL_SENTENCE,
     build_judge_prompt,
     format_passages,
     invalid_citations,
@@ -20,6 +21,7 @@ from scitech_eval.answer_run import (
     parse_judgement,
     run_answers,
     select_items,
+    sentences_for_judge,
     traces_target,
 )
 from scitech_eval.golden import load_golden
@@ -58,7 +60,11 @@ def record(item_id, answer, sources, *, raw=None, citations=(), error=None, refu
         "trace": {
             "latency_ms": 5,
             "retrieved": [{"chunk_id": s["chunk_id"], "doc_id": s["doc_id"]} for s in sources],
-            "model": {"LLM_MODEL": "gen-model", "timeout": 60, "retries": 2},
+            "model": {
+                "model": "gen-model",
+                "timeout": 60,
+                "max_retries": 2,
+            },  # LLMClient.describe()
             "config": {"temperature": 0.0},
         },
     }
@@ -320,6 +326,10 @@ def test_cli_writes_run_and_answers_files(tmp_path, monkeypatch):
     data = json.loads(run_file.read_text(encoding="utf-8"))
     assert data["kind"] == "answers" and data["counts"]["supported"] == 1
     assert data["traces_path"].endswith(".traces.jsonl")
+    # the run, answers and traces files share one prefix (evaluation/AGENTS.md)
+    prefix = run_file.name.removesuffix("-t.json")
+    assert Path(data["traces_path"]).name == f"{prefix}-t.traces.jsonl"
+    assert next(out.glob("*.answers.jsonl")).name == f"{prefix}-t.answers.jsonl"
     assert data["judge"]["prompt"]["sha256"]
     # the answers file is what `make-sheet` reads
     answers_file = next(out.glob("*.answers.jsonl"))
@@ -363,10 +373,41 @@ def test_half_refusal_is_judged_like_an_answer(tmp_path):
             citations=["2001.00001#0"],
         )
     }
-    replies = {refusal: '{"label": "not checkable"}', "Alpha is one [1].": SUPPORTED}
+    replies = {refusal: UNSUPPORTED, "Alpha is one [1].": SUPPORTED}  # the judge is not asked
     result, _, judge, _ = run(tmp_path, records, replies, ["gs-001"])
-    assert result["counts"]["refused_answerable"] == 0 and len(judge.calls) == 2
+    assert result["counts"]["refused_answerable"] == 0 and len(judge.calls) == 1
     assert result["per_answer"][0]["faithfulness"] == 1.0
+    first = result["per_answer"][0]["sentences"][0]
+    assert first["label"] == "not checkable" and "rule 4" in first["reason"]
+    assert (
+        result["counts"]["not_checkable"] == 1 and result["judge"]["fixed_refusal_sentences"] == 1
+    )
+
+
+def test_fixed_refusal_sentence_is_the_one_in_the_agent_prompt():
+    prompt = (REPO / "agent" / "prompts" / "answer.md").read_text(encoding="utf-8")
+    assert f'"{REFUSAL_SENTENCE}"' in prompt
+
+
+def test_marker_only_piece_is_attached_to_the_sentence_before(tmp_path):
+    assert sentences_for_judge("Delta is four. [4]") == ["Delta is four. [4]"]
+    assert sentences_for_judge("Delta is four [1].\n[4]\nEpsilon is five.") == [
+        "Delta is four [1]. [4]",
+        "Epsilon is five.",
+    ]
+    assert sentences_for_judge("[2]") == ["[2]"]  # nothing before it: left as it is
+    assert sentences_for_judge("A [1]. B.") == ["A [1].", "B."]
+    records = {
+        "gs-001": record(
+            "gs-001",
+            "Delta is four [1].\n[4]",
+            [source(1, "2001.00001")],
+            citations=["2001.00001#0"],
+        )
+    }
+    result, _, judge, _ = run(tmp_path, records, {"Delta is four [1]. [4]": SUPPORTED}, ["gs-001"])
+    assert len(judge.calls) == 1 and result["counts"]["sentences"] == 1
+    assert result["counts"]["supported"] == 1
 
 
 def test_traces_path_off_written_unquoted_in_yaml_switches_traces_off(tmp_path):
