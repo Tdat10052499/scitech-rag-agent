@@ -17,11 +17,11 @@ New arXiv `cs.CL` papers reach the serving index automatically, at most about 2 
 - Outputs:
   - `incremental-run` options: `--until today|yesterday` (default `yesterday`, as now), `--rebuild-bm25 <dir>`, a lock file `data/state/incremental.lock`, a per-record filter against the last run's `(id, datestamp)` pairs.
   - A one-time setup command or script that creates `scitech_chunks_live` and `data/index/bm25-live` as copies of the frozen collection and BM25 index.
-  - `docker/ingest/Dockerfile` (Python, Java 17 JRE, cron runner) and its entry script; the compose service itself is added by DAT (shared file).
+  - `docker/ingest/Dockerfile` (Python, Java 17 JRE) and its entry script, a scheduler loop `scitech_pipelines.schedule`; the compose service itself is added by DAT (shared file).
   - `docs/runbooks/data-pipeline.md` section 6 updated (schedule, logs, how to stop it).
 
 ## Scope
-- May change: `pipelines/`, `docker/ingest/` (new), `docs/runbooks/data-pipeline.md`, `.env.example` (new variables with safe placeholders: `INGEST_CRON`, `INGEST_COLLECTION`, `FROZEN_COLLECTION`, `BM25_LIVE_DIR`).
+- May change: `pipelines/`, `docker/ingest/` (new), `docs/runbooks/data-pipeline.md`, `.env.example` (new variables with safe placeholders: `INGEST_EVERY_HOURS` (default 2), `INGEST_COLLECTION`, `FROZEN_COLLECTION`, `BM25_LIVE_DIR`).
 - Must not change: `docs/contracts/`, the frozen collection `scitech_chunks`, `data/index/bm25`, `evaluation/`.
 
 ## Acceptance criteria
