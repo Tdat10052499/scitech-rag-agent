@@ -8,9 +8,9 @@ import os
 from collections.abc import AsyncIterator, Iterator, Mapping
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from typing import Annotated, cast
+from typing import Annotated, Any, Protocol, cast
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -20,7 +20,8 @@ from scitech_agent.factory import agent_from_env
 
 from .agent_adapter import AgentAdapter
 from .agent_port import AgentError, AgentEvent, ChatAgent
-from .schemas import ChatRequest, ErrorCode
+from .feedback import feedback_log_from_env, feedback_record
+from .schemas import ChatRequest, ErrorCode, FeedbackRequest
 from .sse import chat_events
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,20 @@ def agent_mode(env: Mapping[str, str] | None = None) -> str:
     if mode not in AGENT_MODES:
         raise ValueError(f"AGENT_MODE must be one of {', '.join(AGENT_MODES)}, got {mode!r}")
     return mode
+
+
+class FeedbackLog(Protocol):
+    def write(self, record: Mapping[str, Any]) -> None: ...
+
+
+@lru_cache(maxsize=1)
+def _feedback_log() -> FeedbackLog | None:
+    return feedback_log_from_env()
+
+
+def get_feedback_log() -> FeedbackLog | None:
+    """Where `/feedback` appends (`FEEDBACK_LOG`); None when it is `off`. Tests override it."""
+    return _feedback_log()
 
 
 class UnavailableAgent:
@@ -94,7 +109,7 @@ def cors_origins_from_env() -> list[str]:
 
 
 def create_app(cors_origins: list[str] | None = None) -> FastAPI:
-    app = FastAPI(title="SciTech RAG Agent", version="0.2.1", lifespan=lifespan)
+    app = FastAPI(title="SciTech RAG Agent", version="0.3.0", lifespan=lifespan)
 
     origins = cors_origins_from_env() if cors_origins is None else cors_origins
     if origins:
@@ -120,6 +135,16 @@ def create_app(cors_origins: list[str] | None = None) -> FastAPI:
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
+
+    @app.post("/feedback", status_code=204)
+    def feedback(
+        request: FeedbackRequest,
+        log: Annotated[FeedbackLog | None, Depends(get_feedback_log)],
+    ) -> Response:
+        """Append one rating or follow-up click to the feedback log; an invalid body gets 422."""
+        if log is not None:
+            log.write(feedback_record(request))
+        return Response(status_code=204)
 
     return app
 

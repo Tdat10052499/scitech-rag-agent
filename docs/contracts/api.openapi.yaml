@@ -1,11 +1,12 @@
 openapi: 3.0.3
 info:
   title: SciTech RAG Agent API
-  version: 0.2.1
+  version: 0.3.0
   description: >
     Contract between frontend and backend. Frozen on 2026-10-15 (W1-D4-DAT-1, decisions in issue #7).
     Change only through an issue approved by the maintainer (DAT).
     0.2.1 (issue #36, wording only): a stream may be a single `error` event.
+    0.3.0 (issue #147): `POST /feedback` for rating buttons and follow-up clicks.
 paths:
   /health:
     get:
@@ -54,8 +55,49 @@ paths:
         "422":
           description: >
             Invalid request (validation error), returned before any event is streamed.
+  /feedback:
+    post:
+      summary: Record a rating of an answer or a follow-up, or a click on a follow-up
+      description: >
+        Appends one JSON line (the request fields plus `ts`, UTC) to `FEEDBACK_LOG`
+        (default `<DATA_DIR>/logs/feedback.jsonl`). An unknown `message_id` is still recorded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedbackRequest"
+      responses:
+        "204":
+          description: Recorded (no body).
+        "422":
+          description: >
+            Invalid request, including `rating: click` with `target: answer`, `followup` with
+            `target: answer`, or `target: followup` without `followup`.
 components:
   schemas:
+    FeedbackRequest:
+      type: object
+      required: [session_id, message_id, target, rating]
+      properties:
+        session_id:
+          type: string
+          description: Same as in `ChatRequest`.
+        message_id:
+          type: string
+          minLength: 1
+          description: Taken from the `done` event of the answer (equals the trace id of that request).
+        target:
+          type: string
+          enum: [answer, followup]
+        rating:
+          type: string
+          enum: [up, down, click]
+          description: Thumbs up or down; `click` only with target `followup`.
+        followup:
+          type: string
+          minLength: 1
+          description: The follow-up suggestion as shown; required when `target` is `followup`.
     ChatRequest:
       type: object
       required: [session_id, message]
