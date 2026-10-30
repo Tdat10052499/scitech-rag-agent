@@ -88,9 +88,8 @@ of the system on the stated hardware, not as research questions.
   implementations existed.
 - **Decisions.** Every design decision is recorded as an ADR in `docs/decisions/`, with the options
   considered and, where possible, a decision rule fixed before the measurement that applies it.
-- **Schedule.** The project ran from 2026-10-13 to the presentation on 2026-11-03.
-  TODO(W8-D5-DAT-1): confirm the final dates. The original plan of 8 weeks was compressed into
-  22 working days in 8 phases. Five features were cut early to protect the evaluation and the
+- **Schedule.** The project ran from 2026-10-13 to the presentation on 2026-11-10. The original plan of 8
+  weeks was compressed into 22 working days in 8 phases. Five features were cut early to protect the evaluation and the
   report: Kafka, the reranker, UI extras, query decomposition, and a larger user study
   (ADR 0010).
 - **Quality rules.** Every change went through a pull request with CI (lint and tests). Evaluation

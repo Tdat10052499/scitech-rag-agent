@@ -52,30 +52,21 @@ The other chapters rely on these points, so they are fixed here.
   test, which are marked as a single session, not as a measurement.
 - **Chapter 6** lists every feature cut in ADR 0010 and the reason for the cut.
 
-## 3. Schedule for a presentation on Tuesday 2026-11-03
+## 3. Schedule
 
-On 2026-10-30, DAT reported that the presentation is fixed for **Tuesday 2026-11-03**. The plan and
-ADR 0010 still say 2026-11-10, with `v1.0` and the report on 2026-11-06. Updating `docs/plan/` and
-ADR 0010 is a separate change. Until then, this table is the proposal for the report part.
+The dates come from `docs/plan/` and ADR 0010. The presentation is on Tuesday 2026-11-10.
 
 | Day | Report work | Owner |
 |---|---|---|
-| Fri 10-30 | Outline, chapters 1 and 3 drafts (this PR) | DAT |
-| Sat 10-31 | Chapter 2 ready for review (#122). Golden set at 60 and `RUNS.md` merged, so the final runs can start | FAO, LDN |
-| Sun 11-01 | Final runs and `final.md` draft. Error analysis section. Chapter 6 updated with the numbers | LDN, DAT, FAO |
-| Mon 11-02 morning | Chapters 4 and 5. Every chapter reviewed by one other member | LDN, all |
-| Mon 11-02 afternoon | PDF export, `v1.0` tag, slides, dry run | LDN, DAT, all |
-| Tue 11-03 | Presentation | all |
+| Fri 10-30 (D16) | Outline, chapters 1 and 3 drafts (this PR, written early) | DAT |
+| Sat 10-31 to Tue 11-03 (D17–D19) | Final runs. `final.md` draft with the error analysis. Chapter 2 with final numbers (#122) | LDN, DAT, FAO |
+| Tue 11-03 (D19) | Gate W7: every run in `RUNS.md` has results; `final.md` reviewed (gate part of W7-D5-DAT-1) | DAT |
+| Wed 11-04 (D20) | Chapters 1, 3 and 4–6 completed; chapter 2 final edit | all |
+| Thu 11-05 (D21) | Figures and tables, merged report, PDF export, demo script | LDN, DAT |
+| Fri 11-06 (D22) | Final review pass; `v1.0` release with the PDF | DAT |
+| Sat 11-07 to Mon 11-09 (D23–D24) | Slides, rehearsal, dry run | all |
+| Tue 11-10 (D25) | Presentation | all |
 
-Decisions this schedule needs from the team, not from this outline:
-
-1. **User study.** It is planned for the evening of 2026-11-03 (#154), which is after the
-   presentation. It must move to 11-01 or 11-02. Otherwise RQ3 is reported from the pilot only and
-   is described as such.
-2. **Scheduled ingestion (ADR 0011).** The soak check needs at least 12 runs, which is 24 hours at
-   one run every 2 hours, after a merge planned for D20. On this schedule it cannot finish before
-   the presentation. The fallback in ADR 0011 then applies: `v1.0` ships with the manual command
-   of ADR 0008, and the report describes the schedule as built but not soak-tested.
-3. **Ablation split.** The runs were on `split: dev` (32 items; `ablations-v1.md`), while the draft
-   `RUNS.md` (#160) plans `split: all`. Decide whether to rerun them on all 60 items (about
-   15 minutes on DAT's laptop) or report them on dev.
+One decision is still open for chapter 4: the ablations ran on `split: dev` (32 items;
+`ablations-v1.md`), while the draft `RUNS.md` (#160) plans `split: all`. The team decides in #160
+whether to rerun them on all items (about 15 minutes on DAT's laptop) or report them on dev.
