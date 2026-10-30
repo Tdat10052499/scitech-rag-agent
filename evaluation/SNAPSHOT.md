@@ -19,7 +19,7 @@ stack against this file before the first run.
 | Query prefix | `Represent this sentence for searching relevant passages:` (no passage prefix) | ADR 0007 |
 | Vector store | Qdrant 1.19.2 (`docker-compose.yml`), collection `scitech_chunks`, exact search (`QDRANT_SEARCH_EXACT=true`) | #101, `pipelines/reports/index_profile.md` |
 | BM25 index | `data/index/bm25`, 121,926 chunks, built from the same `chunks.parquet` (its `chunked_at` is the `chunked-` part of the id) | `_bm25_manifest.json`, `index_profile.md` |
-| Where it lives | FAO's laptop (Docker Qdrant and `data/`); the documents, chunks and vectors also sit in FAO's private Kaggle dataset and notebook output (`pipelines/README.md`) | |
+| Where it lives | DAT's laptop (native Qdrant and `data/`), the W7 host (#156); FAO's laptop (Docker Qdrant and `data/`), the user-study host; the documents, chunks and vectors also sit in FAO's private Kaggle dataset and notebook output (`pipelines/README.md`) | |
 
 Rules for the frozen index:
 - **Incremental loads never touch it.** `incremental-run` (ADR 0008) adds to the collection it is
@@ -58,9 +58,8 @@ the user-study host serves this exact index.
 | Field | Value | Source |
 |---|---|---|
 | Model | `llama3.2:3b` (Ollama default tag), `Q4_K_M`, 3.2B parameters, digest `a80c4f17acd5` | ADR 0006, `ollama show` / `ollama list` on 2026-10-21 |
-| Server | Ollama on Kaggle (2 × T4) through the tunnel; version 0.40.7 read on 2026-10-21. The notebook installs the current release, so W7-D1-DAT-1 reads `ollama --version` and the digest again before the first run and writes them here; a different digest stops the runs | ADR 0006, `docs/runbooks/llm-serving.md` |
-| Fallback (demo only) | the same tag on the laptop CPU; never used for a W7 run | ADR 0006 |
-| Pilot host (not for W7) | DAT's laptop, Ollama 0.40.13, same digests, 2026-10-30 | #153 |
+| Server (all W7 runs) | DAT's laptop: AMD Ryzen AI 7 350, 31 GB RAM, NVIDIA RTX 5060 Laptop GPU 8 GB (driver 621.01); `ollama ps` shows `llama3.2:3b` at 100% GPU with context 4096; Ollama 0.40.13, run locally with no network hop to the LLM; digests `a80c4f17acd5` and `845dbda0ea48`; Qdrant 1.19.2 native with `scitech_chunks` at 121,926 points. Decided 2026-10-30 (#156). ADR 0006 measured on Kaggle (2 × T4, Ollama 0.40.7) | #148 pilot, #156 |
+| Kaggle | only the ADR 0006 comparison and earlier checks; no W7 run uses it, so W7 numbers are not compared answer by answer with Kaggle runs | ADR 0006 |
 | Call settings | temperature 0; `max_tokens` answer 512, follow-ups 192, rewrite 96; `LLM_TIMEOUT=60`, `LLM_MAX_RETRIES=2`; `num_ctx` is the Ollama server default, read on the run day with the version | `agent/src/scitech_agent/agent.py` (`AgentConfig`), `.env.example` |
 
 ### Prompts
@@ -83,7 +82,7 @@ the user-study host serves this exact index.
 | `AGENT_REWRITE` | `on` (3 latest turns) | #126; the "+rewrite" ablation turns it off |
 | `AGENT_SELF_CHECK` | `off` | #127: `llama3.2:3b` refused 6/6 test questions with it on |
 | `AGENT_MAX_LLM_CALLS` | 4 | #127 |
-| `AGENT_TIMEOUT_S` | 120 | #127 |
+| `AGENT_TIMEOUT_S` | 600 (laptop, recorded in every run's `notes`) | #127, #156 |
 | `AGENT_MODE` | `real` | |
 | Follow-up filter | at most 20 words, no copied "et al." references | #150 (#116), in the tag |
 
@@ -100,7 +99,7 @@ the user-study host serves this exact index.
 | Field | Value | Source |
 |---|---|---|
 | Judge model | `qwen2.5:7b`, Q4_K_M, Ollama digest `845dbda0ea48` (read on D08) | ADR 0006 table note, #142 |
-| Served by | the same Kaggle Ollama session as the generator (`llama3.2:3b`); a different model family, as `evaluation/PLAN.md` section 5 requires | #142 |
+| Served by | the same Ollama on DAT's laptop as the generator (`llama3.2:3b`), digest `845dbda0ea48` there (#156); a different model family, as `evaluation/PLAN.md` section 5 requires | #142, #156 |
 | How the runner calls it | `OpenAICompatibleLLM` with its own variables `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `JUDGE_MODEL` (values only in local `.env`) | #142 |
 | Settings | temperature 0, one sentence per call, prompt `evaluation/prompts/faithfulness-judge.md`; `max_tokens` and the prompt commit are recorded in each run file; an unreadable reply is `judge_error`, not retried, not counted | #142 |
 | Switch rule | only if a hosted key arrives before D17: switch once, re-run the 10 pilot questions, recompute agreement; never mix judges across W7 conditions | #142 |
