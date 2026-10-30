@@ -190,6 +190,18 @@ def test_search_is_exact_by_default_and_uses_hnsw_when_exact_is_off():
     assert "params" not in fake.requests[0][2]
 
 
+def test_requests_ask_qdrant_not_to_compress():
+    seen: list[str | None] = []
+
+    def fake(request: httpx.Request) -> httpx.Response:
+        seen.append(request.headers.get("Accept-Encoding"))
+        return httpx.Response(200, json={"result": {"points": []}})
+
+    config = StoreConfig(url="http://qdrant.test:6333", collection="test_chunks")
+    QdrantStore(config, transport=httpx.MockTransport(fake)).search([1.0], k=1)
+    assert seen == ["identity"]
+
+
 @pytest.mark.parametrize(
     ("raw", "expected"),
     [

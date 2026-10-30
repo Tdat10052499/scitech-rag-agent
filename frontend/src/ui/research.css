@@ -1,0 +1,487 @@
+/* Research components: turns, answer text, citations, sources, follow-ups, composer, states. */
+
+/* ---------- User turn ---------- */
+.ui-user-turn {
+  align-self: flex-end;
+  max-width: min(85%, 600px);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  scroll-margin-top: var(--space-6);
+}
+
+.ui-user-turn__text {
+  margin: 0;
+  font-size: var(--text-answer-size);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Answer turn ---------- */
+.ui-answer-turn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.ui-answer-turn__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 30px;
+}
+
+/* Answer text. The parser only produces p, ul, ol, li, strong, em, code, pre. */
+.ui-prose {
+  font-size: var(--text-answer-size);
+  line-height: var(--text-answer-line);
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.ui-prose > * {
+  margin: 0;
+}
+
+.ui-prose > * + * {
+  margin-top: var(--space-3);
+}
+
+.ui-prose ul,
+.ui-prose ol {
+  padding-left: var(--space-6);
+}
+
+.ui-prose li + li {
+  margin-top: var(--space-1);
+}
+
+.ui-prose li::marker {
+  color: var(--color-text-secondary);
+}
+
+.ui-prose strong {
+  font-weight: var(--weight-semibold);
+}
+
+.ui-prose code {
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-surface);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+/* Only code blocks scroll sideways; the page never does. */
+.ui-prose pre {
+  padding: var(--space-3) var(--space-4);
+  overflow-x: auto;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  font-size: var(--text-code-size);
+  line-height: var(--text-code-line);
+}
+
+.ui-prose pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+/* ---------- Citation marker ---------- */
+.ui-citation {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.45em;
+  height: 1.45em;
+  margin: 0 1px;
+  padding: 0 0.3em;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--citation-bg);
+  color: var(--citation-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  vertical-align: 0.12em;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+button.ui-citation:hover {
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+.ui-citation.is-active {
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+.ui-citation.is-missing {
+  border: var(--border-width) dashed var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: help;
+}
+
+/* Touch: at least 24px targets (WCAG 2.5.8); still fits the 27px answer line. */
+@media (pointer: coarse) {
+  .ui-citation {
+    min-width: 24px;
+    height: 24px;
+    vertical-align: 0;
+  }
+}
+
+/* ---------- Source item ---------- */
+.ui-source {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  transition: background-color var(--duration-base) var(--ease-standard);
+}
+
+.ui-source.is-active {
+  background: var(--color-bg-selected);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+/* Replays on every citation click (the element is re-keyed). */
+.ui-source__flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-bg-highlight);
+  pointer-events: none;
+  animation: ui-flash var(--duration-highlight) var(--ease-exit) forwards;
+}
+
+.ui-source > :not(.ui-source__flash) {
+  position: relative; /* above the flash layer */
+}
+
+@keyframes ui-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-source__flash {
+    display: none;
+  }
+}
+
+.ui-source__number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption-size);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-source.is-active .ui-source__number {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+.ui-source__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ui-source__body > p {
+  margin: 0;
+}
+
+.ui-source__title {
+  font-size: var(--text-body-size);
+  line-height: 1.4;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.ui-source__title a {
+  text-decoration: none;
+}
+
+.ui-source__title a:hover {
+  text-decoration: underline;
+}
+
+.ui-source__title .is-untitled {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.ui-source__external {
+  display: inline;
+  margin-left: var(--space-1);
+  vertical-align: -1px;
+}
+
+.ui-source__meta,
+.ui-source__notes {
+  color: var(--color-text-secondary);
+  font-size: var(--text-meta-size);
+  line-height: var(--text-meta-line);
+}
+
+.ui-source__notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  font-style: italic;
+}
+
+.ui-source__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.ui-source__snippet {
+  color: var(--color-text);
+  font-size: var(--text-meta-size);
+  line-height: 1.55;
+  overflow-wrap: break-word;
+}
+
+.ui-source__snippet.is-clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ui-source__body .ui-text-button {
+  align-self: flex-start;
+}
+
+/* ---------- Source panel ---------- */
+.ui-source-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.ui-source-panel__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.ui-source-panel__heading {
+  flex: 1;
+  min-width: 0;
+  padding-top: 6px;
+}
+
+.ui-source-panel__title {
+  margin: 0;
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+}
+
+.ui-source-panel__count {
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-regular);
+}
+
+.ui-source-panel__context {
+  display: flex;
+  flex-direction: column;
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-meta-size);
+  line-height: var(--text-meta-line);
+  color: var(--color-text-secondary);
+}
+
+.ui-source-panel__turn {
+  font-weight: var(--weight-medium);
+}
+
+.ui-source-panel__question {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.ui-source-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-2);
+}
+
+.ui-source-panel__body > .ui-callout {
+  margin: var(--space-2) var(--space-2) var(--space-3);
+}
+
+.ui-source-panel__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-source-panel__list > li + li {
+  margin-top: var(--space-1);
+}
+
+.ui-source-panel__empty {
+  padding: var(--space-4) var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.ui-source-panel__empty p {
+  margin: 0;
+}
+
+/* ---------- Follow-up suggestions ---------- */
+.ui-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.ui-suggestions__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.ui-suggestions__list > li + li {
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.ui-suggestions__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-body-size);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.ui-suggestions__item:hover {
+  background: var(--color-bg-hover);
+}
+
+.ui-suggestions__item:focus-visible {
+  outline-offset: -2px;
+}
+
+.ui-suggestions__icon {
+  flex: none;
+  color: var(--color-text-secondary);
+  transition: translate var(--duration-fast) var(--ease-standard);
+}
+
+.ui-suggestions__item:hover .ui-suggestions__icon {
+  translate: 2px 0;
+  color: var(--color-accent);
+}
+
+/* ---------- Composer ---------- */
+.ui-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.ui-composer:focus-within {
+  border-color: var(--color-focus-ring);
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.ui-composer .ui-textarea {
+  padding-top: var(--space-1);
+  padding-right: var(--space-1);
+}
+
+.ui-composer__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.ui-composer__status {
+  min-width: 0;
+}
+
+.ui-composer__hint {
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption-size);
+}
+
+@media (max-width: 640px) {
+  .ui-composer__hint {
+    display: none; /* on phones the send button is the obvious way; keeps the bar short */
+  }
+}
+
+/* ---------- Empty conversation ---------- */
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-12) 0 var(--space-6);
+}
+
+.ui-empty__description {
+  margin: 0 0 var(--space-4);
+  max-width: 56ch;
+  color: var(--color-text-secondary);
+  font-size: var(--text-answer-size);
+  line-height: 1.6;
+}

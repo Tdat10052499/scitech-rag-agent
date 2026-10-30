@@ -1,0 +1,18 @@
+# Keep the Docker build context small and free of secrets and data (W6-D3-DAT-1).
+.git
+.env
+.env.*
+!.env.example
+data/
+**/__pycache__/
+**/*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+**/node_modules/
+frontend/dist/
+notebooks/
+pipelines/
+evaluation/
+docs/
