@@ -50,6 +50,10 @@ points in 15 parts (0 resumed), the BM25 `chunked_at` was `2026-10-17T05:19:12+0
 counted 121,926 points.
 Checked again on 2026-10-30 through the `make up` stack (#146): Qdrant counted 121,926 points, so
 the user-study host serves this exact index.
+Checked on DAT's laptop on 2026-10-30 (native Qdrant at `127.0.0.1:6333`): the id matched the
+table, the load manifest gave 121,926 points in 15 parts (0 resumed), the BM25 `chunked_at` was
+`2026-10-17T05:19:12+00:00`, and Qdrant counted 121,926 points, so the W7 host serves this exact
+index (#129).
 
 ## 2. Model, prompts and configuration (W6-D5-DAT-1)
 
