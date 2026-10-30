@@ -4,9 +4,7 @@ What every Week 7 run uses. After the feature freeze (W6-D4, D16, Fri 2026-10-30
 changes until D22 unless the team approves it in the tracking issue. W7-D1-DAT-1 checks the
 stack against this file before the first run.
 
-<!-- Draft. The index section was written early (W6-D4-FAO-1, on D13) from the index loaded on
-2026-10-21. It is final once the bug bash of W6-D4-DAT-1 is over without a P0 that changes the
-data. DAT adds the model, prompt and config section (W6-D5-DAT-1). -->
+<!-- The index section is final as of D16 (2026-10-30); section 2 is DAT's (W6-D5-DAT-1). -->
 
 ## 1. Index (W6-D4-FAO-1)
 
@@ -50,6 +48,8 @@ must be 121926.
 Checked on FAO's laptop on 2026-10-27: the id matched the table, the load manifest gave 121,926
 points in 15 parts (0 resumed), the BM25 `chunked_at` was `2026-10-17T05:19:12+00:00`, and Qdrant
 counted 121,926 points.
+Checked again on 2026-10-30 through the `make up` stack (#146): Qdrant counted 121,926 points, so
+the user-study host serves this exact index.
 
 ## 2. Model, prompts and configuration (W6-D5-DAT-1)
 
