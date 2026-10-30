@@ -3,6 +3,7 @@
 
 // Basic
 export { Badge } from "./Badge";
+export { BackendStatus } from "./BackendStatus";
 export { Button } from "./Button";
 export type { ButtonVariant } from "./Button";
 export { Callout } from "./Callout";

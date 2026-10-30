@@ -20,13 +20,14 @@ type Props = {
   onShowSources?: (trigger: HTMLElement) => void;
   onRetry?: () => void;
   onFollowup?: (question: string) => void; // pass only on the latest answer
+  followupDisabled?: boolean; // another question is being answered
 };
 
 /**
  * One answer. Not a bubble: text sits on the page in the reading column. The answer text goes
  * through the existing safe renderer (src/markdown.ts, React elements only, never innerHTML).
  */
-export function AssistantMessage({ turn, number, activeIndex = null, sourcesShown = false, onCite, onShowSources, onRetry, onFollowup }: Props) {
+export function AssistantMessage({ turn, number, activeIndex = null, sourcesShown = false, onCite, onShowSources, onRetry, onFollowup, followupDisabled = false }: Props) {
   const label = number === undefined ? "Answer" : `Answer ${number}`;
   const streaming = turn.status === "searching" || turn.status === "answering";
   const count = turn.sources.length;
@@ -71,7 +72,7 @@ export function AssistantMessage({ turn, number, activeIndex = null, sourcesShow
       {turn.status === "answering" && <LoadingIndicator size="sm" label="Writing the answer..." />}
       {turn.status === "error" && turn.error && <ErrorState error={turn.error} partial={turn.text !== ""} onRetry={onRetry} />}
 
-      {onFollowup && turn.status === "done" && <FollowUpSuggestions questions={turn.followups} onSelect={onFollowup} />}
+      {onFollowup && turn.status === "done" && <FollowUpSuggestions questions={turn.followups} onSelect={onFollowup} disabled={followupDisabled} />}
     </article>
   );
 }

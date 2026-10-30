@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AssistantMessage as AssistantTurn } from "../types";
 import {
   AssistantMessage,
+  BackendStatus,
   ConversationHeader,
   EmptyConversationState,
   LiveStatus,
@@ -18,6 +19,7 @@ import {
 } from "../ui";
 import type { ActiveCitation, ThemePreference } from "../ui";
 import { BREAKPOINTS, prefersReducedMotion } from "../ui/useMediaQuery";
+import { healthLabel } from "../health";
 import { lastAnswer, liveStatus } from "./chatState";
 import type { ChatController } from "./chatState";
 
@@ -90,6 +92,13 @@ export function ChatWorkspace({ chat, initialTheme }: Props) {
     textarea.current?.focus();
   }
 
+  // A follow-up suggestion is sent at once as the next question of the same conversation. The draft
+  // in the composer is kept. While another answer is being written the suggestions are disabled.
+  function sendFollowup(q: string) {
+    if (phase !== "idle") return;
+    chat.send(q);
+  }
+
   function newConversation() {
     chat.newConversation();
     setDraft("");
@@ -118,6 +127,7 @@ export function ChatWorkspace({ chat, initialTheme }: Props) {
           sourcesCount={panelTurn?.sources.length}
           onNewConversation={newConversation}
           newConversationDisabled={messages.length === 0}
+          actions={chat.health && <BackendStatus state={chat.health.kind} label={healthLabel(chat.health)} />}
         />
       }
       composer={<MessageComposer value={draft} onChange={setDraft} onSubmit={(t) => (chat.send(t), setDraft(""))} state={phase} textareaRef={textarea} />}
@@ -154,7 +164,8 @@ export function ChatWorkspace({ chat, initialTheme }: Props) {
               onCite={(index) => cite(m.id, index)}
               onShowSources={() => showSources(m.id)}
               onRetry={isLatest && m.status === "error" && phase === "idle" ? chat.retry : undefined}
-              onFollowup={m === followupOwner ? chooseQuestion : undefined}
+              onFollowup={m === followupOwner ? sendFollowup : undefined}
+              followupDisabled={phase !== "idle"}
             />
           );
         })}

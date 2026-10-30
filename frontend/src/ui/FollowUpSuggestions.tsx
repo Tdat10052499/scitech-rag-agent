@@ -7,12 +7,13 @@ export const MAX_SUGGESTIONS = 4; // the API sends at most 4 follow-ups (contrac
 type Props = {
   questions: string[];
   onSelect: (question: string) => void; // the page decides: fill the composer or send at once
+  disabled?: boolean; // e.g. while another question is being answered
   title?: string;
   className?: string;
 };
 
 /** Suggested questions as a list of full-width rows (long questions wrap instead of being cut). */
-export function FollowUpSuggestions({ questions, onSelect, title = "Follow-up questions", className }: Props) {
+export function FollowUpSuggestions({ questions, onSelect, disabled = false, title = "Follow-up questions", className }: Props) {
   const headingId = useId();
   const shown = questions.slice(0, MAX_SUGGESTIONS);
   if (shown.length === 0) return null;
@@ -24,7 +25,7 @@ export function FollowUpSuggestions({ questions, onSelect, title = "Follow-up qu
       <ul className="ui-suggestions__list">
         {shown.map((q) => (
           <li key={q}>
-            <button type="button" className="ui-suggestions__item" onClick={() => onSelect(q)}>
+            <button type="button" className="ui-suggestions__item" disabled={disabled} onClick={() => onSelect(q)}>
               <span>{q}</span>
               <ArrowRightIcon size={16} className="ui-suggestions__icon" />
             </button>
