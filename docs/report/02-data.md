@@ -256,4 +256,6 @@ On 2026-10-30, after the feature freeze, both machines that serve it were checke
 laptop through the Docker stack (#146), the user-study host, and DAT's laptop with a native Qdrant,
 the Week 7 host. Both counted 121,926 points, and DAT's laptop also matched the id and the BM25
 `chunked_at` (`evaluation/SNAPSHOT.md` §1, #164).
-<!-- TODO(W7-D1-FAO-1): golden coverage on the final golden set (at least 60 items). -->
+On 2026-10-31 the final golden set (65 items: 60 answerable, 5 unanswerable; #168) was checked
+the same way: all 78 relevant documents were found in the chunks and in Qdrant (W7-D1-FAO-1,
+#156).
