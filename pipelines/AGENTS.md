@@ -36,3 +36,7 @@ Each script's docstring has its full usage. They are kept so the numbers they pr
 - `scripts/bench_engines.py`: W1-D5-FAO-1. The same small job on PySpark, DuckDB and Polars (ADR 0005). Needs `requirements-bench.txt`; PySpark needs Java 17+.
 - `scripts/compare_embeddings.py`: W3-D2-FAO-1. Golden-set retrieval of each candidate embedding model, for ADR 0007. Needs `requirements-embed.txt` and `evaluation/requirements.txt`.
 - `scripts/golden_coverage.py`: W4-D3-FAO-1 (#69), also W7-D1-FAO-1. Checks that every golden `relevant_doc_ids` is in the chunks (`--chunks`) and the loaded collection (`--qdrant`); exit 1 lists what is missing. Runbook §4.
+- `scripts/index_profile.py`: W3-D5-FAO-1 (#68). Query latency per retriever, filter check, Qdrant collection, disk and memory; the tables of `pipelines/reports/index_profile.md`.
+- `scripts/scaling.py`: W6-D2-FAO-1 (#96). Loads the 10% and 50% subsets from the existing vectors and runs `index_profile.py` on each size; `pipelines/reports/scaling.md`, `scaling.csv`.
+- `scripts/scaling_charts.py`: W7-D2-FAO-1 (#121). Draws `scaling-latency.svg` and `scaling-build.svg` from `scaling.csv`. Standard library only.
+- `scripts/vector_search_timing.py`: W7-D2-FAO-1 (#121). `QdrantStore.search` alone with pre-computed query vectors, exact against HNSW at each size; `scaling.md` §2.1.
