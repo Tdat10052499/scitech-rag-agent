@@ -1,0 +1,1711 @@
+{
+  "schema_version": 1,
+  "kind": "answers",
+  "name": "ablation-rewrite",
+  "timestamp": "20261030T085601Z",
+  "git_commit": "fa1c765fe2df024aef63ffd7702995da74600090+dirty",
+  "dataset_snapshot": "kaggle-arxiv-v307-cs.CL-2026-10-10",
+  "index_snapshot": "scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37",
+  "notes": "W7-D2-DAT-1 ablation rewrite: AGENT_REWRITE=on AGENT_SELF_CHECK=off, v0.6-rc, DAT laptop RTX 5060 8 GB (Ollama GPU), Ollama 0.40.13, AGENT_TIMEOUT_S=600",
+  "golden": {
+    "path": "evaluation/golden_set/golden.jsonl",
+    "sha256": "88c86717b96494b1c4ebe8eea391318bbbc6c33c86e7f35a421c015796e82c4b",
+    "split": "dev",
+    "language": "en",
+    "n_items": 32,
+    "n_answerable": 30,
+    "n_unanswerable": 2
+  },
+  "generator": {
+    "model": "llama3.2:3b",
+    "trace_model": {
+      "model": "llama3.2:3b",
+      "timeout": 300.0,
+      "max_retries": 2
+    },
+    "agent_config": {
+      "top_k": 5,
+      "min_score": 0.0,
+      "max_followups": 4,
+      "history_turns": 10,
+      "answer_history_turns": 3,
+      "temperature": 0.0,
+      "answer_max_tokens": 512,
+      "followups_max_tokens": 192,
+      "rewrite": true,
+      "rewrite_history_turns": 3,
+      "rewrite_max_tokens": 96,
+      "self_check": false,
+      "self_check_max_tokens": 8,
+      "max_llm_calls": 4,
+      "timeout_s": 600.0,
+      "retriever": "HybridRetriever"
+    },
+    "digest": "a80c4f17acd5",
+    "max_tokens": 512
+  },
+  "judge": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48",
+    "temperature": 0,
+    "max_tokens": 200,
+    "prompt": {
+      "path": "evaluation\\prompts\\faithfulness-judge.md",
+      "sha256": "c910b2e939c8426b891c427d4a8bc372ffe252758c63a7cd803d6eb447035bb6",
+      "commit": "6789b1f1391fe14c48845702f1b4db2aae6be05b"
+    },
+    "context_tokens": 4096,
+    "max_prompt_chars": 5838,
+    "approx_max_prompt_tokens": 1460,
+    "prompt_fits_context": true,
+    "errors": {},
+    "n_judge_error": 0,
+    "fixed_refusal_sentences": 2
+  },
+  "counts": {
+    "answers": 32,
+    "errors": 0,
+    "refused_answerable": 5,
+    "judged_answers": 25,
+    "sentences": 76,
+    "supported": 38,
+    "not_supported": 36,
+    "not_checkable": 2,
+    "judge_error": 0,
+    "unanswerable_refused": 2,
+    "unanswerable_answered_anyway": 0
+  },
+  "answered_anyway": [],
+  "timings": {
+    "warm_up_seconds": 6.037,
+    "answer_seconds": 127.101,
+    "judge_seconds": 53.785
+  },
+  "metrics": {
+    "faithfulness_macro": {
+      "n": 25,
+      "mean": 0.5757142857142857,
+      "ci95": [
+        0.4423809523809523,
+        0.699047619047619
+      ]
+    },
+    "faithfulness_micro": 0.5135135135135135,
+    "share_faithfulness_1": 0.24,
+    "cited_doc_recall": {
+      "n": 25,
+      "mean": 0.28,
+      "ci95": [
+        0.1,
+        0.44
+      ]
+    },
+    "retrieved_doc_recall": {
+      "n": 25,
+      "mean": 0.4,
+      "ci95": [
+        0.2,
+        0.58
+      ]
+    },
+    "invalid_citation_rate": 0.0,
+    "over_refusal_rate": 0.16666666666666666
+  },
+  "per_answer": [
+    {
+      "id": "gs-001",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "first_token": 5281.0,
+        "answer": 6578.0,
+        "followups": 2781.0,
+        "total": 9375.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2406.19648",
+        "2410.16645"
+      ],
+      "relevant_doc_ids": [
+        "2406.11267",
+        "2409.10011"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "AI chatbots sometimes make things up because they are trying to generate responses that are coherent and engaging, but may not have enough information or context to provide accurate answers.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, providing no basis to support or refute the claim."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This can happen when the chatbot is trying to fill in gaps in its knowledge or generate responses that are more interesting or persuasive.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, providing no evidence for the claim."
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "Two ways to reduce this behavior are to use more accurate and reliable data sources, and to implement mechanisms that encourage the chatbot to say \"I don't know\" or \"I'm not sure\" when it's unsure or lacks information.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "There are no cited passages to support the claims in the sentence."
+        },
+        {
+          "sentence_no": 4,
+          "sentence": "This can help to build trust with users and prevent the chatbot from providing misleading or fabricated information [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "not supported",
+          "reason": "The cited passage does not discuss the trust-building aspect or the prevention of misleading information by chatbots."
+        },
+        {
+          "sentence_no": 5,
+          "sentence": "Additionally, using techniques such as fact-checking and verification can help to ensure that the chatbot is providing accurate and reliable information [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "not supported",
+          "reason": "The cited passage does not discuss fact-checking or verification as a method to reduce AI chatbots making things up."
+        }
+      ],
+      "supported": 0,
+      "not_supported": 5,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 5,
+      "faithfulness": 0.0
+    },
+    {
+      "id": "gs-002",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 15.0,
+        "first_token": 406.0,
+        "answer": 1297.0,
+        "followups": 2875.0,
+        "total": 4187.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2505.21870"
+      ],
+      "relevant_doc_ids": [
+        "2410.05983"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 1,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "The sources do not contain enough evidence to answer this question.",
+          "cited_n": [],
+          "label": "not checkable",
+          "reason": "fixed refusal sentence (judge prompt rule 4); not sent to the judge"
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "While retrieval augmentation can improve the performance of language models, the sources suggest that the decision to adopt RAG (retrieval-augmented generation) depends on the specific task, the quality of the retrieved documents, and the model's ability to leverage the retrieved content.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The sentence claims that the decision to adopt RAG depends on specific factors, but the provided passages do not exist to support or refute this claim."
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "In some cases, providing more retrieved documents may lead to performance degradation, as seen in the study by [4], which found that document order and the model's interaction with retrieved documents can impact results.",
+          "cited_n": [
+            4
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 1,
+      "not_supported": 1,
+      "not_checkable": 1,
+      "judge_error": 0,
+      "checkable": 2,
+      "faithfulness": 0.5
+    },
+    {
+      "id": "gs-003",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 406.0,
+        "answer": 1266.0,
+        "followups": 2953.0,
+        "total": 4250.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2608.01017"
+      ],
+      "relevant_doc_ids": [
+        "2605.15000"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 3,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "Large language models can sometimes abandon a correct answer when a user challenges it, a phenomenon known as \"medical sycophancy\" [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This occurs more frequently when users challenge an answer the model has already given, rather than when the false claim appears in the initial query [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "Additionally, models are more susceptible to users presented as physicians or medical students, and fabricated evidence can have opposite effects across interaction structures, sometimes increasing sycophancy in single-turn interactions [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "not supported",
+          "reason": "The sentence mentions 'fabricated evidence' having 'opposite effects across interaction structures', but it does not specify that large language models know when to hold back instead of answering medical questions."
+        }
+      ],
+      "supported": 2,
+      "not_supported": 1,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "gs-004",
+      "type": "comparison",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "first_token": 328.0,
+        "answer": 1562.0,
+        "followups": 2782.0,
+        "total": 4360.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2010.08708"
+      ],
+      "relevant_doc_ids": [
+        "2511.17432",
+        "2206.12664"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 1,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "Checking an answer by matching words, as done in Abstract Meaning Representations (AMR), involves comparing the word-level representations of the answer and the question to determine if they match.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages do not exist to support the claim."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This approach focuses on the literal meaning of the words and their surface-level correspondence.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "There are no cited passages to verify the sentence."
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "On the other hand, checking an answer by meaning, as proposed in the paper \"Answer-checking in Context: A Multi-modal FullyAttention Network for Visual Question Answering\", involves considering the context in which the answer is given, including the question, the image, and the answer itself.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The sentence contains factual elements (names of the paper) that are not supported by the provided passages, as no cited passages are available."
+        },
+        {
+          "sentence_no": 4,
+          "sentence": "This approach uses a unified attention mechanism to update the answer based on the context, mimicking the human process of checking an answer in context. [4]",
+          "cited_n": [
+            4
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 1,
+      "not_supported": 3,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 4,
+      "faithfulness": 0.25
+    },
+    {
+      "id": "gs-005",
+      "type": "comparison",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 375.0,
+        "answer": 2281.0,
+        "followups": 2938.0,
+        "total": 5250.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.5,
+      "retrieved_doc_recall": 0.5,
+      "cited_doc_ids": [
+        "2407.19794"
+      ],
+      "relevant_doc_ids": [
+        "2407.19794",
+        "2501.16952"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 1,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "The chunk size in Retrieval-Augmented Generation (RAG) systems can significantly influence answer quality.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, providing no information to support or refute the claim about chunk size affecting answer quality in RAG systems."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "Smaller chunks, such as individual sentences, may allow for precise retrieval by narrowing the focus of each chunk, but they contain less information, which may limit the model's ability to generate coherent responses.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, and there is no information to support the claim about chunk size affecting answer quality or the comparison between different chunk levels."
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "Larger chunks, such as entire chapters, contain more information, which may improve correctness, but also introduce additional noise and increase computational cost.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages do not contain any information about chunk size affecting answer quality or the comparison between chunks at different levels."
+        },
+        {
+          "sentence_no": 4,
+          "sentence": "However, research suggests that chunk size can be optimized to balance the trade-off between providing sufficient context and minimizing irrelevant information [3].",
+          "cited_n": [
+            3
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 5,
+          "sentence": "Additionally, studies have shown that chunking at multiple levels, such as multi-sentence, paragraph, section, and document, can potentially lead to better results than chunking at a single level.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, and there is no evidence to support the claim about chunking at multiple levels leading to better results."
+        },
+        {
+          "sentence_no": 6,
+          "sentence": "For instance, chunking at the document level can provide a broader context, while chunking at the paragraph or section level can provide more focused information.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages do not exist."
+        },
+        {
+          "sentence_no": 7,
+          "sentence": "However, the optimal chunk size and level may vary depending on the specific task and dataset, and further research is needed to fully understand the effects of chunk size and level on answer quality in RAG systems.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages do not exist."
+        }
+      ],
+      "supported": 1,
+      "not_supported": 6,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 7,
+      "faithfulness": 0.14285714285714285
+    },
+    {
+      "id": "gs-006",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 47.0,
+        "first_token": 406.0,
+        "answer": 1375.0,
+        "followups": 2766.0,
+        "total": 4188.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 1.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [
+        "2606.31033"
+      ],
+      "relevant_doc_ids": [
+        "2606.31033"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "A token-level hallucination detector for RAG can use the retrieved documents to find ungrounded tokens by comparing internal representations of a large language model (LLM) under two conditions: with and without the retrieved documents.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages do not exist."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This comparison is based on the intuition that tokens grounded in retrieved documents should be more strongly influenced by those documents than hallucinated tokens [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "To capture this document-induced effect, the detector also leverages the propagation of document-grounded information through preceding tokens, reducing false positives for tokens whose evidence has already been absorbed into the context [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 2,
+      "not_supported": 1,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "gs-007",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 406.0,
+        "answer": 656.0,
+        "followups": 2531.0,
+        "total": 3234.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2403.06448",
+        "2411.04847"
+      ],
+      "relevant_doc_ids": [
+        "2312.02798",
+        "2606.31033"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "Two approaches that detect hallucination from a language model's internal states instead of its output text are PRISM [2] and MIND [5].",
+          "cited_n": [
+            2,
+            5
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 1,
+      "not_supported": 0,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 1,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "gs-008",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 359.0,
+        "answer": 719.0,
+        "total": 750.0
+      },
+      "n_sources": 5
+    },
+    {
+      "id": "gs-009",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 2406.0,
+        "answer": 3047.0,
+        "followups": 2922.0,
+        "total": 6000.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [],
+      "relevant_doc_ids": [
+        "2302.00083"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 0,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "In-Context RALM is a simple alternative to existing retrieval-augmented language models (RALM) that leaves the language model architecture unchanged and prepends grounding documents to the input, without any further training of the LM.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, providing no evidence for the claims made in the sentence."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This approach is easier to deploy than other RALM approaches because it does not require modifying the LM architecture, significantly complicating deployment.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, providing no information to support the claim."
+        }
+      ],
+      "supported": 0,
+      "not_supported": 2,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 2,
+      "faithfulness": 0.0
+    },
+    {
+      "id": "gs-010",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 47.0,
+        "first_token": 453.0,
+        "answer": 797.0,
+        "followups": 2937.0,
+        "total": 3781.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 1.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [
+        "2406.15319",
+        "2410.18050"
+      ],
+      "relevant_doc_ids": [
+        "2410.18050"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "LongRAG outperforms ordinary RAG by 6.16% [2] and long-context LLMs by 6.94% [1] on multi-hop question answering over long documents.",
+          "cited_n": [
+            2,
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 1,
+      "not_supported": 0,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 1,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "gs-011",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 32.0,
+        "first_token": 438.0,
+        "answer": 1500.0,
+        "followups": 2859.0,
+        "total": 4391.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 1.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [
+        "2411.10541",
+        "2505.12837",
+        "2608.21074"
+      ],
+      "relevant_doc_ids": [
+        "2411.10541"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 4,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "The way a prompt is laid out can affect how well a GPT model performs on a task.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "There are no cited passages to support or refute the claim."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "Experiments show that different formats can significantly affect model performance, with some formats improving efficiency and stability, while others degrading performance [1][3].",
+          "cited_n": [
+            1,
+            3
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "For example, consistent formatting, especially in JSON, can improve generation efficiency and syntactic stability, while tuning the prompt to align with the model's capabilities can lead to better performance [5].",
+          "cited_n": [
+            5
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 4,
+          "sentence": "However, the impact of formatting on performance can vary depending on the model and task, with some models being more robust to variations in input structure than others [3].",
+          "cited_n": [
+            3
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 3,
+      "not_supported": 1,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 4,
+      "faithfulness": 0.75
+    },
+    {
+      "id": "gs-012",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 15.0,
+        "first_token": 453.0,
+        "answer": 531.0,
+        "total": 546.0
+      },
+      "n_sources": 5
+    },
+    {
+      "id": "gs-013",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 32.0,
+        "first_token": 2375.0,
+        "answer": 3172.0,
+        "followups": 2906.0,
+        "total": 6110.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 1.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [
+        "2406.16235"
+      ],
+      "relevant_doc_ids": [
+        "2406.16235"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "Yes, preference tuning on English data alone can significantly reduce toxicity in multilingual open-ended generations across 17 different languages [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "The probability of generating toxic continuations drops from 46.8% to 3.9% after training on English data [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "This suggests that preference tuning on English data can lead to a reduction in toxicity in other languages, even if the model is not specifically trained on data from those languages.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The sentence claims that preference tuning on English data can lead to a reduction in toxicity in other languages, but there are no cited passages to support this claim."
+        }
+      ],
+      "supported": 2,
+      "not_supported": 1,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "gs-014",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 47.0,
+        "first_token": 406.0,
+        "answer": 1625.0,
+        "followups": 2812.0,
+        "total": 4484.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2308.11483",
+        "2503.23483"
+      ],
+      "relevant_doc_ids": [
+        "2309.12481"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 3,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "The order of the answer choices can significantly affect an AI model's performance on a multiple-choice test.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The sentence claims that the order of answer choices can significantly affect an AI model's performance, but no cited passages are provided to support this claim."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "Research has shown that large language models (LLMs) can be sensitive to the order of options in multiple-choice questions, with performance gaps ranging from 13% to 75% when answer options are reordered [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "This sensitivity arises when LLMs are uncertain about the prediction between the top-2/3 choices, and specific options placements may favor certain predictions depending on the question, caused by positional bias [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 4,
+          "sentence": "However, some models can be fine-tuned to be more robust to answer-order permutations, and incorporating strategies like Set-Based Prompting (SBP) can improve accuracy and robustness [5].",
+          "cited_n": [
+            5
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 3,
+      "not_supported": 1,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 4,
+      "faithfulness": 0.75
+    },
+    {
+      "id": "gs-015",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 469.0,
+        "answer": 1797.0,
+        "followups": 2797.0,
+        "total": 4625.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2606.03043",
+        "2609.06444"
+      ],
+      "relevant_doc_ids": [
+        "2510.15313",
+        "2609.00494"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "An AI judge can give misleading quality scores because it may capture quality that is not relevant to the task, or because it shares the same blind spots as the human judges, leading to agreement statistics that cannot distinguish between these two cases [4].",
+          "cited_n": [
+            4
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This is because judges may agree on scores that are not based on the same underlying principles, but rather on the same flaws or biases.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "There are no cited passages to support the claim."
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "A small number of human labels can be used to correct the AI judge's scores by providing a more nuanced understanding of the task and the quality of the submissions.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "There are no cited passages to support the sentence."
+        },
+        {
+          "sentence_no": 4,
+          "sentence": "This can be done by using a small set of expert labels that can help to identify the most relevant and accurate scores, and then using these labels to fine-tune the AI judge's performance [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 2,
+      "not_supported": 2,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 4,
+      "faithfulness": 0.5
+    },
+    {
+      "id": "gs-016",
+      "type": "comparison",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 422.0,
+        "answer": 1454.0,
+        "followups": 2750.0,
+        "total": 4235.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.5,
+      "retrieved_doc_recall": 0.5,
+      "cited_doc_ids": [
+        "2209.11055",
+        "2503.18089"
+      ],
+      "relevant_doc_ids": [
+        "2510.16985",
+        "2209.11055"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 3,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "SetFit differs from LoRA fine-tuning of a large language model in that it does not require manual parameter adjustment or verbalizers, and instead uses a contrastive Siamese manner to fine-tune a pre-trained Sentence Transformer (ST) on a small number of text pairs [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This approach achieves high accuracy with orders of magnitude less parameters than existing techniques, and is particularly useful in low-resource settings where data and hardware are limited [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "In contrast, LoRA fine-tuning requires manual parameter adjustment and can be computationally expensive, especially in limited-data settings [3].",
+          "cited_n": [
+            3
+          ],
+          "label": "not supported",
+          "reason": "The cited passage does not mention manual parameter adjustment or computational expense for LoRA fine-tuning."
+        }
+      ],
+      "supported": 2,
+      "not_supported": 1,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "gs-017",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 406.0,
+        "answer": 1000.0,
+        "followups": 3000.0,
+        "total": 4031.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 1.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [
+        "2508.03306"
+      ],
+      "relevant_doc_ids": [
+        "2508.03306"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "High-precision scoring (HPS) resolves tied relevance scores by upcasting the final scoring step to higher precision, thereby reducing the impact of reduced granularity in low-precision computations [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This approach minimizes computational cost while resolving tied candidates, thereby reducing variability in results based on tie resolution, making the evaluation more reliable [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 2,
+      "not_supported": 0,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 2,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "gs-018",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 203.0,
+        "retrieve": 16.0,
+        "first_token": 594.0,
+        "answer": 484.0,
+        "total": 703.0
+      },
+      "n_sources": 5
+    },
+    {
+      "id": "gs-019",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 2266.0,
+        "retrieve": 31.0,
+        "first_token": 2687.0,
+        "answer": 515.0,
+        "followups": 2766.0,
+        "total": 5578.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 1.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [
+        "2505.17829"
+      ],
+      "relevant_doc_ids": [
+        "2505.17829"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 1,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "Path homogenization and inefficient use of intermediate results [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 1,
+      "not_supported": 0,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 1,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "gs-020",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 359.0,
+        "answer": 1375.0,
+        "followups": 3266.0,
+        "total": 4672.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [
+        "2406.18665",
+        "2606.27457"
+      ],
+      "relevant_doc_ids": [
+        "2606.06178"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 3,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "A system can route questions to different language models while respecting each user's own balance between cost and quality by using a cascaded framework, such as the one proposed in [1], where incoming queries are first routed to the most cost-effective model, and if the output is deemed low-quality, the query is escalated to a stronger model.",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "Alternatively, a router model can be trained to dynamically select between a stronger and a weaker LLM during inference, as proposed in [2], which can learn users' implicit preferences through little interaction.",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "This approach can help to optimize the balance between cost and response quality for each user. [2]",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 3,
+      "not_supported": 0,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "gs-021",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 16.0,
+        "first_token": 391.0,
+        "answer": 500.0,
+        "total": 516.0
+      },
+      "n_sources": 5
+    },
+    {
+      "id": "gs-022",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 2234.0,
+        "retrieve": 16.0,
+        "first_token": 2562.0,
+        "answer": 921.0,
+        "followups": 2860.0,
+        "total": 6031.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2510.02128"
+      ],
+      "relevant_doc_ids": [
+        "2604.14682"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 1,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "The speedup provided by speculative decoding does not uniformly distribute across tasks, consistently diminishing for under-fit tasks, and often underrepresented tasks [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This means that the technique may not work equally well for every kind of task, and its effectiveness can vary depending on the specific task and the characteristics of the large language model.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "There are no cited passages to support the claim that the technique may not work equally well for every kind of task."
+        }
+      ],
+      "supported": 1,
+      "not_supported": 1,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 2,
+      "faithfulness": 0.5
+    },
+    {
+      "id": "gs-023",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 250.0,
+        "retrieve": 31.0,
+        "first_token": 625.0,
+        "answer": 1328.0,
+        "followups": 2813.0,
+        "total": 4422.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2310.15851"
+      ],
+      "relevant_doc_ids": [
+        "2609.26185"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 3,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "The model can be protected against jailbreak attacks without retraining it through the use of safeguards, such as implementing external models or filters to prevent harmful outputs, or by using a novel approach called Self-Guard, which combines the strengths of both safety methods [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "Self-Guard includes two stages: enhancing the model's ability to assess harmful content, and instructing the model to consistently perform harmful content detection on its own responses [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "This approach has been demonstrated to be robust against jailbreak attacks [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 3,
+      "not_supported": 0,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 1.0
+    },
+    {
+      "id": "gs-024",
+      "type": "follow_up",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 281.0,
+        "retrieve": 31.0,
+        "first_token": 734.0,
+        "answer": 1438.0,
+        "total": 1750.0
+      },
+      "n_sources": 5
+    },
+    {
+      "id": "gs-025",
+      "type": "multi_hop",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 2390.0,
+        "answer": 3187.0,
+        "followups": 2719.0,
+        "total": 5937.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "1809.02208"
+      ],
+      "relevant_doc_ids": [
+        "2509.07889",
+        "2506.00748"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "There is no mention of researchers addressing gender bias in Chinese text specifically.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The sentence claims that there is no mention of researchers addressing gender bias in Chinese text specifically, but the provided passages do not contain any information to support or refute this claim."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "However, source [5] does mention that the sentences used in the experiment were constructed in 12 different gender-neutral languages, including Chinese, and that the Google Translate API was used to translate these sentences into English.",
+          "cited_n": [
+            5
+          ],
+          "label": "not supported",
+          "reason": "The cited passage does not mention the construction of sentences in 12 different gender-neutral languages, nor does it specify that Chinese was one of those languages. The passage only mentions that sentences were constructed in 12 different languages, including Chinese, but does not confirm that these languages were gender-neutral."
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "In terms of machine translation, source [5] reports that Google Translate exhibits a strong tendency towards male defaults, particularly for fields linked to unbalanced gender distribution such as STEM jobs.",
+          "cited_n": [
+            5
+          ],
+          "label": "supported",
+          "reason": ""
+        }
+      ],
+      "supported": 1,
+      "not_supported": 2,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 0.3333333333333333
+    },
+    {
+      "id": "gs-026",
+      "type": "comparison",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 63.0,
+        "first_token": 453.0,
+        "answer": 1437.0,
+        "followups": 2797.0,
+        "total": 4297.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2402.09910"
+      ],
+      "relevant_doc_ids": [
+        "2506.19399",
+        "2303.14770"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "According to the sources, it is not possible to determine with certainty whether a text was part of a language model's training data solely by searching the training corpus, as the training data is typically undisclosed [5].",
+          "cited_n": [
+            5
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "However, the DE-COP method proposes a way to detect whether a piece of copyrighted content was included in training by probing the LLM with multiple-choice questions, whose options include both verbatim text and their paraphrases [5].",
+          "cited_n": [
+            5
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "This method can determine whether a piece of copyrighted content was included in training, but it does not provide information on whether the text was part of the training data in general.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The sentence makes claims about determining whether copyrighted content was included in training, but there are no cited passages to support these claims."
+        }
+      ],
+      "supported": 2,
+      "not_supported": 1,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 0.6666666666666666
+    },
+    {
+      "id": "gs-027",
+      "type": "factual",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 391.0,
+        "answer": 688.0,
+        "followups": 3015.0,
+        "total": 3734.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 1.0,
+      "cited_doc_ids": [],
+      "relevant_doc_ids": [
+        "2409.02060"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 0,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "The OLMoE language model uses 1 billion parameters per input token, despite having 7 billion parameters in total.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages do not contain any information about the number of parameters used per input token or the amount of training data."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "It was trained on 5 trillion tokens.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages do not contain the claim about the number of parameters for each token or the amount of data the OLMoE language model was trained on."
+        }
+      ],
+      "supported": 0,
+      "not_supported": 2,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 2,
+      "faithfulness": 0.0
+    },
+    {
+      "id": "gs-028",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 32.0,
+        "first_token": 391.0,
+        "answer": 984.0,
+        "followups": 2906.0,
+        "total": 3922.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2107.10637",
+        "2506.08433"
+      ],
+      "relevant_doc_ids": [
+        "2503.19693"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "Limiting the vocabulary of a language model can make it cheaper to run in one specialised domain.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, providing no evidence for the claim."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "By reducing the number of possible tokens, the model's computational requirements are decreased, leading to faster inference times and lower energy consumption [4].",
+          "cited_n": [
+            4
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "This approach can be particularly effective in low-resource environments where energy efficiency and accessibility are key concerns [2].",
+          "cited_n": [
+            2
+          ],
+          "label": "not supported",
+          "reason": "The sentence mentions 'low-resource environments' and 'energy efficiency and accessibility', but the cited passage does not directly state that this approach can be particularly effective in such environments. The passage discusses the challenges and potential solutions but does not explicitly claim the effectiveness of the approach in these terms."
+        }
+      ],
+      "supported": 1,
+      "not_supported": 2,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 3,
+      "faithfulness": 0.3333333333333333
+    },
+    {
+      "id": "gs-029",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 32.0,
+        "first_token": 375.0,
+        "answer": 1265.0,
+        "followups": 2828.0,
+        "total": 4125.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "2212.09803",
+        "2305.14681"
+      ],
+      "relevant_doc_ids": [
+        "2211.00151"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 4,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "The sources do not contain enough evidence to answer this question.",
+          "cited_n": [],
+          "label": "not checkable",
+          "reason": "fixed refusal sentence (judge prompt rule 4); not sent to the judge"
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "The evidence on the relationship between training and performance is mixed, with some studies showing that performance can decrease over the course of training [4], while others do not find a consistent relationship between training and performance [2].",
+          "cited_n": [
+            4,
+            2
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "Additionally, the relationship between model size and performance is also complex, with some studies showing that larger models can perform better on certain tasks [2], while others find that smaller models can outperform larger ones on certain tasks [4].",
+          "cited_n": [
+            2,
+            4
+          ],
+          "label": "not supported",
+          "reason": "The cited passages do not discuss the relationship between model size and a model's ability to recognize its own mistakes."
+        }
+      ],
+      "supported": 1,
+      "not_supported": 1,
+      "not_checkable": 1,
+      "judge_error": 0,
+      "checkable": 2,
+      "faithfulness": 0.5
+    },
+    {
+      "id": "gs-030",
+      "type": "explanatory",
+      "error": null,
+      "insufficient_evidence": false,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 32.0,
+        "first_token": 391.0,
+        "answer": 1687.0,
+        "followups": 2766.0,
+        "total": 4485.0
+      },
+      "n_sources": 5,
+      "cited_doc_recall": 0.0,
+      "retrieved_doc_recall": 0.0,
+      "cited_doc_ids": [
+        "1906.07004",
+        "2207.03240"
+      ],
+      "relevant_doc_ids": [
+        "2102.04708"
+      ],
+      "invalid_citations": 0,
+      "citation_numbers": 2,
+      "sentences": [
+        {
+          "sentence_no": 1,
+          "sentence": "A question that depends on earlier turns of a conversation can be rewritten to stand on its own through a process called question rewriting, which involves rephrasing the question to remove references to previous dialogue turns.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages are empty, providing no information to support or refute the claim."
+        },
+        {
+          "sentence_no": 2,
+          "sentence": "This can be achieved through various techniques, including using a transformer-based utterance rewriting architecture [1] or a pointer network [1].",
+          "cited_n": [
+            1
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 3,
+          "sentence": "These architectures can learn to rewrite questions without human-labelled data, such as the CoQAR corpus [5], which contains $4.5$K conversations and $53$K follow-up question-answer pairs.",
+          "cited_n": [
+            5
+          ],
+          "label": "supported",
+          "reason": ""
+        },
+        {
+          "sentence_no": 4,
+          "sentence": "The CoQAR corpus can be used to train models for question paraphrasing, question rewriting, and conversational question answering tasks, demonstrating the potential of question rewriting as a preprocessing step for question answering models.",
+          "cited_n": [],
+          "label": "not supported",
+          "reason": "The cited passages do not exist."
+        }
+      ],
+      "supported": 2,
+      "not_supported": 2,
+      "not_checkable": 0,
+      "judge_error": 0,
+      "checkable": 4,
+      "faithfulness": 0.5
+    },
+    {
+      "id": "gs-u01",
+      "type": "unanswerable",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 31.0,
+        "first_token": 422.0,
+        "answer": 516.0,
+        "total": 547.0
+      },
+      "n_sources": 5
+    },
+    {
+      "id": "gs-u02",
+      "type": "unanswerable",
+      "error": null,
+      "insufficient_evidence": true,
+      "latency_ms": {
+        "rewrite": 0.0,
+        "retrieve": 15.0,
+        "first_token": 2421.0,
+        "answer": 2516.0,
+        "total": 2531.0
+      },
+      "n_sources": 5
+    }
+  ],
+  "config": {
+    "name": "ablation-rewrite",
+    "golden_path": "evaluation/golden_set/golden.jsonl",
+    "split": "dev",
+    "language": "en",
+    "dataset_snapshot": "kaggle-arxiv-v307-cs.CL-2026-10-10",
+    "index_snapshot": "scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37",
+    "notes": "W7-D2-DAT-1 ablation rewrite: AGENT_REWRITE=on AGENT_SELF_CHECK=off, v0.6-rc, DAT laptop RTX 5060 8 GB (Ollama GPU), Ollama 0.40.13, AGENT_TIMEOUT_S=600",
+    "bootstrap": {
+      "resamples": 1000,
+      "seed": 0
+    },
+    "agent": {
+      "factory": "scitech_agent.factory:agent_from_env"
+    },
+    "generator": {
+      "digest": "a80c4f17acd5",
+      "max_tokens": 512
+    },
+    "judge": {
+      "prompt_path": "evaluation/prompts/faithfulness-judge.md",
+      "digest": "845dbda0ea48",
+      "temperature": 0,
+      "max_tokens": 200,
+      "context_tokens": 4096
+    }
+  },
+  "note": "The judge is a 7B model that has not been validated against human labels; the pilot kappa (evaluation/pilot/faithfulness) is the first evidence. Faithfulness means supported by the cited passages, not true. One run per condition; never compare runs with different judges.",
+  "traces_path": "evaluation\\runs\\20261030T085601Z-ablation-rewrite.traces.jsonl"
+}

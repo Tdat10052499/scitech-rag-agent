@@ -1,0 +1,191 @@
+/* Layout: workspace shell, sidebar, conversation header, reading column.
+   Breakpoints 1280px and 1024px are also in useMediaQuery.ts (BREAKPOINTS); change both together. */
+
+/* ---------- Shell ---------- */
+.ui-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-bg-canvas);
+}
+
+.ui-shell.has-sidebar {
+  grid-template-columns: var(--layout-sidebar) minmax(0, 1fr);
+}
+
+.ui-shell.has-sources {
+  grid-template-columns: minmax(0, 1fr) var(--layout-sources);
+}
+
+.ui-shell.has-sidebar.has-sources {
+  grid-template-columns: var(--layout-sidebar) minmax(0, 1fr) var(--layout-sources);
+}
+
+.ui-shell__sidebar {
+  min-height: 0;
+  overflow-y: auto;
+  border-right: var(--border-width) solid var(--color-border);
+  background: var(--color-bg-surface);
+}
+
+.ui-shell__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ui-shell__header {
+  flex: none;
+}
+
+.ui-shell__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-anchor: auto; /* keeps the reading position when the column width changes */
+}
+
+.ui-shell__composer {
+  flex: none;
+  width: 100%;
+  max-width: calc(var(--layout-reading) + 2 * var(--layout-gutter));
+  margin: 0 auto;
+  padding: var(--space-2) var(--layout-gutter) var(--space-4);
+}
+
+.ui-shell__sources {
+  min-height: 0;
+  border-left: var(--border-width) solid var(--color-border);
+  background: var(--color-bg-canvas);
+}
+
+.ui-shell__drawer-sidebar,
+.ui-shell__drawer-sources {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ui-shell__drawer-sidebar {
+  background: var(--color-bg-surface);
+}
+
+.ui-shell__drawer-sources {
+  overflow: hidden; /* the source panel scrolls its own list */
+}
+
+/* ---------- Conversation header ---------- */
+.ui-conversation-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--layout-header);
+  padding: 0 var(--space-3) 0 var(--layout-gutter);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.ui-conversation-header > .ui-tooltip-anchor:first-child {
+  margin-left: calc(var(--space-2) - var(--layout-gutter));
+}
+
+.ui-conversation-header__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-body-size);
+  font-weight: var(--weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-conversation-header__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ---------- Reading column ---------- */
+.ui-reading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+  max-width: calc(var(--layout-reading) + 2 * var(--layout-gutter));
+  margin: 0 auto;
+  padding: var(--space-8) var(--layout-gutter);
+}
+
+/* ---------- Sidebar ---------- */
+.ui-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 100%;
+  padding: var(--space-4) var(--space-3);
+}
+
+.ui-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-1);
+}
+
+.ui-sidebar__mark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+.ui-sidebar__name {
+  font-family: var(--font-display);
+  font-size: var(--text-title-size);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-display);
+}
+
+.ui-sidebar__new {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.ui-sidebar__sections {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-2) var(--space-1) 0;
+}
+
+.ui-sidebar__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-sidebar__section-body {
+  color: var(--color-text-secondary);
+  font-size: var(--text-meta-size);
+  line-height: var(--text-meta-line);
+}
+
+.ui-sidebar__section-body p {
+  margin: 0;
+}
+
+.ui-sidebar__section-body p + p {
+  margin-top: var(--space-2);
+}
+
+.ui-sidebar__footer .ui-segmented {
+  width: 100%;
+}

@@ -1,8 +1,9 @@
 """Integration test of `load` (W3-D3-FAO-1) with DAT's store against a real Qdrant.
 
 Runs only when Qdrant answers at `QDRANT_URL` (default http://localhost:6333), e.g. after
-`make up`; otherwise it is skipped, as in CI. It loads the fixture chunks into a throw-away
-collection that it deletes at the end, so it never touches `QDRANT_COLLECTION`. Run it with:
+`make up-qdrant` (or `make up`); otherwise it is skipped, as in CI. It loads the fixture chunks
+into a throw-away collection that it deletes at the end, so it never touches
+`QDRANT_COLLECTION`. Run it with:
     python -m pytest -m integration pipelines/tests/test_load_integration.py
 """
 
