@@ -120,7 +120,7 @@ python -m scitech_pipelines incremental-run --start 2026-10-10 --model "$EMBEDDI
 python -m scitech_pipelines incremental-run --model "$EMBEDDING_MODEL"                      # later runs
 ```
 - It needs Java 17+ (`clean`), sentence-transformers (`embed`, a CPU is enough) and the Qdrant it loads into, on one machine. FAO's laptop has Java 8, so it runs in WSL2, Linux or a Kaggle CPU notebook. A notebook has its own Qdrant and cannot update the one on the laptop.
-- **Schedule:** none. It is run by hand when new papers are needed (ADR 0008, point 6). One run catches up all missed days in one range. The cron line for a machine with Java 17+ is in the ADR (not tested).
+- **Schedule:** by hand (ADR 0008, point 6) until ADR 0011's scheduled runs are merged after Gate W7; see "Scheduled runs" below. One run catches up all missed days in one range.
 - **What it does:** fetch from OAI-PMH (set `cs:cs:CL`) from the watermark day to yesterday (UTC), then `clean`, `chunk`, `embed` and a replacing load: every fetched paper loses all its old points before its new chunks are loaded. The watermark moves only after the load's count check passes, so a failed run is simply run again. The watermark day is fetched again on the next run (its records may still have been arriving), which costs about one day of embedding.
 - **Check a run:** the last lines say `load: N papers replaced in <collection>: D old points deleted, L loaded, P points now` and `incremental: watermark <day> -> ...`. In the run's `_load_manifest.json` (`<data-dir>/processed/incremental/<from>_<until>/index/`), `counts.points` must equal `points_before - points_deleted + points_loaded`.
 - **Live test** (W5-D4-FAO-1, 2026-10-27, `pipelines/reports/incremental_test.md`, #124), on a Kaggle CPU notebook against a copy of the full index:
@@ -134,8 +134,45 @@ python -m scitech_pipelines incremental-run --model "$EMBEDDING_MODEL"          
   | Wall time (embed on CPU) | 10 min 45 s (549.2 s) | 1 min 13 s (39.1 s) |
 
   The cells, with the independent check of duplicates and stale chunks, are in the report's "Reproduce" section.
-- **Never** point it at the frozen evaluation collection (`--collection`): no index changes from W6-D4 to D22 unless approved.
-- It does not rebuild the BM25 index, so incremental papers are found only by the dense half of hybrid retrieval, and BM25 keeps the old text of replaced papers, until the index is rebuilt (#119).
+- **Never** point it at the frozen evaluation collection: it refuses `FROZEN_COLLECTION` (empty or unset: `scitech_chunks`) with "is the frozen evaluation collection". No index changes from W6-D4 to D22 unless approved.
+- **Only new or changed papers are processed.** Each fetched record is compared with the one fetched for the same paper by the last successful run (`<data-dir>/state/incremental-seen.json`); unchanged papers skip `clean`, `embed` and the load. When nothing is left, the run logs `incremental: nothing changed` and leaves the watermark as it is. To force a full re-run of the watermark range, delete that file.
+- **One run at a time:** a run holds `<data-dir>/state/incremental.lock`. A second run stops at once with "another incremental run holds ..." and exit code 1. A lock left by a process that is gone is taken over, and any lock older than 3 hours is taken over (a run takes about 10 minutes). A restarted container keeps its host name and reuses low process ids, so a lock whose id is the new run's own or its parent's counts as gone too.
+- Without `--rebuild-bm25` it does not rebuild the BM25 index, so incremental papers are found only by the dense half of hybrid retrieval, and BM25 keeps the old text of replaced papers, until the index is rebuilt (#119).
+
+### Scheduled runs (ADR 0011, W7-D6-FAO-1; not merged before Gate W7)
+The `ingest` container (`docker/ingest/`) runs `incremental-run` on the live collection every 2 hours, on the hour (UTC), and rebuilds its BM25 index after each load. The frozen `scitech_chunks` and `data/index/bm25` are only read, once, by the setup.
+
+| Setting (`.env`) | Default | Meaning |
+|---|---|---|
+| `INGEST_EVERY_HOURS` | 2 | Hours between runs: 1, 2, 3, 4, 6, 8, 12 or 24; runs start at the hours divisible by it |
+| `INGEST_COLLECTION` | `scitech_chunks_live` | The live collection the demo backend uses |
+| `BM25_LIVE_DIR` | `data/index/bm25-live` | Its BM25 index (the backend's `BM25_INDEX_DIR` in the live setup) |
+| `FROZEN_COLLECTION` | `scitech_chunks` | Refused by `incremental-run` |
+| `INGEST_RUN_NOW` | 0 | 1: also run once when the container starts |
+
+1. **Once, set up the live index.** This loads the bulk chunks and vectors (`data/processed/chunks`, `data/processed/embeddings`, or the release zip `data-2026-10-17`) into `scitech_chunks_live`, copies `data/index/bm25` to `data/index/bm25-live`, and runs the first catch-up from 2026-10-10 to today. The load took 135.2 s on FAO's laptop (#91). The catch-up embedded 2,744 papers in 549 s on a Kaggle CPU (#124).
+   ```bash
+   docker compose run --rm ingest setup-live.sh
+   ```
+   It stops if `data/index/bm25-live` exists already, and if `INGEST_COLLECTION` is the frozen collection.
+   If the load and copy passed but the first run (the catch-up) failed, delete nothing: run the catch-up alone. It goes on from the watermark once there is one.
+   ```bash
+   docker compose run --rm ingest catch-up.sh
+   ```
+2. **Start the schedule** with the stack: `INGEST_ENABLED=1` (W7-D7-DAT-1) and `make up`, or `docker compose up -d ingest`. Each run's output is in `docker compose logs ingest` and is appended to `data/logs/incremental.log` between `=== run started <time>` and `=== run ended <time>, exit code <n>` lines.
+3. **Check a run** in the log:
+   - `incremental: N of M papers new or changed`, then the usual `load:` line;
+   - `bm25: C chunks of scitech_chunks_live indexed in S s -> data/index/bm25-live`;
+   - `incremental: watermark ...`.
+   A run with nothing new logs `incremental: nothing changed` and ends with exit code 0. Count the soak runs (W8-D6-DAT-1) with `grep -c "=== run ended" data/logs/incremental.log`, and the failed ones with `grep "=== run ended" data/logs/incremental.log | grep -vc "exit code 0"`.
+4. **Stop it:** `docker compose stop ingest`, or `INGEST_ENABLED=0` and `make up`. The live index stays as it is. To start again from the frozen copy, stop it, delete `data/index/bm25-live`, `data/state/incremental.json` and `data/state/incremental-seen.json`, drop the collection (PowerShell: `Invoke-RestMethod -Method Delete http://localhost:6333/collections/scitech_chunks_live`), and run step 1 again.
+
+Notes:
+- **BM25 rebuild:** the new index is built from the live collection's own payloads (Qdrant scroll), so a replaced paper's old text is gone and no run's chunk files are needed. It is written to `bm25-live.next` and switched in with two renames, so a reader sees the old index or the new one. A failed build leaves the old one in place, and the watermark does not move, so the next run repeats the load and the build.
+- **Laptop sleep:** nothing runs while Windows sleeps (the Docker VM is paused). For the soak, set "When plugged in, put my device to sleep after" to Never. A missed hour is not run later; the next run catches up its records.
+- **Disk:** each run with new papers keeps about 1-2 MB under `data/processed/incremental/`. The raw fetch file in `data/raw/arxiv-oai/` is deleted when the run has passed (or found nothing changed); its `.manifest.json` stays. A failed run keeps it for the retry. The live copy adds about 610 MiB in Qdrant (Docker's disk) and 177 MiB for BM25 in `data/` (`index_profile.md` section 4).
+- **Memory:** the BM25 build peaked at 1,184 MB (DAT's laptop, bulk index); `clean` starts Spark with at most 4 GB of driver memory. Record the container's peak (`docker stats`) on the first real run.
+- **Not covered:** deleted arXiv records stay until a full rebuild (ADR 0008).
 - Deleted arXiv records are counted in the fetch manifest but stay in the index until the next full rebuild.
 
 ## 7. Scaling measurements

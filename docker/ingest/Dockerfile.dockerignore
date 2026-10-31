@@ -1,0 +1,14 @@
+# Build context of docker/ingest/Dockerfile (replaces the root .dockerignore for this image).
+.git
+.env
+.env.*
+data/
+**/__pycache__/
+**/*.py[cod]
+.venv/
+venv/
+**/node_modules/
+frontend/
+notebooks/
+evaluation/
+docs/

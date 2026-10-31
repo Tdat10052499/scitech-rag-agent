@@ -28,15 +28,30 @@ Spark, a model or Qdrant; `default_steps` wires the real ones. The store needs o
 than `load` (`delete_doc_ids`). DAT's store module (W3-D1-DAT-1) has no delete, so
 `QdrantReplaceStore` adds Qdrant's delete-by-filter on top of it, through the REST API at the
 store's own URL and collection; the store module itself is unchanged.
+
+Scheduled runs (ADR 0011) add four rules, all off by default so a manual run behaves as before:
+- `until_today`: fetch up to today (UTC) instead of yesterday. The watermark day is still fetched
+  again by the next run, so records that arrive later the same day are not missed.
+- `skip_unchanged`: compare each fetched record with the one fetched for the same paper by the
+  last successful run (a hash of its line, in `<data>/state/incremental-seen.json`) and send only
+  new or changed papers to `clean`. With none left, the run logs `incremental: nothing changed`
+  and changes nothing, not even the watermark.
+- `after_load`: called once the load has passed and before the watermark moves (the BM25
+  rebuild of the live index, `scitech_pipelines.bm25_live`); if it fails, the next run repeats.
+- `run_lock`: one run at a time (`<data>/state/incremental.lock`).
+`check_not_frozen` refuses the frozen evaluation collection (`FROZEN_COLLECTION`).
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
+import socket
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -56,6 +71,10 @@ from scitech_pipelines.load import (
 from scitech_pipelines.validate import _quote
 
 STATE_FILE = Path("state") / "incremental.json"
+SEEN_FILE = Path("state") / "incremental-seen.json"  # line hash per paper of the last run
+LOCK_FILE = Path("state") / "incremental.lock"
+LOCK_STALE_SECONDS = 3 * 3600  # a lock of another host older than this is taken over
+DEFAULT_FROZEN_COLLECTION = "scitech_chunks"  # evaluation index, frozen (evaluation/SNAPSHOT.md)
 DELETE_BATCH = 256  # doc ids per delete request
 
 Log = Callable[[str], None]
@@ -114,6 +133,38 @@ class QdrantReplaceStore:
                 f"{response.text[:300]}"
             )
 
+    def scroll_payloads(
+        self, fields: Sequence[str], *, page_size: int = 1000
+    ) -> Iterator[dict[str, Any]]:
+        """Every point's payload (only `fields`), page by page through Qdrant's scroll API."""
+        import httpx
+
+        path = f"/collections/{self.collection}/points/scroll"
+        offset: Any = None
+        while True:
+            body: dict[str, Any] = {
+                "limit": page_size,
+                "with_payload": list(fields),
+                "with_vector": False,
+            }
+            if offset is not None:
+                body["offset"] = offset
+            try:
+                response = self._http.post(path, json=body)
+            except httpx.HTTPError as exc:
+                raise RuntimeError(f"Qdrant scroll in {self.collection} failed: {exc}") from exc
+            if response.is_error:
+                raise RuntimeError(
+                    f"Qdrant scroll in {self.collection} failed with HTTP "
+                    f"{response.status_code}: {response.text[:300]}"
+                )
+            result = response.json()["result"]
+            for point in result["points"]:
+                yield point.get("payload") or {}
+            offset = result.get("next_page_offset")
+            if offset is None:
+                return
+
     def close(self) -> None:
         self._http.close()
 
@@ -162,6 +213,117 @@ def check_index_model(data_dir: Path, collection: str, model: str) -> None:
             f"{collection} was loaded with {bulk['model']} ({path}), not {model}: vectors of two "
             "models would be mixed. Use the model of the bulk load, or another --collection."
         )
+
+
+def check_not_frozen(collection: str, frozen: str | None = DEFAULT_FROZEN_COLLECTION) -> None:
+    """Refuse the frozen evaluation collection (ADR 0011). `frozen` empty: no check."""
+    if frozen and collection == frozen:
+        raise ValueError(
+            f"{collection} is the frozen evaluation collection (FROZEN_COLLECTION): incremental "
+            "runs go to the live collection (ADR 0011), for example scitech_chunks_live"
+        )
+
+
+class RunLocked(RuntimeError):
+    """Another run holds the lock."""
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:  # alive, owned by another user
+        return True
+    except OSError:  # Windows: no signal 0 for a process that is gone
+        return False
+    return True
+
+
+@contextmanager
+def run_lock(
+    data_dir: Path, *, stale_seconds: float = LOCK_STALE_SECONDS, log: Log = print
+) -> Iterator[Path]:
+    """Hold `<data>/state/incremental.lock` for the duration of a run.
+
+    The lock file holds the host name, the process id and the start time. A lock left by a
+    process that is gone (same host) is taken over, and so is any lock older than
+    `stale_seconds` (a run takes about 10 minutes): a container that was restarted keeps its
+    host name and starts its process ids low again, so the old id can belong to an unrelated
+    process, or to this run or its parent (both treated as gone). Anything else raises
+    `RunLocked`."""
+    path = data_dir / LOCK_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    mine = {"host": socket.gethostname(), "pid": os.getpid(), "started": time.time()}
+    for _ in range(2):
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                held = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                held = {}
+            same_host = held.get("host") == mine["host"]
+            pid = int(held.get("pid") or 0)
+            age = time.time() - float(held.get("started") or 0)
+            gone = same_host and (pid in (os.getpid(), os.getppid()) or not _pid_alive(pid))
+            if age < stale_seconds and not gone:
+                raise RunLocked(
+                    f"another incremental run holds {path} (host {held.get('host')}, pid "
+                    f"{held.get('pid')}, started {age / 60:.0f} min ago); this run stops"
+                ) from None
+            log(f"incremental: taking over a stale lock {path} ({held})")
+            path.unlink(missing_ok=True)
+            continue
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(mine, f)
+        break
+    else:
+        raise RunLocked(f"could not take {path}")
+    try:
+        yield path
+    finally:
+        path.unlink(missing_ok=True)
+
+
+def _line_hashes(raw: Path) -> dict[str, str]:
+    """Paper id -> sha1 of its fetched line (the record as `incremental-fetch` wrote it)."""
+    hashes: dict[str, str] = {}
+    if not raw.is_file():
+        return hashes
+    with raw.open(encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                hashes[json.loads(line)["id"]] = hashlib.sha1(line.encode("utf-8")).hexdigest()
+    return hashes
+
+
+def read_seen(data_dir: Path) -> dict[str, str]:
+    path = data_dir / SEEN_FILE
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def _write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def keep_changed(raw: Path, out: Path, seen: dict[str, str]) -> int:
+    """Copy the lines of `raw` whose paper is not in `seen` or has another hash to `out`;
+    return how many were copied."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    kept = 0
+    with raw.open(encoding="utf-8") as src, out.open("w", encoding="utf-8") as dst:
+        for line in src:
+            if not line.strip():
+                continue
+            doc_id = json.loads(line)["id"]
+            if seen.get(doc_id) != hashlib.sha1(line.encode("utf-8")).hexdigest():
+                dst.write(line)
+                kept += 1
+    return kept
 
 
 def _doc_ids(chunks: Path) -> list[str]:
@@ -248,38 +410,63 @@ def run_incremental(
     today: date | None = None,
     set_spec: str | None = DEFAULT_SET,
     category: str | None = DEFAULT_CATEGORY,
+    until_today: bool = False,
+    skip_unchanged: bool = False,
+    after_load: Callable[[], Any] | None = None,
+    now: datetime | None = None,
     log: Log = print,
 ) -> dict[str, Any]:
-    """Run the days from the watermark (or `start` on the first run) to yesterday, UTC, and
-    move the watermark only when the load has passed. Return the watermark state."""
+    """Run the days from the watermark (or `start` on the first run) to yesterday, UTC (today
+    with `until_today`), and move the watermark only when the load and `after_load` have
+    passed. Return the watermark state (unchanged when nothing changed).
+
+    With `skip_unchanged`, the raw fetch file is deleted once the watermark is written (or when
+    nothing changed); its manifest is kept. The serving laptop has little free disk."""
     state = read_watermark(data_dir)
     if state is None and start is None:
         raise ValueError(
             f"no watermark in {data_dir / STATE_FILE}: give the first day with --start, the "
             "date of the Kaggle snapshot the bulk index was built from (2026-10-10 for 307)"
         )
+    now = now or datetime.now(timezone.utc)
     from_day = date.fromisoformat(state["until"]) if state else start
-    until = (today or datetime.now(timezone.utc).date()) - timedelta(days=1)
+    until = (today or now.date()) - timedelta(days=0 if until_today else 1)
     if until < from_day:
         log(f"incremental: nothing to do, the watermark is {from_day} and yesterday was {until}")
         return state or {}
 
     name = f"{from_day.isoformat()}_{until.isoformat()}"
     raw = data_dir / "raw" / "arxiv-oai" / f"{name}.jsonl"
-    work = data_dir / "processed" / "incremental" / name
+    # Several runs a day fetch the same range: each gets its own folder, so the folder of the
+    # last successful run, named in the watermark, is never removed by the next one.
+    work = data_dir / "processed" / "incremental" / (
+        f"{name}_{now:%H%M%S}" if until_today else name
+    )
     if work.exists():  # an earlier failed run of the same range: start its steps again
         shutil.rmtree(work)
     log(f"incremental: {from_day} to {until} ({set_spec}, {category})")
 
     fetched = steps.fetch(from_day, until, raw)
     records = fetched["counts"]["kept"]
+    to_clean = raw
+    if skip_unchanged and records:
+        to_clean = work / "changed.jsonl"
+        records = keep_changed(raw, to_clean, read_seen(data_dir))
+        log(f"incremental: {records:,} of {fetched['counts']['kept']:,} papers new or changed")
+        if not records:
+            shutil.rmtree(work)
+            raw.unlink(missing_ok=True)
+            log("incremental: nothing changed")
+            return state or {}
     load_manifest: dict[str, Any] | None = None
     if records:
         documents, chunks, embeddings = work / "documents", work / "chunks", work / "embeddings"
-        steps.clean(raw, documents)
+        steps.clean(to_clean, documents)
         steps.chunk(documents, chunks)
         steps.embed(chunks, embeddings)
         load_manifest = steps.load(chunks, embeddings, work / "index")
+        if after_load is not None:
+            after_load()
     else:
         log("incremental: no new records, nothing to load")
 
@@ -296,10 +483,15 @@ def run_incremental(
         "index_snapshot": (
             load_manifest["index_snapshot"] if load_manifest else previous.get("index_snapshot")
         ),
-        "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "updated_at": now.isoformat(timespec="seconds"),
     }
+    if skip_unchanged:
+        _write_json(data_dir / SEEN_FILE, _line_hashes(raw))
     path = write_watermark(data_dir, new_state)
     log(f"incremental: watermark {until} -> {path}")
+    if skip_unchanged:  # the seen file holds what is needed of it; its manifest stays
+        raw.unlink(missing_ok=True)
+        (work / "changed.jsonl").unlink(missing_ok=True)
     return new_state
 
 
