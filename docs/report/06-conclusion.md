@@ -84,10 +84,19 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
   It is checked by hand on a sample only, so its errors can remain in the rest.
   <!-- TODO(W7-D2-LDN-1): the agreement between judge and manual labels. -->
 
-**Features cut by ADR 0010.**
-- **Cut:** the reranker, query decomposition, Kafka streaming, and the UI extras (data page,
-  statistics, step display, debug view). RQ1 and RQ2 therefore say nothing about reranking or
-  decomposition.
+**Features cut by ADR 0010.** The plan was written for 40 working days and the project had 22,
+so the cut list was applied at the start instead of at the first delay (ADR 0010):
+- **Kafka streaming:** arXiv announces new papers in one daily batch, so a stream would add
+  infrastructure without fresher data. New papers come in by a scheduled batch with a watermark
+  instead (ADR 0008, ADR 0011).
+- **Reranker and query decomposition:** cut for time, to keep the evaluation and the report on the
+  critical path. RQ1 and RQ2 therefore say nothing about reranking or decomposition, and the
+  results describe a simpler agent than the original brief.
+- **UI extras** (data page, `GET /stats`, step display, debug view): cut for time; the chat,
+  citations, sources panel, follow-ups and feedback buttons were kept.
+- **Also cut** outside the original list: follow-up suggestions v2 (v1 is the evaluated version)
+  and response caching (the latency measurement was kept).
+- **Kept at the minimum size:** the user study, with 5 to 6 participants.
 - **Fixed, not tuned:** the RRF settings (ADR 0009), because 30 questions are too few to tune
   them on.
 
