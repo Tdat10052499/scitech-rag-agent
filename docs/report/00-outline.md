@@ -24,7 +24,7 @@ proposals.
 | File | Chapter | Owner | Task | Pages | Main sources | State on 2026-10-30 |
 |---|---|---|---|---|---|---|
 | `01-introduction.md` | 1. Introduction: problem, goals, scope, research questions, how the project was run | DAT | W8-D1-DAT-1 | 2 | `docs/00-project-brief.md`, `evaluation/PLAN.md` §1, ADR 0010 | Draft in this PR |
-| `02-data.md` | 2. Data: sources, volume, pipeline, processing engine, incremental ingestion, scaling, frozen snapshot | FAO | W7-D4-FAO-1, W8-D1-FAO-1 | 5 | ADR 0003, 0005, 0007, 0008, 0011; `pipelines/reports/`; `evaluation/reports/scaling.md` | Draft PR #122 |
+| `02-data.md` | 2. Data: sources, volume, pipeline, processing engine, incremental ingestion, scaling, frozen snapshot | FAO | W7-D4-FAO-1, W8-D1-FAO-1 | 5 | ADR 0003, 0005, 0007, 0008, 0011; `pipelines/reports/`; `pipelines/reports/scaling.md` | Draft PR #122 |
 | `03-system.md` | 3. System: architecture, request flow, retrieval, agent, LLM serving, API, deployment, design decisions | DAT | W8-D1-DAT-1 | 5 | `docs/01-architecture.md`, `docs/contracts/`, ADR 0001, 0006, 0009, 0010; `agent/` | Draft in this PR |
 | `04-evaluation.md` | 4. Evaluation: golden set, RQ1 retrieval, RQ2 agent ablations and faithfulness, RQ3 user study, latency, error analysis, threats to validity | LDN (error analysis: DAT, W7-D4-DAT-1) | W8-D1-LDN-1 | 6 | `evaluation/reports/final.md` (W7-D5-LDN-1), `retrieval-v1.md`, `ablations-v1.md`, `docs/runbooks/performance.md` | Not started; `final.md` does not exist yet |
 | `05-interface.md` | 5. Interface: chat, citations, sources panel, follow-ups, refusal state, feedback | LDN | W8-D1-LDN-1 | 2 | `frontend/`, `docs/demo/`, ADR 0004 | Not started |

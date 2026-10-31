@@ -70,7 +70,7 @@ The evaluation answers three questions, fixed before the runs (`evaluation/PLAN.
   do they click them? The user study is small, so RQ3 is answered with descriptive statistics only.
 
 Answer latency and the behaviour of the index as the corpus grows are measured too
-(`docs/runbooks/performance.md`, `evaluation/reports/scaling.md`). They are reported as properties
+(`docs/runbooks/performance.md`, `pipelines/reports/scaling.md`). They are reported as properties
 of the system on the stated hardware, not as research questions.
 
 ## 1.5 How the project was run

@@ -147,7 +147,7 @@ code path.
 | Role | Model | Where | Decision |
 |---|---|---|---|
 | Generator | `llama3.2:3b` (Q4_K_M, 3.2B parameters), temperature 0 | Ollama. Development and ADR 0006 runs: Kaggle 2 × T4 behind a tunnel. Evaluation runs: DAT's laptop (RTX 5060 Laptop 8 GB) | ADR 0006 |
-| Faithfulness judge | `qwen2.5:7b`, temperature 0 | Same Ollama as the generator. A different model family from the generator, as `evaluation/PLAN.md` §5 requires | #142, `evaluation/SNAPSHOT.md` |
+| Faithfulness judge | `qwen2.5:7b`, temperature 0 | Same Ollama as the generator. A different model from the generator, as `evaluation/PLAN.md` §5 requires (here also a different model family) | #142, `evaluation/SNAPSHOT.md` |
 
 **Model choice (ADR 0006).**
 - Three open-weights models were compared on 10 questions, by two raters, with a rule fixed
@@ -210,6 +210,12 @@ illustration, not a measurement.
 - **No working relevance gate.** With the score threshold at 0 and the self-check off, the agent
   answers even when the 5 retrieved passages are unrelated. A refusal then depends on the 3B model
   following the prompt.
+- **Refusal detection is a phrase match.** An uncited answer counts as a refusal when it matches
+  one of the refusal phrasings in `agent/src/scitech_agent/evidence.py`. Two phrasings were added
+  on 2026-10-30 (#167); the stored Week 7 answers were rechecked and none changed. The wider
+  patterns can also match an uncited non-refusal ("There is no information on X in the sources,
+  but ..."), which then gets the hint and no follow-ups. Runs record the commit, so the detector
+  each refusal count used is known.
 - **The citation check is formal, not semantic.** It verifies that `[n]` points to an existing
   source, not that the source supports the claim. Faithfulness (RQ2) measures the semantic part.
 - **Out-of-scope questions** are not detected before retrieval. Examples are questions about
