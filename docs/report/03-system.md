@@ -180,7 +180,8 @@ TODO(W8-D2-DAT-1): the clean-clone check, which follows only the README on a fre
 **Scheduled ingestion (ADR 0011).**
 - An `ingest` service runs the incremental pipeline of ADR 0008 every 2 hours into a separate
   collection, `scitech_chunks_live`.
-- It rebuilds the BM25 index and switches it atomically.
+- After a run that loaded new records, it rebuilds the BM25 index and switches it atomically. A
+  "nothing changed" run, which is most of them, stops before that step.
 - The backend reloads it when `BM25_RELOAD_SECONDS` > 0.
 - The frozen evaluation collection is never written: the pipeline refuses it by name.
 - Freshness is bounded by arXiv's daily announcement batch, so the system is "near real time",

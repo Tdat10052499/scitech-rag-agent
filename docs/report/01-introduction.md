@@ -7,8 +7,9 @@ Sources: docs/00-project-brief.md, evaluation/PLAN.md, ADR 0010. TODOs name the 
 
 Researchers and students who start on a topic in large language models (LLMs) and natural
 language processing (NLP) face a fast-growing literature. The arXiv category `cs.CL` alone holds
-121,860 records, cross-lists included, on the snapshot of 2026-10-10. About 460 new records arrive
-per week (ADR 0003). Keyword search returns lists of papers, but the reader still has to open them
+121,860 records, cross-lists included, on the snapshot of 2026-10-10. New records arrive at about
+460 per week in 2025 (ADR 0003) and about 730 per week in the live test of October 2026 (1,782 new
+papers over 17 datestamp days; `pipelines/reports/incremental_test.md`, #124). Keyword search returns lists of papers, but the reader still has to open them
 to answer a question. A general-purpose chatbot answers fluently, but it does not show where an
 answer comes from, and it may state things that no paper says.
 
