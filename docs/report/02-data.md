@@ -125,7 +125,9 @@ runs in a Kaggle CPU notebook or WSL2, not on Windows directly.
 
 ## 2.5 Incremental ingestion (ADR 0008)
 
-New papers arrive every weekday. The bulk index is a snapshot of 2026-10-10. Rebuilding from a
+New papers arrive every weekday: about 460 per week in 2025 (ADR 0003) and about 730 per week in
+the October 2026 live test (1,782 new papers in 17 datestamp days, #124). The bulk index is a
+snapshot of 2026-10-10. Rebuilding from a
 newer snapshot would mean downloading 5.61 GB again for a few hundred new records a day, so new
 records are fetched incrementally instead:
 
