@@ -1,5 +1,6 @@
 """Command line: `retrieval`, `compare`, `check-golden`, and the faithfulness pilot tools
-`make-sheet` and `check-labels`, and `answers` (answers + faithfulness judge)."""
+`make-sheet` and `check-labels`, `answers` (answers + faithfulness judge) and `relevance` (relevance
+judge on a stored answers file)."""
 
 from __future__ import annotations
 
@@ -41,6 +42,11 @@ def main(argv: list[str] | None = None) -> int:
 
     k = sub.add_parser("check-labels", help="check a filled labelling sheet")
     k.add_argument("sheet", type=Path, help="labels-<annotator>.csv")
+
+    v = sub.add_parser("relevance", help="rate the relevance of the answers in an answers.jsonl")
+    v.add_argument("--config", required=True, type=Path)
+    v.add_argument("--answers", required=True, type=Path, help="<ts>-<name>.answers.jsonl")
+    v.add_argument("--out-dir", type=Path, default=Path("evaluation/runs"))
 
     args = parser.parse_args(argv)
 
@@ -97,6 +103,26 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         print(format_comparison(result), end="")
+        return 0
+
+    if args.command == "relevance":
+        from scitech_eval.relevance import run_from_relevance_config
+
+        try:
+            path = run_from_relevance_config(args.config, args.answers, args.out_dir)
+        except (GoldenError, OSError, ValueError, KeyError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        run = json.loads(path.read_text(encoding="utf-8"))
+        n, rel = run["counts"], run["metrics"]["relevance"]
+        print(f"wrote {path}")
+        print(
+            f"  answers {n['answers_in_file']}, left out {sum(n['left_out'].values())}, "
+            f"rated {n['rated']}, judge_error {n['judge_error']}, "
+            f"rated 1/2/3: {'/'.join(str(v) for v in run['metrics']['distribution'].values())}"
+        )
+        if rel:
+            print(f"  relevance (n={rel['n']}) {rel['mean']:.3f} CI {rel['ci95']}")
         return 0
 
     if args.command == "check-golden":

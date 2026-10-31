@@ -1,0 +1,18 @@
+# W7-D2-LDN-1: answer relevance judge (evaluation/PLAN.md 4.2, anchor from #94), run on the stored
+# `.answers.jsonl` of one condition at a time (RUNS.md A1 to A4). It does not call the agent.
+# Run (needs evaluation/src and agent/src on PYTHONPATH, and JUDGE_BASE_URL, JUDGE_API_KEY and
+# JUDGE_MODEL=qwen2.5:7b in the environment; not at the same time as an A run on the laptop):
+#   python -m scitech_eval relevance --config evaluation/configs/relevance-w7.yaml \
+#       --answers evaluation/runs/<ts>-answers-w7-a2-rewrite.answers.jsonl --out-dir evaluation/runs
+# Never write a URL or key here.
+name: relevance-w7
+golden_path: evaluation/golden_set/golden.jsonl
+bootstrap:
+  resamples: 1000
+  seed: 0
+judge:
+  prompt_path: evaluation/prompts/relevance-judge.md
+  digest: 845dbda0ea48     # qwen2.5:7b Q4_K_M, the same judge model as the faithfulness runs (#142)
+  temperature: 0
+  max_tokens: 200          # the reply is a short JSON object
+  context_tokens: 4096     # `ollama ps` on DAT's laptop, 2026-10-30 (#148); change it if that changes
