@@ -25,7 +25,7 @@ From the repository root, in the project's virtual environment:
 ```bash
 python -m pip install -r pipelines/requirements.txt     # every step except embed
 python -m pip install -r pipelines/requirements-embed.txt  # embed only (PyTorch, several GB)
-export PYTHONPATH=pipelines/src                          # PowerShell: $env:PYTHONPATH = "pipelines\src"
+export PYTHONPATH=pipelines/src:agent/src                # PowerShell: $env:PYTHONPATH = "pipelines/src;agent/src"
 python -m scitech_pipelines --help
 ```
 
