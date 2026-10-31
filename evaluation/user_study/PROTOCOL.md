@@ -146,5 +146,14 @@ In-page rating buttons (W6-D2-LDN-1): with moderated sessions the participant as
 ## 12. Schedule and participants (no names)
 
 - Invitations sent 2026-10-27; replies until 2026-10-29; Gate W6 on D16 (2026-10-30).
-- Tue 2026-11-03: sessions back to back from 22:30 (22:30, 23:15, and 00:00 (night of 3 to 4 Nov) if there is a third participant). Further slots: Mon 2026-11-02 and Tue 2026-11-03 at 21:00, 21:45 and 22:30 (Vietnam time).
+- Confirmed on 2026-10-30: **4 classmates** of the current course, all on Tue 2026-11-03, back to back (Vietnam time). This is one below the target of 5-6 (section 2); if fewer than 5 take part, the report states the real number.
+
+| Code | Slot (Tue 2026-11-03) |
+|---|---|
+| P01 | 22:30 |
+| P02 | 23:15 |
+| P03 | 00:00 (night of 3 to 4 Nov) |
+| P04 | 00:45 (night of 3 to 4 Nov) |
+
+- Codes follow the order of the slots. If a fifth participant is confirmed, FAO can host a slot at 21:00 or 21:45 on Tue 2026-11-03 (Vietnam time). Mon 2026-11-02 is not used.
 - Slots are confirmed by FAO on #134. Names and contact details are kept outside the repository (section 8).
