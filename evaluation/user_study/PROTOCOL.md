@@ -4,7 +4,7 @@ Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). No item is m
 
 Decisions this draft follows: issue #134 (DAT, 2026-10-27: option A, moderated sessions; FAO confirmed his laptop as host), DAT's answers on #111 (UI version, logged fields, no screen recording), the reviews of FAO and DAT on #143 (trace file, operator, schedule wording), and the schedule FAO confirmed on #134 on 2026-10-30. Since `POST /feedback` merged (#146), the feedback log is part of the data (sections 4, 8, 10).
 
-Planned sessions: all on D19 (Tue 2026-11-03), in the evening (Vietnam time), five back to back from 21:00 (section 12). Mon 2026-11-02 is not used.
+Planned sessions: all on D19 (Tue 2026-11-03), in the evening (Vietnam time), four back to back from 22:30 (section 12). Mon 2026-11-02 is not used.
 
 ## 1. Purpose and scope
 
@@ -42,7 +42,7 @@ Roles (FAO confirmed on #134): FAO is the operator and types what the participan
 
 Checklist, run 15 minutes before the first session of each day:
 
-- FAO starts the Kaggle LLM session at about 20:50 on 2026-11-03, 10 minutes before the first slot, and stops it after the last slot (to save GPU quota). The tunnel URL stays only in FAO's local `.env`; it is never written in the repository, in issues or in chat.
+- FAO starts the Kaggle LLM session at about 22:20 on 2026-11-03, 10 minutes before the first slot (22:30), and stops it after the last slot (to save GPU quota). The tunnel URL stays only in FAO's local `.env`; it is never written in the repository, in issues or in chat.
 - Qdrant, backend and frontend are running on the host laptop; run the snapshot check of `evaluation/SNAPSHOT.md` (same index id, 121,926 points).
 - The host laptop runs the Docker stack (`make up`, or `docker compose up -d --build` on Windows). Put `AGENT_TRACES=data/logs/study-<date>.jsonl` and `FEEDBACK_LOG=data/logs/feedback-<date>.jsonl` in its `.env`, with paths relative to the repository root under `data/`, and apply them with `docker compose up -d backend`. A PowerShell `$env:AGENT_TRACES` does not reach the containers, and `docker compose restart backend` keeps the old values (FAO and DAT, #146). Ask the test question (it should return an answer with sources), and check that the trace file now has one line. Click one thumb under the answer and check that the feedback file has one line. Then delete both files before the first participant; the next request creates them again. This keeps test questions, the pilot and evaluation runs out of the study data.
 - UI version: tag `v0.6-rc` (DAT, #111), set at the D16 gate (W6-D5-DAT-1, 2026-10-30) on commit `b61001d` (DAT, #153), which includes the new UI of #102 with the rating buttons. If the tag is not there, the commit hash used is recorded on the observer sheet before the first session.
@@ -147,6 +147,14 @@ In-page rating buttons (W6-D2-LDN-1): thumbs up and down under each answer; a cl
 ## 12. Schedule and participants (no names)
 
 - Invitations sent 2026-10-27; replies until 2026-10-29; Gate W6 on D16 (2026-10-30).
-- All sessions are on Tue 2026-11-03 (Vietnam time) on FAO's laptop, FAO operating (confirmed by FAO on #134, 2026-10-30): five back-to-back slots at 21:00, 21:45, 22:30, 23:15 and 00:00 (night of 3 to 4 Nov). Kaggle starts at about 20:50. Mon 2026-11-02 is not used.
-- Each confirmed participant gets one slot. LDN posts the codes and slots on #134 (no names). If fewer than five people take part, the report states the real number (section 2).
-- Names and contact details are kept outside the repository (section 8).
+- Confirmed on 2026-10-30: **4 classmates** of the current course, all on Tue 2026-11-03, back to back (Vietnam time). This is one below the target of 5-6 (section 2); if fewer than 5 take part, the report states the real number.
+
+| Code | Slot (Tue 2026-11-03) |
+|---|---|
+| P01 | 22:30 |
+| P02 | 23:15 |
+| P03 | 00:00 (night of 3 to 4 Nov) |
+| P04 | 00:45 (night of 3 to 4 Nov) |
+
+- Codes follow the order of the slots. If a fifth participant is confirmed, FAO can host a slot at 21:00 or 21:45 on Tue 2026-11-03 (Vietnam time). Mon 2026-11-02 is not used.
+- Slots are confirmed by FAO on #134. Names and contact details are kept outside the repository (section 8).
