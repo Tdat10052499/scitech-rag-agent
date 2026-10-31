@@ -155,5 +155,5 @@ In-page rating buttons (W6-D2-LDN-1): with moderated sessions the participant as
 | P03 | 00:00 (night of 3 to 4 Nov) |
 | P04 | 00:45 (night of 3 to 4 Nov) |
 
-- Codes follow the order of the slots. Further slots, if another participant is confirmed: Mon 2026-11-02 and Tue 2026-11-03 at 21:00 and 21:45 (Vietnam time).
+- Codes follow the order of the slots. If a fifth participant is confirmed, FAO can host a slot at 21:00 or 21:45 on Tue 2026-11-03 (Vietnam time). Mon 2026-11-02 is not used.
 - Slots are confirmed by FAO on #134. Names and contact details are kept outside the repository (section 8).
