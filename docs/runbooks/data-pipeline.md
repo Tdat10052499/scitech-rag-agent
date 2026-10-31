@@ -9,7 +9,7 @@ Commands: `pipelines/AGENTS.md` (every option) and `pipelines/README.md` (setup,
 - **Python environment:** `make setup`, then `PYTHONPATH=pipelines/src:agent/src` from the repository root (PowerShell: `$env:PYTHONPATH = "pipelines/src;agent/src"`). `load` and `run-all` need `agent/src` for DAT's Qdrant store.
 - **Java 17+** for `clean` (PySpark). Native Windows does not work: use WSL2, Linux or a Kaggle CPU notebook. Java 8 counts as none.
 - **A GPU** for `embed` on the full corpus (Kaggle T4: 14.4 min with bge-small). On a CPU it would take about 12 h (estimate, `docs/03-data-sources.md`).
-- **Qdrant** for `load`: `make up` (docker compose, `qdrant/qdrant:v1.19.2`), or the release binary of the same version in a notebook (README, "load on Kaggle").
+- **Qdrant** for `load`: `make up-qdrant` (docker compose, `qdrant/qdrant:v1.19.2`; since #146 `make up` also builds the backend and frontend and needs `.env`), or the release binary of the same version in a notebook (README, "load on Kaggle").
 - **Kaggle login** for `download`: `kaggle auth login` once. The token stays in your user profile, never in the repository.
 - **Environment:** `EMBEDDING_MODEL`, `EMBEDDING_QUERY_PREFIX`, `QDRANT_URL`, `QDRANT_COLLECTION` and `DATA_DIR` from `.env.example`.
 
@@ -96,14 +96,15 @@ The counts must chain, for snapshot 307:
 | `embed` very slow | Running on CPU (no GPU runtime selected) | Select a GPU in the notebook; `--device cuda` fails loudly instead of falling back |
 | `embed` fails with "no embedding model" | `EMBEDDING_MODEL` unset or `replace-me` | `--model BAAI/bge-small-en-v1.5` (ADR 0007) or set the variable |
 | `load`: `ModuleNotFoundError: scitech_agent` | `agent/src` not on `PYTHONPATH` | Add it (section 1) |
-| `load`: connection refused | Qdrant not running, or a wrong `QDRANT_URL` | `make up`, or start the binary; check `curl $QDRANT_URL/healthz` |
+| `load`: connection refused | Qdrant not running, or a wrong `QDRANT_URL` | `make up-qdrant`, or start the binary; check `curl $QDRANT_URL/healthz` |
 | `load` refuses the vectors | Vectors from other chunks (`chunked_at` differs), an `embed --limit` run, or an unfinished embed run | Re-run `embed` on the current chunks, without `--limit` |
 | `load`: "other settings" | Resume state from a load with other vectors, chunks or collection | `--force`, or another `--out` |
+| `load`: "load check failed ... parts were skipped as done" (often 0 points) | `_load_state.json` from an earlier load into another Qdrant instance or a deleted collection, with the same settings, marks every part as done | `load --force`: it ignores the saved progress; the vectors are not embedded again |
 | `load`: "load check failed ... holds N points" | Points from an older load in the same collection | Recreate the collection (another `QDRANT_COLLECTION`, or delete it), then `load --force` |
 | Dense recall lower than ADR 0007 through Qdrant | `QDRANT_SEARCH_EXACT=false`: approximate HNSW search, where gs-016 drops out (#87) | Check that `QDRANT_SEARCH_EXACT` is not `false`; exact search is the default since #101 |
 | `load` (or its tests) fails with an `AttributeError` about `fetch_arrow_table` | duckdb 2.0 removed `fetch_arrow_table`, and a fresh `make setup` installs 2.0 | Fixed in #107 (`to_arrow_table` first); on an older branch, merge `main` |
 | `ModuleNotFoundError: scitech_agent.retrieval.hybrid` (evaluation configs, `index_profile.py`) | A branch from before the hybrid retriever (#82, #101) | Merge `main` into the branch, or run from `main` |
-| `docker start qdrant`: "No such container: qdrant" | The container belongs to docker compose and is named `<folder>-qdrant-1` | `docker compose up -d` (or `make up`) from the repository root |
+| `docker start qdrant`: "No such container: qdrant" | The container belongs to docker compose and is named `<folder>-qdrant-1` | `docker compose up -d qdrant` (or `make up-qdrant`) from the repository root |
 | A golden set or run file copied from Windows has another sha256 than on Linux | Git on Windows checks text files out with CRLF line ends | Compare files with LF line ends, or run on one OS; the run file records the sha256 of the bytes it read |
 | Kaggle notebook: data of a previous run gone | `/kaggle/working` lasts only for the session | Keep inputs as Kaggle datasets; don't use *Save Version* with Qdrant's storage in `/kaggle/working` |
 | `Warning: You are sending unauthenticated requests to the HF Hub` at the start of `embed` or `incremental-run` | No Hugging Face token; the model is public | Harmless. Downloads are only slower; don't put a token in the repository |

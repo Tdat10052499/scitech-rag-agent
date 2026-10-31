@@ -10,6 +10,7 @@ Gate (D22, Fri 2026-11-06, internal deadline): report complete in `docs/report/`
 Presentation (D25, Tue 2026-11-10): slides final, dry run done on D24, live demo with the recorded video as fallback.
 
 Rule this phase: code changes only for P0 bugs found in the reproduction check, through PRs as usual. After `v1.0` (D22) the code is frozen: the presentation shows `v1.0`.
+**Replan (2026-10-30, ADR 0011):** exception: the scheduled-ingestion PRs from Week 7 (W7-D6-FAO-1, W7-D7-DAT-1) are merged on D20 and soak-tested until D22 (W8-D6-FAO-1, W8-D6-DAT-1). If the soak fails, the schedule is switched off (`INGEST_ENABLED=0`) and `v1.0` ships with the manual command of ADR 0008.
 
 ## D20
 Wednesday 2026-11-04
@@ -41,6 +42,12 @@ Wednesday 2026-11-04
 - Do: summary of results per research question, limitations (data scope, small samples, model size, judge bias, features cut by ADR 0010), future work (from error analyses).
 - Done when: draft in a PR reviewed by LDN.
 - Depends on: W7-D5-LDN-1
+
+#### W8-D6-FAO-1 Merge and start scheduled ingestion, soak test
+- Module: `pipelines/`, `docs/runbooks/data-pipeline.md`
+- Do (after Gate W7 is recorded): merge W7-D6-FAO-1 and W7-D7-DAT-1 (DAT reviews); create `scitech_chunks_live` and `data/index/bm25-live` on the serving machine; start `make up` with `INGEST_ENABLED=1`, `BM25_RELOAD_SECONDS=60`; set the laptop to never sleep on power until D22; check the first scheduled run.
+- Done when: first scheduled run logged in `data/logs/incremental.log` with points before/after; the frozen `scitech_chunks` point count unchanged (121,926).
+- Depends on: W7-D6-FAO-1, W7-D7-DAT-1, W7-D5-DAT-1
 
 ### LDN (@Yui-Mika)
 
@@ -95,6 +102,11 @@ Thursday 2026-11-05
 Friday 2026-11-06 · Final gate (internal deadline)
 
 ### DAT (@Tdat10052499)
+
+#### W8-D6-DAT-1 Scheduled ingestion soak check and ADR 0011 result
+- Do (D22 morning, before the release): read `data/logs/incremental.log` since D20: at least 12 runs logged (a gap while the laptop slept counts as an uptime gap, not a failed run), none failed or overlapping, no backend error during a BM25 switch; ask one question about a paper announced on D21 and check it is cited. Record the numbers in ADR 0011 and in the release notes; if the check fails, set `INGEST_ENABLED=0` and record why.
+- Done when: result in ADR 0011 (Consequences) and the `v1.0` release notes; FAO's data chapter and slides mention the schedule (W8-D1-FAO-1, W8-D3-FAO-1).
+- Depends on: W8-D6-FAO-1
 
 #### W8-D5-DAT-1 Release v1.0
 - **Replan:** the presentation is on 2026-11-10 and the instructor only asks for the final product there, so this task releases `v1.0` and freezes the report; the dry run (W8-D4-DAT-1) moves to D24. The final report review moves here from W8-D4-DAT-1.

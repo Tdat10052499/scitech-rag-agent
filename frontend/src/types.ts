@@ -32,6 +32,7 @@ export type AssistantMessage = {
   // searching: request sent, no event yet; answering: sources arrived; done / error: stream ended.
   status: "searching" | "answering" | "done" | "error";
   error?: ChatError; // set when status is "error"; the text received so far is kept
+  messageId?: string; // from the `done` event (equals the trace id); absent when the answer ended in an error
 };
 
 export type Message = UserMessage | AssistantMessage;

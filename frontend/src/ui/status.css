@@ -1,0 +1,66 @@
+/* Backend status indicator, rating buttons and disabled follow-up suggestions (W6-D1-LDN-1, W6-D2-LDN-1).
+   Uses only existing tokens; the colour pairs are the ones already checked in contrast.ts. */
+
+/* ---------- Backend status ---------- */
+.ui-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.ui-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.ui-status--ok .ui-status__dot {
+  background: var(--color-accent);
+}
+
+.ui-status--down {
+  background: var(--color-warning-bg);
+  border: var(--border-width) solid var(--color-warning-border);
+  color: var(--color-warning-text);
+}
+
+.ui-status--down .ui-status__dot {
+  background: var(--color-warning-icon);
+}
+
+@media (max-width: 640px) {
+  .ui-status:not(.ui-status--down) .ui-status__text {
+    display: none; /* only the dot; the name stays in aria-label and title */
+  }
+}
+
+/* ---------- Follow-up suggestions while another answer is being written ---------- */
+.ui-suggestions__item:disabled {
+  color: var(--color-text-disabled);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+/* ---------- Rating buttons under an answer ---------- */
+.ui-rating {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.ui-rating .ui-label {
+  margin-right: var(--space-2);
+}
+
+.ui-rating .ui-icon-button--ghost.is-selected {
+  background: var(--color-bg-selected);
+  color: var(--color-text);
+}

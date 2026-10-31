@@ -10,6 +10,7 @@ from scitech_agent.agent import Agent, AgentConfig, load_prompt
 from scitech_agent.events import FollowupsEvent
 from scitech_agent.followups import (
     MAX_QUESTION_CHARS,
+    MAX_QUESTION_WORDS,
     SNIPPET_CHARS,
     followups_user_message,
     parse_followups,
@@ -93,6 +94,19 @@ def test_cleans_each_question_and_keeps_at_most_limit() -> None:
     )
     assert parse_followups(text, 4) == ["What is self-attention?", "Why masks?", "A?", "B?"]
     assert parse_followups(text, 0) == []
+
+
+def test_drops_questions_over_the_word_limit_and_copied_references() -> None:
+    """#116: the prompt's 20-word rule is enforced, and "X et al." references are dropped."""
+    title = (
+        "How does the cascaded framework in Cluster, Route, Escalate: Cascaded Framework for "
+        "Cost-Aware LLM Serving handle queries that are too complex for the initial model?"
+    )
+    at_limit = " ".join(["word"] * (MAX_QUESTION_WORDS - 1)) + " end?"
+    reference = "How does the strategy of Artexte et al. (2018b) relate to CUNI Systems?"
+    text = json.dumps([title, reference, at_limit, "What is LoRA?"])
+    assert len(title.split()) > MAX_QUESTION_WORDS
+    assert parse_followups(text, 4) == [at_limit, "What is LoRA?"]
 
 
 # --- Prompt -----------------------------------------------------------------------------------

@@ -1,4 +1,7 @@
-# Local infrastructure. The backend and frontend are added as services once they exist.
+# One-command stack (W6-D3-DAT-1): `make up` starts Qdrant, the backend and the frontend.
+# The LLM stays outside the stack: LLM_BASE_URL in .env (Ollama on this machine, a Kaggle or Colab
+# tunnel, or a hosted API; see docs/runbooks/llm-serving.md). The index is loaded separately
+# (docs/runbooks/data-pipeline.md): vectors into Qdrant, the BM25 index into ./data/index/bm25.
 services:
   qdrant:
     image: qdrant/qdrant:v1.19.2   # pinned (W3-D1-DAT-1); store tests ran against this version
@@ -6,6 +9,43 @@ services:
       - "6333:6333"
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      # The image has no curl or wget; bash can open a TCP connection by itself.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: .env
+    environment:
+      # Inside the stack these two always point at the compose services and the mounted data/.
+      QDRANT_URL: http://qdrant:6333
+      DATA_DIR: /app/data
+    extra_hosts:
+      # Lets LLM_BASE_URL=http://host.docker.internal:11434/v1 reach Ollama on the host (Linux too).
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data            # BM25 index, traces and feedback logs
+      - hf_cache:/root/.cache/huggingface   # embedding model, downloaded on the first start
+    depends_on:
+      qdrant:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   qdrant_data:
+  hf_cache:
