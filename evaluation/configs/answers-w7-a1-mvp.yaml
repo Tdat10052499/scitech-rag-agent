@@ -29,6 +29,6 @@ judge:
   temperature: 0
   max_tokens: 200          # the judge reply is a short JSON object; same value in all four runs
   # Context window (tokens) the judge really uses: `ollama ps`, column CONTEXT, while qwen2.5:7b is
-  # loaded on the evaluation host (DAT). Write the integer here in all four files before the first
-  # run; null = not measured and the run file reports prompt_fits_context: null.
-  context_tokens: null
+  # loaded on the evaluation host. DAT read 4096 on his laptop on 2026-10-30 (#148); same value in
+  # all four files. If the context changes, change it in all four.
+  context_tokens: 4096
