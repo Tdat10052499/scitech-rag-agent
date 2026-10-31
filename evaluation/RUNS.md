@@ -68,7 +68,7 @@ Time, from DAT's pilot of 10 questions on the laptop's GPU (warm-up 8 s, answers
 
 - A random 20% of the answers are labelled by hand with the written procedure (`PLAN.md` section 5): LDN and FAO each label half, DAT does not (he built the agent). No double annotation; this stays a limitation.
 - Sheets come from `python -m scitech_eval make-sheet <answers.jsonl>`; the labelled sheets are checked with `check-labels`. Agreement is Cohen's kappa plus raw agreement between judge and human. Where they disagree, the human label is used for the headline numbers, and the report says so.
-- **[TBC]** `make-sheet` has no sampling option yet. LDN adds a seeded sample (same seed written in the report) before the first sheet is made; which answers are sampled (per condition, or pooled over the four) is decided there. The pilot cases from #148 (gs-003: the judge's reason is about answering the question, not support) go into the pilot kappa sheet.
+- `make-sheet --sample 0.2 --seed N [--part K/N]` draws the seeded sample (PR #169, Draft until merged; see `evaluation/AGENTS.md`). It samples each run file separately, from the answers that enter the metrics (no error, not refused, answerable item), and writes `sample.json` with the seed and the counts; the same seed is used for all four conditions and written in the report. **[TBC: the seed, fixed before the answers are read, and whether #169 is merged before the first sheet.]** The pilot cases from #148 (gs-003: the judge's reason is about answering the question, not support) go into the pilot kappa sheet.
 
 ## 4. Efficiency
 
