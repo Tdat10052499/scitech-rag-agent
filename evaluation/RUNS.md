@@ -68,7 +68,14 @@ Time, from DAT's pilot of 10 questions on the laptop's GPU (warm-up 8 s, answers
 
 - A random 20% of the answers are labelled by hand with the written procedure (`PLAN.md` section 5): LDN and FAO each label half, DAT does not (he built the agent). No double annotation; this stays a limitation.
 - Sheets come from `python -m scitech_eval make-sheet <answers.jsonl>`; the labelled sheets are checked with `check-labels`. Agreement is Cohen's kappa plus raw agreement between judge and human. Where they disagree, the human label is used for the headline numbers, and the report says so.
-- `make-sheet --sample 0.2 --seed N [--part K/N]` draws the seeded sample (PR #169, Draft until merged; see `evaluation/AGENTS.md`). It samples each run file separately, from the answers that enter the metrics (no error, not refused, answerable item), and writes `sample.json` with the seed and the counts; the same seed is used for all four conditions and written in the report. **[TBC: the seed, fixed before the answers are read, and whether #169 is merged before the first sheet.]** The pilot cases from #148 (gs-003: the judge's reason is about answering the question, not support) go into the pilot kappa sheet.
+- `make-sheet --sample 0.2 --seed N [--part K/N]` draws the seeded sample (PR #169, Draft until merged; see `evaluation/AGENTS.md`). It samples each run file separately, from the answers that enter the metrics (no error, not refused, answerable item), and writes `sample.json` with the seed and the counts; the same seed is used for all four conditions and written in the report. **The seed is 20261031** (the date it was set, Sat 2026-10-31, D17; chosen on D17 before the A runs of this table (the run log in section 7 shows none) and not changed after a sample has been seen). `--part 1/2` is LDN's half and `--part 2/2` FAO's, for every condition. Each run file is sampled by itself, so the four conditions get the same items only where the same answers are eligible (refusals differ per run); the report says so. **[TBC: #169 is merged before the first sheet.]** The pilot cases from #148 (gs-003: the judge's reason is about answering the question, not support) go into the pilot kappa sheet.
+
+### Relevance (W7-D2-LDN-1)
+
+- Answer relevance (`PLAN.md` 4.2, anchor #94, rated 1 to 3) is not computed by `answers`. After each of A1 to A4 has finished, a separate pass rates the stored answers: `python -m scitech_eval relevance --config evaluation/configs/relevance-w7.yaml --answers evaluation/runs/<ts>-answers-w7-<cond>.answers.jsonl --out-dir evaluation/runs` (PR #171). It reads the `.answers.jsonl`, so the agent is not called and no A run is repeated. It uses the same judge (`qwen2.5:7b`) on the same laptop, so it runs after the A runs and not at the same time as one, and before L1 (one run at a time on the laptop).
+- Output: `<ts>-answers-w7-<cond>.relevance.json` (mean, distribution, per-answer ratings, judge settings and prompt hash). Commit it with the A run file.
+- The manual rating of the same 20% sample uses `relevance-template.csv` from `make-sheet --sample` (same seed and parts as faithfulness). Where judge and human differ the human rating is used; the report gives the raw agreement and a table of judge against human ratings.
+- **[TBC with DAT: #171 and #170 agreed, and the prompt tried once on real `qwen2.5:7b` output (pilot answers, gs-003 included) before the A runs finish. If the pass is not ready by the evening of D18, relevance is rated by hand only, on the pooled sample, with `n` stated and no comparison between conditions.]**
 
 ## 4. Efficiency
 
@@ -97,7 +104,7 @@ Not planned: a Vietnamese run (the golden set has no `vi` items), reranking and 
 
 ## 7. Order and run log
 
-Order: W7-D1-DAT-1 and W7-D1-FAO-1 confirm the stack and coverage (D17, by 09:30) and the golden set is at 60 items; then R1 to R3 (LDN's task, run on the laptop), then A1 to A4 one after another; L1 on D18 outside the study; U1 on D19 night. The Sunday buffer takes any run that did not finish.
+Order: W7-D1-DAT-1 and W7-D1-FAO-1 confirm the stack and coverage (D17, by 09:30) and the golden set is at 60 items; then R1 to R3 (LDN's task, run on the laptop), then A1 to A4 one after another, then the relevance pass on each of their answer files; L1 on D18 outside the study; U1 on D19 night. The Sunday buffer takes any run that did not finish.
 
 After every run: check that `counts` and `golden.n_items` match the other runs, that `git_commit`, `index_snapshot` and the golden sha256 are the same, and for A1 to A4 that `generator.agent_config` shows the flags of the condition. Then fill the row.
 
@@ -116,5 +123,5 @@ After every run: check that `counts` and `golden.n_items` match the other runs, 
 
 ## 8. Confirmation needed
 
-- **DAT:** the definition of A4 (section 3); `split: all` or `dev` for the ablations (section 3); the commit for all runs, with #166 merged (section 1); who runs R1 to R3 on the laptop (they need Qdrant and the BM25 index, no LLM); the L1 method. Settled: the Ollama version and digests (W7-D1-DAT-1, #156), `judge.context_tokens: 4096` (written into the four configs) and `AGENT_TIMEOUT_S=600` (SNAPSHOT).
+- **DAT:** the definition of A4 (section 3); `split: all` or `dev` for the ablations (section 3); the commit for all runs, with #166 merged (section 1); who runs R1 to R3 on the laptop (they need Qdrant and the BM25 index, no LLM); the L1 method; the relevance pass (section 3, #171). Settled: the Ollama version and digests (W7-D1-DAT-1, #156), `judge.context_tokens: 4096` (written into the four configs) and `AGENT_TIMEOUT_S=600` (SNAPSHOT).
 - **FAO:** confirmed on #160: coverage of the final golden set (W7-D1-FAO-1, posted on #156 before the first run), half of the manual labels (W7-D3-FAO-1), S1 as it is, operator and host of U1. Still open: the full-index check of `gs-u03` to `gs-u05` and about 3 random items of #168.
