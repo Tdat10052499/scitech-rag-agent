@@ -41,9 +41,11 @@ recurring comments; descriptive only (5-6 participants). -->
 - **Vector search:** inside Qdrant, exact search took 2.0, 8.0 and 14.4 ms p50 at 10%, 50% and
   100% of the corpus. HNSW stayed at 1.6 to 2.6 ms.
 - **Whole retrieval:** under 135 ms at p95 at every size.
-- **Whole answer** on the frozen system, on the Week 7 host (DAT's laptop, RTX 5060 8 GB, 30 dev
-  questions, `docs/runbooks/performance.md`, #161): the first token arrived at p50 0.42 s and
-  p95 2.6 s, and the complete answer at p50 4.3 s and p95 6.0 s, with 0 errors.
+- **Whole answer** on the frozen system, on the Week 7 host (DAT's laptop, RTX 5060 8 GB, the
+  first 30 golden questions with `split: all` and `limit: 30`, 5 of them follow-up turns;
+  `docs/runbooks/performance.md` run B, #161): the first token arrived at p50 0.42 s and p95
+  2.6 s, the answer was complete at p50 1.3 s and p95 3.2 s, and the full turn including the
+  follow-up suggestions took p50 4.3 s and p95 6.0 s, with 0 errors.
 
 At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
 
