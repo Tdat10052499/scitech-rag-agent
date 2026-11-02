@@ -83,7 +83,8 @@ Other settings:
 
 ## 4. Updates
 
-- **Code change:** after it is merged on `main`, run step 4 again from a clean `main`.
+- **Code change (automatic):** `.github/workflows/deploy-hf-space.yml` runs step 4 after every push to `main` whose CI passes, or by hand (Actions > Deploy HF Space > Run workflow). One-time setup: a Hugging Face fine-grained token with write access to the Space only, saved in GitHub > Settings > Secrets and variables > Actions as `HF_TOKEN` (separate from the read-only `HF_TOKEN` inside the Space). Without it the workflow fails at its first step. It runs only from `main`; before this branch is merged, push by hand.
+- **Code change (by hand):** run step 4 again from a clean `main`.
 - **New index:** run step 3 again, then restart the Space (Settings > Restart).
 - The live index of ADR 0011 is **not** used here. The Space serves the frozen evaluation index.
 
