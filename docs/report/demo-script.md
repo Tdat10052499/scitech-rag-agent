@@ -6,7 +6,7 @@ Length: 3 to 5 minutes. Presenter: DAT. The data page is cut (replan), so the de
 
 ## Where the demo runs
 
-Two options. Decide in the dry run (W8-D4-DAT-1) and keep the other as the fallback.
+**Decided (DAT, 2026-11-02): the live demo runs on the hosted Space.** The laptop stack is the fallback; start it before the session too, so a switch takes seconds.
 
 | | Laptop (frozen stack) | Hosted Space (`https://teichi-scitech-rag-agent.hf.space`, `docs/runbooks/hosting.md`) |
 |---|---|---|
@@ -14,11 +14,12 @@ Two options. Decide in the dry run (W8-D4-DAT-1) and keep the other as the fallb
 | Speed | first token p50 0.42 s, full turn p50 4.3 s (`performance.md` run B) | first token 1.2 to 1.5 s, answer done in 1.4 to 2.1 s (4 script questions, one run each, 2026-11-02) |
 | Risk | laptop, Qdrant and Ollama must all be up | room Wi-Fi; Groq quota (`CHAT_TOTAL_PER_MINUTE=2`, so wait about 30 s between questions); the Space sleeps after 48 h without visits (open it before the session) |
 
-If the Space is used, say once: "This public copy uses a larger hosted model; the evaluation numbers in the report are for the 3B model on the laptop." Section 2 point 1 then quotes the Space time, not 0.42 s.
+Say once, at the opening: "This public copy uses a larger hosted model; the evaluation numbers in the report are for the 3B model on the laptop."
 
 ## 0. Before the session (about 10 minutes before)
 
-- **Space only:** open the Space URL and ask the warm-up question there; skip the stack steps below.
+- **Space (live demo):** open `https://teichi-scitech-rag-agent.hf.space` about 10 minutes before (it may be asleep or rebuilding after a merge to `main`; wait for the chat to load), and ask the warm-up question there. Do not merge to `main` on the presentation day, because every merge rebuilds the Space (`.github/workflows/deploy-hf-space.yml`).
+- **Laptop (fallback):** start it with the steps below and leave it open in a second tab.
 
 - **Stack:** start the frozen stack on the demo laptop. Native Windows: Qdrant from its folder, Ollama, backend, frontend (README, "Run the real app on Windows without Docker"). Docker: `make up`.
 - **Index:** Qdrant `scitech_chunks` must show 121,926 points.
@@ -42,7 +43,7 @@ Ask:
 
 Show:
 
-1. The answer starts streaming in about half a second. On the W7 host, the first token arrived at a median of 0.42 s (`docs/runbooks/performance.md`).
+1. The answer starts streaming in about 1.5 s on the Space (1.2 to 1.5 s in the check of 2026-11-02, `docs/runbooks/hosting.md` §5). On the laptop the first token arrived at a median of 0.42 s (`docs/runbooks/performance.md`).
 2. The `[n]` markers in the text. Click one: the sources panel shows that paper with title, authors, date and arXiv link.
 3. The answer names test-time scaling (Beam Search, DVTS), as in the golden reference.
 
@@ -85,7 +86,7 @@ Say: "When the evidence is not there, it says so instead of guessing."
 
 "Behind this are:
 - a hybrid search over 121,926 chunks that answers in under 135 ms at p95;
-- a local 3-billion-parameter model on a laptop GPU;
+- a language model behind an OpenAI-compatible interface: here a hosted model, and in the evaluation a local 3-billion-parameter model on a laptop GPU;
 - an evaluation on 65 golden questions.
 
 The results are in the report."
@@ -117,4 +118,5 @@ The following are known weak cases, all documented in the report.
 - **"The answer service is unavailable":** check the backend window for `llm_unavailable` (Ollama stopped) or `retrieval_failed` (Qdrant window closed). Restart that part; the backend rebuilds the agent on the next request.
 - **Slow first answer:** this is the model warm-up. Say so and wait. Do not ask again, because a second request queues behind the first.
 - **Wrong or weak answer:** switch to a backup question (section 6) and say that the report has an error analysis of such cases.
+- **Space down, rate-limited (HTTP 429) or very slow:** switch to the laptop tab and say so in one sentence. Wait about 30 s between questions on the Space (`CHAT_TOTAL_PER_MINUTE=2`).
 - **Fallback:** screenshots of sections 2 to 4 taken in the dry run (W8-D4-DAT-1), stored with the slides.
