@@ -69,7 +69,13 @@ export function ChatWorkspace({ chat, initialTheme }: Props) {
   const firstUserId = useRef(lastUserId);
   useEffect(() => {
     if (!lastUserId || lastUserId === firstUserId.current) return;
-    document.getElementById(`turn-${lastUserId}`)?.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    // Scroll only the conversation column. scrollIntoView would also scroll every other scrollable
+    // ancestor, including the page itself.
+    const turn = document.getElementById(`turn-${lastUserId}`);
+    const column = turn?.closest<HTMLElement>(".ui-shell__scroll");
+    if (!turn || !column) return;
+    const top = column.scrollTop + (turn.getBoundingClientRect().top - column.getBoundingClientRect().top);
+    column.scrollTo({ top, behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }, [lastUserId]);
 
   const questionOf = (turnId: string) => {
