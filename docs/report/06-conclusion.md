@@ -1,36 +1,63 @@
 # 6. Conclusion
 
 <!-- Draft (W8-D2-FAO-1, written early on D13, updated on D16 with the Week 7 latency and
-ablation runs and ADR 0011). The limitations and the data side are written from
-what is measured now. Every result of the research questions is a TODO until `final.md`
-(W7-D5-LDN-1) is merged; the numbers there replace the preliminary ones below. Future work from the
-error analyses is a TODO until W7-D3-FAO-1 and the answer error analysis exist. -->
+ablation runs and ADR 0011, and on D18 with the W7 runs R1-R3 and A1-A4 of #179 and the two error
+analyses, #179 and #180). The RQ1 and RQ2 numbers below come from the run files of #179; when
+`final.md` (W7-D5-LDN-1) is merged, the citations move to it. RQ3 waits for the user study. -->
 
 ## 6.1 Results by research question
 
 **RQ1 (retrieval): does hybrid retrieval beat dense-only and BM25-only?**
-Preliminary, from the 30 answerable dev items (ADR 0009, table B; 2026-10-21):
-- recall@5 was 0.333 for hybrid, 0.283 for dense and 0.350 for BM25;
-- MRR was 0.301, 0.253 and 0.370.
+Partly: hybrid beats dense-only at recall@10, but not BM25-only, and at recall@5 no retriever is
+measurably better. The final runs R1 to R3 used all 60 answerable items with the raw question
+(`evaluation/RUNS.md` §7, `retrieval-final-compare.txt`, #179):
 
-Every 95% interval of the paired differences with hybrid included 0. On this sample none of the
-three is measurably better. Hybrid was kept as the default by the rule set before the numbers.
+| Retriever | recall@5 | recall@10 | MRR |
+|---|---:|---:|---:|
+| Hybrid (product default) | 0.508 [0.38, 0.63] | 0.583 [0.46, 0.70] | 0.474 |
+| Dense only | 0.458 [0.35, 0.58] | 0.492 [0.38, 0.60] | 0.420 |
+| BM25 only | 0.508 [0.39, 0.63] | 0.567 [0.45, 0.69] | 0.486 |
 
-<!-- TODO(W7-D1-LDN-1, W7-D5-LDN-1): the final runs on the full golden set (k = 1, 5, 10, per
-question type, with n per cell) and one sentence answering RQ1. -->
+- **Hybrid against dense.** At recall@10, hybrid is +0.092 ahead, with a 95% interval of
+  [+0.025, +0.167]. That is the only paired difference whose interval excludes 0.
+- **Hybrid against BM25.** No difference: the interval of every metric includes 0. Hybrid stays
+  the default by the rule set in ADR 0009 before the numbers.
+- **By question type (hybrid recall@5, n per type):**
+  - factual 0.85 (13);
+  - explanatory 0.65 (17);
+  - comparison 0.50 (8);
+  - multi-hop 0.32 (11);
+  - follow-up 0.09 (11).
+
+  Follow-up turns were searched without their history. The product rewrites them first, and on
+  answered follow-ups that rewrite raised the share of relevant papers retrieved from 0.13 to
+  0.44 (A1 against A2, `answer-errors-w7.md` §4.2, #179).
+- **Why questions are missed** (retrieval error analysis, #180). Of hybrid's 32 missed questions:
+  - 10 are follow-ups without their history;
+  - 7 use everyday words for a technical term (vocabulary mismatch);
+  - 7 are on topics where other papers rank higher;
+  - 2 ask for a side detail of a paper;
+  - 6 are found by one of the single retrievers but lost in the fusion.
+
+  No relevant paper was missing from the index.
 
 **RQ2 (agent steps): do query rewriting and the evidence check improve faithfulness?**
-Preliminary, from the 32 dev items on the Week 7 host (`evaluation/reports/ablations-v1.md`,
-#163):
-- **Rewriting** changed only the 5 follow-up turns. Macro faithfulness was 0.576 [0.44, 0.70]
-  with rewriting and 0.556 [0.42, 0.67] without, so the difference is inside both intervals. It
-  found the relevant paper in 1 of the 5 follow-ups, against 0 without.
-- **The evidence check** refused all 32 items, including questions that the other conditions
-  answered with faithfulness 1.0. With `llama3.2:3b` it is a constant NO, so the "+evidence" and
-  "full" conditions could not be scored, and the frozen configuration keeps it off.
+Not measurably. The final runs A1 to A4 used all 65 items on the Week 7 host (`evaluation/RUNS.md`
+§7, #179; `evaluation/reports/answer-errors-w7.md`):
+- **Rewriting.** Macro faithfulness was 0.491 [0.39, 0.59] for the MVP (A1) and 0.527 [0.43, 0.62]
+  with rewriting (A2). The intervals overlap almost completely. Rewriting changes only the 11
+  follow-up turns, and on those it found the relevant paper more often (above).
+- **Refusals.** Answerable items refused: 6/60 (A1) and 5/60 (A2). Unanswerable items refused:
+  4/5 in both; `gs-u05` was answered.
+- **The evidence check** (A3, A4) refused every item, 60/60 answerable and 5/5 unanswerable, as in
+  the earlier dev run (#163). With `llama3.2:3b` it is a constant NO, so these two conditions
+  cannot be scored, and the frozen configuration keeps it off.
+- **Where faithfulness is lost.** 75% of the unsupported sentences in A2 have no citation at all.
+  Sentences that do cite a passage are supported 76% of the time (DAT's error analysis, #179).
+  So the low score is partly a citation-format failure of the 3B generator, not only unfaithfulness.
 
-<!-- TODO(W7-D2-LDN-1, W7-D5-LDN-1): faithfulness and refusal rate for MVP, +rewrite, +evidence
-check and full agent, per type; the follow-up items for rewriting; the manual check of the judge. -->
+<!-- TODO(W7-D2-LDN-1, W7-D5-LDN-1): the manual check of the judge (agreement on the 20% sample)
+and, if #171 is used, answer relevance per condition. -->
 
 **RQ3 (follow-up suggestions): do users find them useful and click them?**
 <!-- TODO(W7-D4-LDN-1): n, mean, median and distribution of the usefulness rating, click rate, and
@@ -67,9 +94,11 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
   "by hand" again. -->
 
 **Small samples.**
-- **Golden set:** 60 items planned (47 on D13), of which 30 were used for decisions.
-  <!-- TODO(W5-D1-LDN-1): final count. --> One question is 3.3 points of
-  recall on the dev split, and the intervals of most comparisons overlap.
+- **Golden set:** 65 items (60 answerable: 30 dev and 30 test; 5 unanswerable; #168). One
+  question is 1.7 points of recall over the 60 answerable items, and the intervals of most
+  comparisons overlap. The relevant papers of an item are the ones it was written from, not
+  every paper that answers it, so recall is a lower bound: in at least one item (`gs-014`) two
+  papers ranked above the relevant one also answer the question (#180).
 - **User study:** 5 to 6 participants, chosen by the team, not at random. It supports
   description, not a claim about users in general.
 - **Efficiency:** measured on one laptop, one run per size, with sequential queries. Load under
@@ -129,5 +158,10 @@ so the cut list was applied at the start instead of at the first delay (ADR 0010
 - **A larger golden set**, so differences of a few questions can be told apart from noise.
 - **The cut features:** a reranker and query decomposition, each tested as an ablation like RQ2.
 
-<!-- TODO(W7-D3-FAO-1 and the answer error analysis): one or two items from the most common
-retrieval misses and answer errors. -->
+- **Citation enforcement:** find answer sentences without a `[n]` marker after generation and
+  either have them cited from the sources or drop them. This targets the largest cause of low
+  faithfulness (DAT's error analysis, #179).
+- **Better queries, not only better ranking:** the two largest groups of retrieval misses are
+  follow-ups searched without history and everyday wording of technical terms (#180). Next steps:
+  - measure follow-up retrieval on the rewritten query;
+  - try a second, technical rewrite of every question, searched next to the original.
