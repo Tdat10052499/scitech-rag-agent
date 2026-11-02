@@ -4,7 +4,21 @@ Status: draft by DAT, 2026-11-02, written ahead of the plan (D21). The questions
 
 Length: 3 to 5 minutes. Presenter: DAT. The data page is cut (replan), so the demo shows only the chat.
 
+## Where the demo runs
+
+Two options. Decide in the dry run (W8-D4-DAT-1) and keep the other as the fallback.
+
+| | Laptop (frozen stack) | Hosted Space (`https://teichi-scitech-rag-agent.hf.space`, `docs/runbooks/hosting.md`) |
+|---|---|---|
+| LLM | `llama3.2:3b` on the laptop GPU: the model of every evaluation number | `qwen/qwen3.8-27b` on Groq: **not** the evaluated model |
+| Speed | first token p50 0.42 s, full turn p50 4.3 s (`performance.md` run B) | first token 1.2 to 1.5 s, answer done in 1.4 to 2.1 s (4 script questions, one run each, 2026-11-02) |
+| Risk | laptop, Qdrant and Ollama must all be up | room Wi-Fi; Groq quota (`CHAT_TOTAL_PER_MINUTE=2`, so wait about 30 s between questions); the Space sleeps after 48 h without visits (open it before the session) |
+
+If the Space is used, say once: "This public copy uses a larger hosted model; the evaluation numbers in the report are for the 3B model on the laptop." Section 2 point 1 then quotes the Space time, not 0.42 s.
+
 ## 0. Before the session (about 10 minutes before)
+
+- **Space only:** open the Space URL and ask the warm-up question there; skip the stack steps below.
 
 - **Stack:** start the frozen stack on the demo laptop. Native Windows: Qdrant from its folder, Ollama, backend, frontend (README, "Run the real app on Windows without Docker"). Docker: `make up`.
 - **Index:** Qdrant `scitech_chunks` must show 121,926 points.

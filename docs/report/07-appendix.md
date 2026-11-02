@@ -11,6 +11,7 @@ The full steps are in `README.md`. In short:
 - **Index:**
   - The index is not in the repository. Build it from the Kaggle arXiv snapshot with `docs/runbooks/data-pipeline.md`, or load the release data.
   - The evaluation index is frozen: collection `scitech_chunks`, 121,926 points, id in `evaluation/SNAPSHOT.md`.
+- **Public demo:** a Hugging Face Docker Space with the same code and the frozen index, but a hosted LLM (`qwen/qwen3.8-27b` on Groq). It is deployed from `main` by `.github/workflows/deploy-hf-space.yml` (`docs/runbooks/hosting.md`). The evaluation numbers are for `llama3.2:3b` and do not describe the Space.
 - **Evaluation:** `evaluation/RUNS.md` lists every run, with its config, command and result file.
 
 ## B. Architecture decisions
