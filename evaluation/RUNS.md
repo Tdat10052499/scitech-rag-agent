@@ -110,16 +110,22 @@ After every run: check that `counts` and `golden.n_items` match the other runs, 
 
 | Run | Run file | Date | Commit | Host | Golden sha256 | Status |
 |---|---|---|---|---|---|---|
-| R1 | | | | | | not run |
-| R2 | | | | | | not run |
-| R3 | | | | | | not run |
-| A1 | | | | | | not run |
-| A2 | | | | | | not run |
-| A3 | | | | | | not run |
-| A4 | | | | | | not run |
+| R1 | `evaluation/runs/20261102T111427Z-retrieval-final-hybrid.json` | 2026-11-02 | `3a2b92d` | DAT laptop | `1d05086d…` | done: n=60, R@5 0.508, R@10 0.583, MRR 0.474 |
+| R2 | `evaluation/runs/20261102T111434Z-retrieval-final-dense.json` | 2026-11-02 | `3a2b92d` | DAT laptop | `1d05086d…` | done: R@5 0.458, R@10 0.492, MRR 0.420 |
+| R3 | `evaluation/runs/20261102T111435Z-retrieval-final-bm25.json` | 2026-11-02 | `3a2b92d` | DAT laptop | `1d05086d…` | done: R@5 0.508, R@10 0.567, MRR 0.486; `compare`: `retrieval-final-compare.txt` |
+| A1 | `evaluation/runs/20261102T111436Z-answers-w7-a1-mvp.json` | 2026-11-02 | `1638c06` (code = `3a2b92d`) | DAT laptop | `1d05086d…` | done: faithfulness 0.491 [0.39, 0.59], over-refusal 6/60, unanswerable refused 4/5 |
+| A2 | `evaluation/runs/20261102T112100Z-answers-w7-a2-rewrite.json` | 2026-11-02 | `dac3848` (code = `3a2b92d`) | DAT laptop | `1d05086d…` | done: faithfulness 0.527 [0.43, 0.62], over-refusal 5/60, unanswerable refused 4/5 |
+| A3 | `evaluation/runs/20261102T112723Z-answers-w7-a3-check.json` | 2026-11-02 | `32cf09d` (code = `3a2b92d`) | DAT laptop | `1d05086d…` | done: over-refusal 60/60, not scorable on faithfulness |
+| A4 | `evaluation/runs/20261102T112800Z-answers-w7-a4-full.json` | 2026-11-02 | `367ccdc` (code = `3a2b92d`) | DAT laptop | `1d05086d…` | done: over-refusal 60/60, not scorable on faithfulness |
 | L1 | `docs/runbooks/performance.md` (run B `20261030T083604Z`) | 2026-10-30 | `v0.6-rc` + files of #148 | DAT laptop | | done (DAT, #161) |
 | S1 | `pipelines/reports/scaling.md` | | | | | done in W6 |
 | U1 | | | | | | not run |
+
+Notes on this log (DAT, 2026-11-02):
+- All seven runs used the same code. The script committed each run file as soon as it finished, so the runner recorded the commit that holds the previous run files: `1638c06`, `dac3848`, `32cf09d` and `367ccdc`. `git diff 3a2b92d 01da803 -- . ':!evaluation/runs'` is empty, so the code, prompts and configs are those of `3a2b92d` (`main` after #166, #168 and #160).
+- `index_snapshot` and the golden sha256 (`1d05086d71904dcc479793c930b7586fd2afb0a0e4c1543b30c46f0ed3ec50bc`, Windows checkout) are the same in all seven files. Every A run has 0 errors and 0 judge errors.
+- The relevance pass (#171) was not run: #171 is not merged yet.
+- Answer error analysis of A2 (W7-D4-DAT-1): `evaluation/reports/answer-errors-w7.md`.
 
 ## 8. Confirmations
 
