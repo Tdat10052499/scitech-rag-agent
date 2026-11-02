@@ -117,6 +117,8 @@ After every run: check that `counts` and `golden.n_items` match the other runs, 
 | A2 | `evaluation/runs/20261102T112100Z-answers-w7-a2-rewrite.json` | 2026-11-02 | `dac3848` (code = `3a2b92d`) | DAT laptop | `1d05086d…` | done: faithfulness 0.527 [0.43, 0.62], over-refusal 5/60, unanswerable refused 4/5 |
 | A3 | `evaluation/runs/20261102T112723Z-answers-w7-a3-check.json` | 2026-11-02 | `32cf09d` (code = `3a2b92d`) | DAT laptop | `1d05086d…` | done: over-refusal 60/60, not scorable on faithfulness |
 | A4 | `evaluation/runs/20261102T112800Z-answers-w7-a4-full.json` | 2026-11-02 | `367ccdc` (code = `3a2b92d`) | DAT laptop | `1d05086d…` | done: over-refusal 60/60, not scorable on faithfulness |
+| V1 (A1) | `evaluation/runs/20261102T111436Z-answers-w7-a1-mvp.relevance.json` | 2026-11-02 | `4036333` (`main` `b729811` with this PR merged in) | DAT laptop | `1d05086d…` | done: relevance n=54, mean 2.31 [2.11, 2.52], ratings 1/2/3 = 11/15/28 |
+| V2 (A2) | `evaluation/runs/20261102T112100Z-answers-w7-a2-rewrite.relevance.json` | 2026-11-02 | `61e7e42` (code = `4036333`) | DAT laptop | `1d05086d…` | done: relevance n=55, mean 2.44 [2.24, 2.62], ratings 1/2/3 = 8/15/32 |
 | L1 | `docs/runbooks/performance.md` (run B `20261030T083604Z`) | 2026-10-30 | `v0.6-rc` + files of #148 | DAT laptop | | done (DAT, #161) |
 | S1 | `pipelines/reports/scaling.md` | | | | | done in W6 |
 | U1 | | | | | | not run |
@@ -124,7 +126,8 @@ After every run: check that `counts` and `golden.n_items` match the other runs, 
 Notes on this log (DAT, 2026-11-02):
 - All seven runs used the same code. The script committed each run file as soon as it finished, so the runner recorded the commit that holds the previous run files: `1638c06`, `dac3848`, `32cf09d` and `367ccdc`. `git diff 3a2b92d 01da803 -- . ':!evaluation/runs'` is empty, so the code, prompts and configs are those of `3a2b92d` (`main` after #166, #168 and #160).
 - `index_snapshot` and the golden sha256 (`1d05086d71904dcc479793c930b7586fd2afb0a0e4c1543b30c46f0ed3ec50bc`, Windows checkout) are the same in all seven files. Every A run has 0 errors and 0 judge errors.
-- The relevance pass (#171) was not run: #171 is not merged yet.
+- `+dirty` on R2 and R3 (LDN's question): the runner's `git_commit()` (`evaluation/src/scitech_eval/runner.py`) runs `git status --porcelain`, which also counts untracked files. The script ran R1, R2 and R3 back to back and committed the three files together (`1638c06`), so R2 saw R1's new run file and R3 saw R1's and R2's. R1 ran on a clean tree. No tracked file changed, so the code is `3a2b92d` for all three.
+- Relevance (#171, `relevance-w7.yaml`, judge `qwen2.5:7b` `845dbda0ea48`) ran on 2026-11-02 on the stored A1 and A2 answers, after `main` (with #171) was merged into this branch (`4036333`); the agent was not called again. Rated: every answer that is not refused, not an error and not an unanswerable item; 0 judge errors. The A1-A2 difference is +0.12 and the intervals overlap. A3 and A4 have no rateable answer (all refused). The A2 numbers equal the trial run of #171 on the same file.
 - Answer error analysis of A2 (W7-D4-DAT-1): `evaluation/reports/answer-errors-w7.md`.
 
 ## 8. Confirmations
