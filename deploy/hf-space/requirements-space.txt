@@ -1,0 +1,2 @@
+# Extra dependency of the Space image only (deploy/hf-space): fetch_index.py downloads the index.
+huggingface_hub>=0.23
