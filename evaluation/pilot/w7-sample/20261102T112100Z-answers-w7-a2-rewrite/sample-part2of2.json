@@ -1,0 +1,37 @@
+{
+  "fraction": 0.2,
+  "seed": 20261031,
+  "part": "2/2",
+  "answers_in_file": 65,
+  "excluded": {
+    "error": 0,
+    "refused": 9,
+    "unanswerable_item": 1
+  },
+  "eligible": 55,
+  "sampled_all_parts": [
+    "gs-002",
+    "gs-017",
+    "gs-023",
+    "gs-033",
+    "gs-034",
+    "gs-043",
+    "gs-044",
+    "gs-050",
+    "gs-053",
+    "gs-058",
+    "gs-060"
+  ],
+  "sampled_this_part": [
+    "gs-043",
+    "gs-044",
+    "gs-053",
+    "gs-058",
+    "gs-060"
+  ],
+  "types_this_part": {
+    "follow_up": 4,
+    "comparison": 1
+  },
+  "answers_file": "20261102T112100Z-answers-w7-a2-rewrite.answers.jsonl"
+}
