@@ -101,9 +101,10 @@ def bm25_index_dir(env: Mapping[str, str]) -> Path:
 def retriever_from_env(env: Mapping[str, str] | None = None) -> Retriever:
     """The retriever named by `RETRIEVER` (`dense`, `bm25` or `hybrid`; empty: `hybrid`).
     Dense needs Qdrant and the embedding model (`DenseRetriever.from_env`); BM25 loads the index
-    from `BM25_INDEX_DIR`; hybrid needs both, plus `RRF_K` and the per-retriever top-k."""
+    from `BM25_INDEX_DIR` (and follows its rebuilds when `BM25_RELOAD_SECONDS` > 0); hybrid
+    needs both, plus `RRF_K` and the per-retriever top-k."""
     from scitech_agent.retrieval.dense import DenseRetriever
-    from scitech_agent.retrieval.keyword import KeywordRetriever
+    from scitech_agent.retrieval.keyword import keyword_retriever
 
     env = os.environ if env is None else env
     name = (env.get("RETRIEVER") or "hybrid").strip().lower()
@@ -112,8 +113,8 @@ def retriever_from_env(env: Mapping[str, str] | None = None) -> Retriever:
     if name == "dense":
         return DenseRetriever.from_env(env)
     if name == "bm25":
-        return KeywordRetriever.load(bm25_index_dir(env))
+        return keyword_retriever(bm25_index_dir(env), env)
     config = HybridConfig.from_env(env)  # checked before loading the index or the model
     return HybridRetriever(
-        DenseRetriever.from_env(env), KeywordRetriever.load(bm25_index_dir(env)), config
+        DenseRetriever.from_env(env), keyword_retriever(bm25_index_dir(env), env), config
     )
