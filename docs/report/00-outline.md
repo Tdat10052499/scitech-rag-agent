@@ -29,8 +29,8 @@ proposals.
 | `04-evaluation.md` | 4. Evaluation: golden set, RQ1 retrieval, RQ2 agent ablations and faithfulness, RQ3 user study, latency, error analysis, threats to validity | LDN (error analysis: DAT, W7-D4-DAT-1) | W8-D1-LDN-1 | 6 | `evaluation/reports/final.md` (W7-D5-LDN-1), `retrieval-v1.md`, `ablations-v1.md`, `docs/runbooks/performance.md` | Not started; `final.md` does not exist yet |
 | `05-interface.md` | 5. Interface: chat, citations, sources panel, follow-ups, refusal state, feedback | LDN | W8-D1-LDN-1 | 2 | `frontend/`, `docs/demo/`, ADR 0004 | Not started |
 | `06-conclusion.md` | 6. Conclusion: results by research question, limitations, future work | FAO | W8-D2-FAO-1 | 2 | chapters 2–5 | Draft PR #131 |
-| `demo-script.md` | Demo script (not a chapter) | DAT | W8-D3-DAT-1 | — | — | Not started |
-| Appendix | A. How to run (link to README); B. ADR index; C. Golden-set format; D. Team and AI-tool use | DAT | W8-D5-DAT-1 | — | `README.md`, `docs/decisions/` | Not started |
+| `demo-script.md` | Demo script (not a chapter) | DAT | W8-D3-DAT-1 | — | — | Draft 2026-11-02 |
+| `07-appendix.md` | A. How to run (link to README); B. ADR index; C. Golden-set format; D. Team and AI-tool use | DAT | W8-D5-DAT-1 | — | `README.md`, `docs/decisions/` | Draft 2026-11-02 |
 
 ### What each chapter must contain
 
