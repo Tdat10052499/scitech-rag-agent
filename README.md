@@ -59,7 +59,7 @@ Details: [docs/01-architecture.md](docs/01-architecture.md).
 | `frontend/` | User interface |
 | `evaluation/` | Golden question set, metrics, experiment reports |
 | `deploy/` | Public demo on a Hugging Face Docker Space ([runbook](docs/runbooks/hosting.md)); `.github/workflows/deploy-hf-space.yml` uploads `main` after CI passes |
-| `notebooks/` | Kaggle notebooks for the data and embedding runs (outputs stripped) |
+| `notebooks/` | Experiments: the Kaggle Ollama server and the LLM benchmarks (`llm-serving/`); outputs stripped |
 | `data/` | Local data, indexes and logs; git-ignored |
 | `docs/` | Brief, architecture, contracts, decisions, plan, task briefs, journals |
 | `.github/` | Issue/PR templates, CI, CODEOWNERS |
