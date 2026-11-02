@@ -112,4 +112,15 @@ First real Space build, 2026-11-02 (`Teichi/scitech-rag-agent`, PRO, `cpu-basic`
 - from container start to `Application startup complete.` took about 30 s (16:23:46 to about 16:24:15 in the log);
 - the first `/chat` failed with HTTP 401 from Groq because of a wrong `LLM_API_KEY`; after the secret was fixed, DAT reported that the app answers.
 
-Not measured yet: first-token latency on the Space, and the wake-up time after 48 h of sleep.
+Latency on the Space, 2026-11-02 about 17:28 UTC, measured from DAT's laptop (Vietnam) with a small `httpx` script over `/chat`, one run per question, Space warm, 35 s between questions because of `CHAT_TOTAL_PER_MINUTE=2`:
+
+| Question (demo script) | First `token` event | Stream done |
+|---|---:|---:|
+| maths at answer time (`gs-019` turn 1) | 1.3 s | 1.8 s |
+| "What goes wrong with those methods?" (same session) | 1.5 s | 2.1 s |
+| RevThink GPU hours (`gs-u03`, refused) | 1.2 s | 1.7 s |
+| pizza recipe (off-topic, refused) | 1.2 s | 1.4 s |
+
+All four returned HTTP 200. Four single runs are not a distribution: no p50 or p95, and they are not comparable with `performance.md` (other model, other host). The answers' content was not checked by the script.
+
+Not measured yet: the wake-up time after 48 h of sleep.

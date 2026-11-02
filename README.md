@@ -6,12 +6,35 @@
 
 An interactive web app where an AI agent answers science and technology questions using retrieval over a large-scale corpus, and suggests relevant follow-up questions. The corpus is scoped to **large language models and NLP** research (arXiv `cs.CL`; see the [project brief](docs/00-project-brief.md)).
 
-> Status: course project. Work runs 2026-10-13 to 2026-11-06 (release `v1.0`); the product is presented on 2026-11-10. Plan: [docs/04-roadmap.md](docs/04-roadmap.md) and [docs/plan/](docs/plan/README.md).
+> Status (2026-11-02): course project, feature freeze since 2026-10-30 (tag `v0.6-rc`); the final evaluation runs are done (Week 7). Work runs 2026-10-13 to 2026-11-06 (release `v1.0`); the product is presented on 2026-11-10. Plan: [docs/04-roadmap.md](docs/04-roadmap.md) and [docs/plan/](docs/plan/README.md).
+
+**Live demo:** https://teichi-scitech-rag-agent.hf.space (Hugging Face Space, deployed from `main`). The public copy uses a hosted LLM (`qwen/qwen3.8-27b` on Groq) and a free API quota, so it accepts about 2 questions per minute in total and 3 per visitor; the evaluation numbers below are for `llama3.2:3b` on a laptop GPU and do not describe the Space. Details: [docs/runbooks/hosting.md](docs/runbooks/hosting.md).
 
 ## What it does
 1. The user asks a question about LLM/NLP research.
 2. The agent rewrites the question into a standalone search query, retrieves evidence from an indexed corpus, and answers **only from that evidence, with citations**. If evidence is insufficient it says so.
 3. The app proposes follow-up questions based on the answer and the retrieved context.
+
+| Part | What is used |
+|---|---|
+| Corpus | 121,860 arXiv `cs.CL` papers (titles and abstracts, CC0) from the Kaggle snapshot, 121,926 chunks; frozen index for the evaluation ([evaluation/SNAPSHOT.md](evaluation/SNAPSHOT.md)) |
+| Retrieval | hybrid: dense (`BAAI/bge-small-en-v1.5`, Qdrant) + BM25, fused with reciprocal rank fusion; top 5 passages ([ADR 0009](docs/decisions/0009-default-retrieval.md)) |
+| Generation | any OpenAI-compatible endpoint ([ADR 0001](docs/decisions/0001-hybrid-llm-backend.md)); evaluated with `llama3.2:3b` on Ollama ([ADR 0006](docs/decisions/0006-llm-model.md)) |
+| Agent | query rewrite for follow-up turns, answer with `[n]` citations, refusal when the sources do not answer, follow-up suggestions |
+| Interface | React chat with a sources panel, citation markers, refusal state and answer rating ([frontend/](frontend/)) |
+
+## Results (Week 7, 2026-11-02)
+Measured on the 65-item golden set (60 answerable, 5 unanswerable) with the frozen index; full log in [evaluation/RUNS.md](evaluation/RUNS.md) §7.
+
+| Question | Result |
+|---|---|
+| Retrieval (R1–R3, n = 60) | recall@5 hybrid 0.508, dense 0.458, BM25 0.508; recall@10 0.583 / 0.492 / 0.567. Only hybrid > dense at recall@10 is significant (+0.092, 95% CI [0.025, 0.167]) |
+| Faithfulness (A1 MVP / A2 + rewrite) | 0.491 [0.39, 0.59] / 0.527 [0.43, 0.62]; answerable questions refused 6/60 and 5/60; unanswerable refused 4/5 |
+| Answer relevance (1–3, LLM judge) | A1 2.31 [2.11, 2.52], A2 2.44 [2.24, 2.62] |
+| Evidence self-check (A3, A4) | refused 60/60 answerable questions with the 3B model, so it is off in the product |
+| Latency (laptop, 30 questions) | first token p50 0.42 s; answer complete p50 1.3 s, p95 3.2 s ([docs/runbooks/performance.md](docs/runbooks/performance.md)) |
+
+Faithfulness and relevance are rated by an LLM judge (`qwen2.5:7b`) and checked by hand on a 20% sample; the samples are small and most intervals overlap. Error analyses: [answers](evaluation/reports/answer-errors-w7.md), [retrieval](evaluation/reports/retrieval-errors-w7.md).
 
 ## Architecture in one picture
 ```mermaid
@@ -35,10 +58,16 @@ Details: [docs/01-architecture.md](docs/01-architecture.md).
 | `backend/` | FastAPI service exposing the API contract |
 | `frontend/` | User interface |
 | `evaluation/` | Golden question set, metrics, experiment reports |
+| `deploy/` | Public demo on a Hugging Face Docker Space ([runbook](docs/runbooks/hosting.md)); `.github/workflows/deploy-hf-space.yml` uploads `main` after CI passes |
+| `notebooks/` | Experiments: the Kaggle Ollama server and the LLM benchmarks (`llm-serving/`); outputs stripped |
+| `data/` | Local data, indexes and logs; git-ignored |
 | `docs/` | Brief, architecture, contracts, decisions, plan, task briefs, journals |
 | `.github/` | Issue/PR templates, CI, CODEOWNERS |
 
 ## Quick start
+
+To only try the app, use the [live demo](https://teichi-scitech-rag-agent.hf.space). To run it yourself:
+
 ### Run the app with one command (Docker)
 
 Needs Docker with Compose v2. The stack runs Qdrant, the backend and the frontend; the LLM stays
@@ -154,4 +183,4 @@ Start with [AGENTS.md](AGENTS.md) (also the entry point for AI coding agents) an
 | Dương Ngọc Linh Đan | [@Yui-Mika](https://github.com/Yui-Mika) | Frontend, evaluation, golden set, user study |
 
 ## License
-Code: [MIT](LICENSE). Data keeps its source licence: arXiv metadata (titles, abstracts) is CC0 1.0; Wikipedia text is CC BY-SA 4.0 and is shown with attribution. Details: [docs/03-data-sources.md](docs/03-data-sources.md).
+Code: [MIT](LICENSE). Data keeps its source licence: arXiv metadata (titles, abstracts) is CC0 1.0. Wikipedia pages (CC BY-SA 4.0) were downloaded but are not in the v1.0 index (ADR 0003 update, #34). Details: [docs/03-data-sources.md](docs/03-data-sources.md).
