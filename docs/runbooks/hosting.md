@@ -7,11 +7,13 @@ a tunnel was ruled out. Files: `deploy/hf-space/`.
 
 | Part | Where | Notes |
 |---|---|---|
-| UI, backend, Qdrant, BM25 | one container in a Hugging Face Docker Space, free `cpu-basic` | nginx on port 7860 serves the UI and forwards `/health`, `/chat` and `/feedback` to uvicorn on 127.0.0.1:8000. Qdrant runs on 127.0.0.1:6333 inside the container. |
+| UI, backend, Qdrant, BM25 | one container in a Hugging Face Docker Space, `cpu-basic` (needs a PRO account, see below) | nginx on port 7860 serves the UI and forwards `/health`, `/chat` and `/feedback` to uvicorn on 127.0.0.1:8000. Qdrant runs on 127.0.0.1:6333 inside the container. |
 | Index | a private Hugging Face dataset repo | It holds a Qdrant snapshot and the BM25 directory. `fetch_index.py` downloads it at every start, because the free Space disk is not persistent. |
 | LLM | a hosted OpenAI-compatible API, e.g. Groq | ADR 0001: only `LLM_BASE_URL`, `LLM_MODEL` and `LLM_API_KEY` change. |
 
-Free `cpu-basic` limits ([Hugging Face docs](https://huggingface.co/docs/hub/en/spaces-gpus), read 2026-11-02):
+Since 2026-11-02, creating a Docker Space on `cpu-basic` returns HTTP 402 without a Hugging Face PRO subscription; only static Spaces stay free. DAT bought PRO for the defense period (cancel after 2026-11-10).
+
+`cpu-basic` limits ([Hugging Face docs](https://huggingface.co/docs/hub/en/spaces-gpus), read 2026-11-02):
 
 - 2 vCPU, 16 GB RAM, 50 GB disk;
 - the Space sleeps after 48 h without visits, and the next visit wakes it;
@@ -76,7 +78,7 @@ Other settings:
    Changing a variable restarts the Space.
 6. **Check it.**
    - Open `https://<hf-user>-scitech-rag-agent.hf.space`.
-   - In the Space log, the start prints `fetch_index: scitech_chunks has 121926 points`, then `AGENT_MODE=real: agent ready`.
+   - In the Space log, the start prints `fetch_index: scitech_chunks has 121926 points`, then `Application startup complete.` The `AGENT_MODE=real: agent ready` line is logged at INFO and does not appear in the Space log. A `/chat` that reaches the LLM confirms real mode (a wrong key shows `answer failed: LLM endpoint returned HTTP 401`).
    - Ask the demo questions.
 
 ## 4. Updates
@@ -101,3 +103,12 @@ On 2026-11-02, in the cloud dev container, the image was built and run with a 5-
 - a hosted LLM.
 
 These are checked by the first real Space build. TODO: wake-up time and first-token latency on the Space.
+
+First real Space build, 2026-11-02 (`Teichi/scitech-rag-agent`, PRO, `cpu-basic`, LLM `qwen/qwen3.8-27b` on Groq):
+
+- the image built, so the apt and CPU torch installs work;
+- `fetch_index` downloaded the index in 2 s and restored `scitech_chunks` in 5 s, with 121926 points;
+- from container start to `Application startup complete.` took about 30 s (16:23:46 to about 16:24:15 in the log);
+- the first `/chat` failed with HTTP 401 from Groq because of a wrong `LLM_API_KEY`; after the secret was fixed, DAT reported that the app answers.
+
+Not measured yet: first-token latency on the Space, and the wake-up time after 48 h of sleep.
