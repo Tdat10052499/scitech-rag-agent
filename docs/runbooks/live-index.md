@@ -45,7 +45,8 @@ a Docker restart. Its log goes to `data/logs/incremental.log`.
   papers as soon as they are loaded into Qdrant.
 - While it loads, the backend holds two indexes in memory, about 2 x 177 MiB for the bulk index.
 
-Log lines (`docker compose logs backend`):
+Log lines (`docker compose logs backend`). The backend sets no log level, so only the warning
+and error lines show by default; the `switched` line is at INFO level:
 
 - `bm25 reload: switched to the index at data/index/bm25-live (N chunks)`
 - `bm25 reload: cannot read ... ; keeping the old index`
