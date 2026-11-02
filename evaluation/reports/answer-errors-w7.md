@@ -20,10 +20,11 @@ Status: draft by DAT, 2026-11-02, from the W7 runs in `evaluation/RUNS.md` secti
 | Faithfulness, macro [95% CI] | 0.491 [0.39, 0.59] | 0.527 [0.43, 0.62] |
 | Faithfulness, micro (supported / checkable) | 0.408 (62/152) | 0.441 (67/152) |
 | Cited sentences supported | 62/82 (0.76) | 67/88 (0.76) |
-| Sentences without a citation | 70 (all "not supported") | 64 (all "not supported") |
+| Sentences without a citation | 72 (70 not supported, 2 not checkable) | 67 (64 not supported, 3 not checkable) |
 | Share of "not supported" sentences that have no citation | 70/90 (0.78) | 64/85 (0.75) |
 | Answers with no citation at all | 7 | 6 |
-| Relevant document retrieved but none cited | 7 | 8 |
+| All relevant documents retrieved (`retrieved_doc_recall` = 1.0) but none cited | 7 | 8 |
+| At least one relevant document retrieved but none cited | 8 | 9 |
 | Cited-document recall [95% CI] | 0.398 [0.27, 0.53] | 0.427 [0.30, 0.55] |
 | Answerable items refused | 6/60 | 5/60 |
 | Unanswerable items refused | 4/5 (`gs-u05` answered) | 4/5 (`gs-u05` answered) |
@@ -76,6 +77,7 @@ Count by cause: missing citations 12, over-refusal 5, retrieval miss 3, cited cl
 - **`gs-008`** is a true over-refusal: R1 found the relevant document at rank 5 or better, and the model still said the sources were insufficient.
 - In **`gs-012`** and **`gs-021`**, the relevant documents were not in R1's top 5. A refusal is the correct behaviour given those sources. The cause is retrieval, not the answer step.
 - **`gs-018`** and **`gs-024`** are follow-up turns. R1 searches with the raw follow-up question, so its recall of 0 does not show what A2's rewritten query found. Without the trace, the cause stays open.
+- **What the rewrite does for follow-up retrieval** (FAO's review of #179). Over answered follow-up items only, `retrieved_doc_recall` is 0.125 in A1 (raw question, n = 8) and 0.44 in A2 (rewrite, n = 9), against 0.09 for R1 on the raw question (n = 11). In A2, `gs-019`, `gs-044` and `gs-058` find their paper; in A1 they do not. The answered sets differ and n is small, so this is an indication, not a measured effect, but it shows that R1's 0.09 understates the product.
 - **Overall rate.** A2 over-refused 5/60 (0.08) and A1 6/60 (0.10). A3 and A4 refused 60/60. Section 5 covers why.
 
 ### 4.3 Retrieval miss (3 of 20)
@@ -103,4 +105,4 @@ Count by cause: missing citations 12, over-refusal 5, retrieval miss 3, cited cl
 2. **Stronger generator:** run A2 with `qwen2.5:7b` or a hosted model as generator, with another model as judge (PLAN section 5 requires them to differ). This would show how much of 4.1 and 5 is the 3B model.
 3. **Multi-hop and comparison retrieval:** question decomposition, or retrieving per entity named in the question, for the types with recall@5 of 0.32 and 0.50 (4.3).
 4. **Self-check calibration:** store the raw reply, raise `self_check_max_tokens`, and try the check with a larger model before using it again (5).
-5. **Follow-up retrieval evaluation:** evaluate retrieval on the rewritten query (`standalone_query` in the golden set), not only the raw question. R1 gives follow-ups recall@5 0.09, which says little about the product.
+5. **Follow-up retrieval evaluation:** evaluate retrieval on the rewritten query (`standalone_query` in the golden set), not only the raw question. R1 gives follow-ups recall@5 0.09, while A2's answered follow-ups reach 0.44 (section 4.2), so the raw-question number says little about the product. The retrieval error analysis (W7-D3-FAO-1) covers the retrieval side.
