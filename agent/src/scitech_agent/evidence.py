@@ -53,6 +53,11 @@ _REFUSAL = re.compile(
             r"provides?|answers?|discuss(?:es)?|says?|specif(?:y|ies))",
             r"\b(?:cannot|can't|can\s+not|unable\s+to)\s+(?:be\s+)?answer",
             rf"\bnot\s+(?:specified|mentioned|stated|covered)\s+in\s+the\s+(?:\w+\s+)?{_SOURCES}",
+            # "There is no evidence in the provided sources ..." (#167)
+            r"\bno\s+(?:\w+\s+)?(?:evidence|information)\s+(?:in|from|within|about|on)\b",
+            # "... but none of them provide a specific recipe" (#167)
+            r"\bnone\s+of\s+(?:them|these|those)\s+(?:\w+\s+)?(?:covers?|mentions?|contains?|"
+            r"provides?|answers?|discuss(?:es)?|says?|specif(?:y|ies))",
         ]
     ),
     re.IGNORECASE,
