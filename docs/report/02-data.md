@@ -23,7 +23,8 @@ The sub-domain is LLM/NLP research. The corpus is **every arXiv record whose cat
 Sources: `docs/03-data-sources.md`, ADR 0003.
 
 Full-text PDFs are not indexed: their licences are the authors' own, while the metadata is public
-domain. Every chunk carries a `license` field (`CC0-1.0`), the interface links each source to its
+domain. After the freeze, ADR 0012 lets the agent read one paper's HTML full text on demand when a
+question names its arXiv id; the text stays in memory and is never added to the index. Every chunk carries a `license` field (`CC0-1.0`), the interface links each source to its
 arXiv page, and `incremental-fetch` keeps arXiv's limit of one OAI-PMH request every 3 seconds.
 
 ## 2.2 Volume
