@@ -105,6 +105,7 @@ class RequestTrace:
         self.config = dict(config or {})
         self.started = clock()
         self.query = message
+        self.search: dict[str, Any] | None = None  # intent.SearchPlan.to_dict(); None: default
         self.retrieved: list[dict[str, Any]] = []
         self.evidence_count: int | None = None
         self.self_check = "off"
@@ -168,6 +169,7 @@ class RequestTrace:
             "message": self.message,
             "query": self.query,
             "rewritten": self.query != self.message,
+            "search": self.search,
             "retrieved": self.retrieved,
             "evidence": {
                 "min_score": self.config.get("min_score"),

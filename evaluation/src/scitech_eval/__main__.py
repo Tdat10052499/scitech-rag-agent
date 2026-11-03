@@ -1,5 +1,6 @@
 """Command line: `retrieval`, `compare`, `check-golden`, and the faithfulness pilot tools
-`make-sheet` and `check-labels`, and `answers` (answers + faithfulness judge)."""
+`make-sheet` and `check-labels`, `answers` (answers + faithfulness judge) and `relevance` (relevance
+judge on a stored answers file)."""
 
 from __future__ import annotations
 
@@ -9,7 +10,7 @@ import sys
 from pathlib import Path
 
 from scitech_eval.answer_run import run_from_answer_config
-from scitech_eval.answers import check_labels, make_sheet
+from scitech_eval.answers import check_labels, make_sheet, parse_part
 from scitech_eval.compare import compare_runs, format_comparison, load_run
 from scitech_eval.golden import GoldenError, check_golden, read_corpus_doc_ids
 from scitech_eval.runner import run_from_config
@@ -38,9 +39,27 @@ def main(argv: list[str] | None = None) -> int:
     m = sub.add_parser("make-sheet", help="write the labelling sheet for an answers.jsonl")
     m.add_argument("answers", type=Path, help="answers.jsonl of the faithfulness pilot")
     m.add_argument("--out-dir", type=Path, default=Path("evaluation/pilot/faithfulness"))
+    m.add_argument(
+        "--sample",
+        type=float,
+        help="fraction (0-1] of the scored answers to write (no error, not refused, answerable "
+        "item), drawn with --seed; also writes relevance-template.csv and sample.json",
+    )
+    m.add_argument("--seed", type=int, default=0, help="seed of --sample (write it in the report)")
+    m.add_argument("--part", help="K/N: write part K of N of the sample, one part per annotator")
+    m.add_argument(
+        "--golden",
+        type=Path,
+        help="golden file for --sample (default evaluation/golden_set/golden.jsonl)",
+    )
 
     k = sub.add_parser("check-labels", help="check a filled labelling sheet")
     k.add_argument("sheet", type=Path, help="labels-<annotator>.csv")
+
+    v = sub.add_parser("relevance", help="rate the relevance of the answers in an answers.jsonl")
+    v.add_argument("--config", required=True, type=Path)
+    v.add_argument("--answers", required=True, type=Path, help="<ts>-<name>.answers.jsonl")
+    v.add_argument("--out-dir", type=Path, default=Path("evaluation/runs"))
 
     args = parser.parse_args(argv)
 
@@ -64,11 +83,21 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "make-sheet":
         try:
-            sheet, chunks = make_sheet(args.answers, args.out_dir)
+            part = parse_part(args.part) if args.part else None
+            if args.sample is None and (args.part or args.golden):
+                raise ValueError("--part and --golden need --sample")
+            paths = make_sheet(
+                args.answers,
+                args.out_dir,
+                sample=args.sample,
+                seed=args.seed,
+                part=part,
+                golden_path=args.golden,
+            )
         except (OSError, KeyError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
-        print(f"wrote {sheet} and {chunks}")
+        print("wrote " + " and ".join(str(p) for p in paths))
         return 0
 
     if args.command == "check-labels":
@@ -97,6 +126,26 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         print(format_comparison(result), end="")
+        return 0
+
+    if args.command == "relevance":
+        from scitech_eval.relevance import run_from_relevance_config
+
+        try:
+            path = run_from_relevance_config(args.config, args.answers, args.out_dir)
+        except (GoldenError, OSError, ValueError, KeyError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        run = json.loads(path.read_text(encoding="utf-8"))
+        n, rel = run["counts"], run["metrics"]["relevance"]
+        print(f"wrote {path}")
+        print(
+            f"  answers {n['answers_in_file']}, left out {sum(n['left_out'].values())}, "
+            f"rated {n['rated']}, judge_error {n['judge_error']}, "
+            f"rated 1/2/3: {'/'.join(str(v) for v in run['metrics']['distribution'].values())}"
+        )
+        if rel:
+            print(f"  relevance (n={rel['n']}) {rel['mean']:.3f} CI {rel['ci95']}")
         return 0
 
     if args.command == "check-golden":
