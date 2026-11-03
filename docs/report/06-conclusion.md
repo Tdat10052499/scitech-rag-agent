@@ -3,7 +3,8 @@
 <!-- Draft (W8-D2-FAO-1, written early on D13, updated on D16 with the Week 7 latency and
 ablation runs and ADR 0011, and on D18 with the W7 runs R1-R3 and A1-A4 of #179 and the two error
 analyses, #179 and #180). The RQ1 and RQ2 numbers below come from the run files of #179; when
-`final.md` (W7-D5-LDN-1) is merged, the citations move to it. RQ3 waits for the user study. -->
+`final.md` (W7-D5-LDN-1) is merged, the citations move to it. RQ3 is not evaluated: the user study was cancelled on 2026-11-03,
+ADR 0013. -->
 
 ## 6.1 Results by research question
 
@@ -60,8 +61,9 @@ Not measurably. The final runs A1 to A4 used all 65 items on the Week 7 host (`e
 and, if #171 is used, answer relevance per condition. -->
 
 **RQ3 (follow-up suggestions): do users find them useful and click them?**
-<!-- TODO(W7-D4-LDN-1): n, mean, median and distribution of the usefulness rating, click rate, and
-recurring comments; descriptive only (5-6 participants). -->
+Not answered. The user study that was its only evidence was cancelled on 2026-11-03 (ADR 0013),
+so this report makes no claim about the usefulness of the follow-up suggestions. The product
+still shows them (chapter 5); measuring them is future work (6.3).
 
 **Efficiency (not a research question).** The data side is measured in chapter 2.6 and
 `pipelines/reports/scaling.md`:
@@ -102,8 +104,8 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
   comparisons overlap. The relevant papers of an item are the ones it was written from, not
   every paper that answers it, so recall is a lower bound: in at least one item (`gs-014`) two
   papers ranked above the relevant one also answer the question (#180).
-- **User study:** 5 to 6 participants, chosen by the team, not at random. It supports
-  description, not a claim about users in general.
+- **No user study:** it was cancelled (ADR 0013), so nothing in this report comes from users
+  of the system, and RQ3 is unanswered.
 - **Efficiency:** measured on one laptop, one run per size, with sequential queries. Load under
   several users at once was not measured.
 
@@ -130,7 +132,8 @@ so the cut list was applied at the start instead of at the first delay (ADR 0010
   citations, sources panel, follow-ups and feedback buttons were kept.
 - **Also cut** outside the original list: follow-up suggestions v2 (v1 is the evaluated version)
   and response caching (the latency measurement was kept).
-- **Kept at the minimum size:** the user study, with 5 to 6 participants.
+- **Cut on 2026-11-03:** the user study, first reduced to 5 to 6 participants by ADR 0010, then
+  cancelled before its first session (ADR 0013). RQ3 is therefore not evaluated.
 - **Fixed, not tuned:** the RRF settings (ADR 0009), because 30 questions are too few to tune
   them on.
 
@@ -161,6 +164,8 @@ so the cut list was applied at the start instead of at the first delay (ADR 0010
   rather than YES/NO, measured again as the "+evidence" ablation.
 - **A larger golden set**, so differences of a few questions can be told apart from noise.
 - **The cut features:** a reranker and query decomposition, each tested as an ablation like RQ2.
+- **A user study for RQ3:** the protocol is ready (`evaluation/user_study/PROTOCOL.md`), and the
+  rating buttons and the feedback log are already in the product.
 
 - **Citation enforcement:** find answer sentences without a `[n]` marker after generation and
   either have them cited from the sources or drop them. This targets the largest cause of low
