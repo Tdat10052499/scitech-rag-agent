@@ -82,6 +82,22 @@ It is refused, with no follow-ups. This is the case from the clean-clone check o
 
 Say: "When the evidence is not there, it says so instead of guessing."
 
+## 4b. Reading a paper's full text (optional, about 45 s)
+
+Ask, in a new conversation:
+
+> Which library did 2302.00083 use for sparse retrieval?
+
+Show:
+
+- The sources: titles end with "(full text, section: ...)". The index holds abstracts only. Because the question names a paper by arXiv id, the agent reads that paper's HTML full text at request time and does not index it (ADR 0012).
+- The answer is Pyserini, cited from the Retrieval section. The abstract does not say this.
+- If an answer that used full text cites nothing, or gives a number that its cited sources do not contain, a "Note" line under it says so.
+
+Passed on the Space in the trap test of 2026-11-03 (question 3.1). If the sources show only the abstract, the Space could not reach arxiv.org. Skip this part and say so.
+
+Say: "For a paper you name, it can also read the full text, and it still cites the section it used."
+
 ## 5. Closing (about 20 s)
 
 "Behind this are:
@@ -109,7 +125,8 @@ The following are known weak cases, all documented in the report.
 | What | Why |
 |---|---|
 | "How many parameters does the largest Gemini model have?" (`gs-u05`) | Answered instead of refused in A1 and A2 (`evaluation/reports/answer-errors-w7.md` §4.3) |
-| Deeper questions about one paper after 3 or more turns, for example on LongRAG | The answer repeats the abstract (video test, 2026-10-30) |
+| Deeper questions about one paper without its arXiv id, for example on LongRAG after 3 or more turns | Without an id there is no full text, so the answer repeats the abstract (video test, 2026-10-30). Name the id instead (section 4b) |
+| Exact numbers from a paper's figures, for example perplexity in 2302.00083 | Numbers shown only in figures are not in the text the agent reads (likely the case here, not checked on the whole paper). On the laptop model this produced invented numbers, flagged by the "Note" line (2026-11-03) |
 | "Which products use X?" | The corpus has no product data. The answer was generic and cited unrelated sources (video test) |
 | Multi-hop or comparison questions that need two papers | Recall@5 was 0.32 and 0.50 for these types (R1). Answers often cite the wrong papers |
 
