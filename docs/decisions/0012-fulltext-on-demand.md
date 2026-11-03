@@ -1,6 +1,6 @@
 # 0012. Read a paper's full text on demand, without indexing it
 
-- Status: proposed (2026-11-03; DAT chose this option in the project thread; needs a review by FAO and LDN)
+- Status: accepted (2026-11-03; FAO approved #187, which merged the same day; LDN has not reviewed it yet. The hosted Space passed the full-text questions of the trap test set on 2026-11-03)
 - Date: 2026-11-03
 - Deciders: DAT (author), FAO (pipelines, data scope), LDN (evaluation impact)
 
