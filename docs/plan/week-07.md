@@ -2,10 +2,12 @@
 
 > Replanned on 2026-10-13, see [ADR 0010](../decisions/0010-compressed-schedule.md). This phase has 3 working days (D17, D18, D19); Sunday 2026-11-01 is a buffer day (long LLM runs may continue unattended).
 > Task IDs are unchanged. Lines starting with **Replan:** say what changed.
+>
+> **Cancelled (2026-11-03, [ADR 0013](../decisions/0013-user-study-cancelled.md)): the user study.** W7-D3-DAT-1, W7-D3-LDN-1 and W7-D4-LDN-1 are not done by anyone, and no session is held. RQ3 is not evaluated.
 
 Goal: all experiments are run on the frozen system (`v0.6-rc` + `evaluation/SNAPSHOT.md`) and written up with sample sizes and limitations.
 
-Gate (D19, Tue 2026-11-03; checked at the latest D20 10:00): every experiment in `evaluation/RUNS.md` has a stored run file; user study completed (n >= 5); `evaluation/reports/final.md` draft merged with all tables, error analysis and threats to validity.
+Gate (D19, Tue 2026-11-03; checked at the latest D20 10:00): every experiment in `evaluation/RUNS.md` has a stored run file (U1, the user study, is cancelled by ADR 0013); `evaluation/reports/final.md` draft merged with all tables, error analysis and threats to validity.
 
 Rule this phase: no feature work. Only P0 bug fixes, and every fix after a run means the affected runs are repeated and the commit hash is recorded.
 **Replan (2026-10-30, ADR 0011):** one controlled exception: scheduled ingestion every 2 hours (W7-D6-DAT-1, W7-D6-FAO-1, W7-D7-DAT-1). It is built on branches only, against a separate serving collection, and merged after Gate W7 (W8-D6-FAO-1), so no Week 7 run sees it. Evaluation tasks keep priority: if they slip, these tasks wait.
@@ -60,7 +62,8 @@ Monday 2026-11-02
 
 ### DAT (@Tdat10052499)
 
-#### W7-D3-DAT-1 Support user study sessions
+#### ~~W7-D3-DAT-1 Support user study sessions~~ CANCELLED
+- **Cancelled (2026-11-03, ADR 0013):** the user study is cancelled. Nothing to do.
 - Do: keep the system running for the sessions; observe one session; log any failure with time and trace id.
 - Done when: incident notes in the journal.
 - Depends on: W6-D4-LDN-1
@@ -95,7 +98,8 @@ Monday 2026-11-02
 - Done when: results and agreement in `final.md`.
 - Depends on: W7-D2-DAT-1
 
-#### W7-D3-LDN-1 User study sessions part 1
+#### ~~W7-D3-LDN-1 User study sessions part 1~~ CANCELLED
+- **Cancelled (2026-11-03, ADR 0013):** the user study is cancelled. Nothing to do, except telling the participants.
 - Do: run sessions with the first half of participants following `PROTOCOL.md`; store questionnaire answers anonymised in `evaluation/user_study/responses/`.
 - Done when: sessions done; responses stored.
 - Depends on: W6-D4-LDN-1
@@ -113,7 +117,7 @@ Tuesday 2026-11-03 · Gate day
 #### W7-D5-DAT-1 Evaluation gate and report outline
 - Do: check every run in `RUNS.md` has results; review `final.md`; create `docs/report/00-outline.md` with chapters, owners and page budget (Markdown chapters exported to PDF, see the brief).
 - Done when: gate status recorded; outline merged.
-- Depends on: W7-D4-LDN-1, W7-D4-DAT-1
+- Depends on: W7-D4-DAT-1 (W7-D4-LDN-1 is cancelled, ADR 0013)
 
 #### W7-D7-DAT-1 BM25 reload and `ingest` compose service (branch only)
 - Module: `agent/src/scitech_agent/retrieval/`, `backend/`, `docker-compose.yml`, `Makefile`
@@ -133,22 +137,25 @@ Tuesday 2026-11-03 · Gate day
 #### W7-D5-FAO-1 Review evaluation report
 - Do (as soon as LDN opens the PR; at the latest D20 10:00): review `final.md` for correctness of numbers against run files (spot-check 5 numbers).
 - Done when: review approved or issues listed.
-- Depends on: W7-D4-LDN-1
+- Depends on: W7-D5-LDN-1 (`final.md` PR open; W7-D4-LDN-1 is cancelled, ADR 0013)
 
 ### LDN (@Yui-Mika)
 
-#### W7-D4-LDN-1 User study sessions part 2 and analysis
+#### ~~W7-D4-LDN-1 User study sessions part 2 and analysis~~ CANCELLED
+- **Cancelled (2026-11-03, ADR 0013):** the user study is cancelled. Nothing to do; `final.md` has no user-study section.
 - Do (sessions in the morning): remaining sessions; analyse ratings (mean, median, distribution, n), follow-up click rate from `feedback.jsonl`, and recurring comments; state limitations (small, non-random sample).
 - Done when: user study section in `final.md`.
 - Depends on: W7-D3-LDN-1
 
 #### W7-D5-LDN-1 `final.md` draft complete
 - Module: `evaluation/reports/final.md`
-- Do: assemble all sections: setup (snapshot, models, sample sizes), retrieval, answers and ablations, efficiency, user study, error analysis, threats to validity, summary of answers to the research questions; mark measured results vs interpretations.
+- Do: assemble all sections: setup (snapshot, models, sample sizes), retrieval, answers and ablations, efficiency, error analysis, threats to validity, summary of answers to the research questions; mark measured results vs interpretations.
 - **Replan:** start assembling on D18 evening with the retrieval and ablation sections; merge at the latest D20 10:00.
+- **Replan (2026-11-03, ADR 0013):** no user-study section. State instead that RQ3 was dropped because the study was cancelled, and list a user study as future work.
 - Done when: merged.
-- Depends on: W7-D3-FAO-1, W7-D4-DAT-1, W7-D4-LDN-1
+- Depends on: W7-D3-FAO-1, W7-D4-DAT-1
 
 ## Cut or merged in the replan
 None in Week 7 (W6-D2-DAT-1 moved here; W6-D5-FAO-1 merged into W7-D4-FAO-1).
 Added on 2026-10-30 (ADR 0011): W7-D6-DAT-1, W7-D6-FAO-1, W7-D7-DAT-1.
+Cancelled on 2026-11-03 (ADR 0013): W7-D3-DAT-1, W7-D3-LDN-1, W7-D4-LDN-1 (the user study).

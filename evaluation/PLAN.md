@@ -23,7 +23,7 @@ Each question is stated with the comparison that answers it. The expectations ar
 
 - **RQ1 (retrieval).** Does hybrid retrieval (dense + BM25, reciprocal rank fusion) give higher recall@k and MRR than dense-only or BM25-only on the golden set? Expectation: hybrid is at least as good as the better single retriever, and BM25 is competitive on questions that use exact technical terms. Reranking is not tested (cut, ADR 0010).
 - **RQ2 (agent steps).** Do the agent steps that remain after ADR 0010, query rewriting and the evidence check, improve faithfulness compared with the MVP pipeline? Conditions: MVP (all flags off), +rewrite, +evidence check, full agent. Question decomposition is cut and is not tested. Expectation: rewriting helps mostly on follow-up and multi-turn items; the evidence check raises faithfulness but may raise the refusal rate.
-- **RQ3 (follow-up suggestions).** Do users rate the suggested follow-up questions as useful, and do they click them? Evidence: a user study with 5-6 participants (cut-list item 5), so descriptive statistics only. No claim about a general effect.
+- **RQ3 (follow-up suggestions). Dropped on 2026-11-03: the user study was cancelled ([ADR 0013](../docs/decisions/0013-user-study-cancelled.md)), so RQ3 is not evaluated in v1.0.** Original question: do users rate the suggested follow-up questions as useful, and do they click them? Evidence: a user study with 5-6 participants (cut-list item 5), so descriptive statistics only. No claim about a general effect.
 
 ## 3. Golden set
 
@@ -106,6 +106,8 @@ Only non-refused answers to answerable items enter the faithfulness and relevanc
 
 ### 4.3 Follow-up suggestions (RQ3)
 
+**Cancelled (ADR 0013):** none of the measures below is collected. Kept as a record of the plan.
+
 - **Usefulness rating.** Post-task questionnaire item on a 1-5 scale ("The suggested follow-up questions were useful"), plus open comments (`evaluation/user_study/PROTOCOL.md`, W6-D3-LDN-1). Report `n`, mean, median and the full distribution.
 - **Follow-up click rate.** `clicks on suggestions / answers shown`, from `data/logs/feedback.jsonl`, and the share of clicked follow-ups that received a thumbs-up.
 - **Optional offline check** (if time remains): for 20 sampled suggestion sets, whether each suggestion is answerable from the corpus (relevant document in the top 5). Report as an extra, not as a headline result.
@@ -170,7 +172,7 @@ All runs record: configuration file, git commit hash, dataset snapshot id (from 
 - **Year bias.** The first items come from a 2022-2026 sample, while 26% of the index is older. Until items from older papers are added (from item 31 on), results mainly describe recent papers.
 - **Simplified system.** Reranking and decomposition were cut (ADR 0010); results describe the reduced system, not the original design.
 - **Run variability.** The LLM runs on an external GPU session that can end and may be replaced by a fallback model; each run records the model actually used. One run per condition.
-- **User study.** 5-6 classmates, a convenience sample of AI students who know the team: possible courtesy bias, not representative of general users. Descriptive statistics only.
+- **User study (cancelled, ADR 0013; RQ3 not evaluated).** Planned: 5-6 classmates, a convenience sample of AI students who know the team: possible courtesy bias, not representative of general users. Descriptive statistics only.
 - **Vietnamese subset (if kept).** Very small, written by one person, and affected by translation choices; not comparable with the English numbers.
 - **Unanswerable group.** About 5 items written by one person who knows the corpus; absence of an answer is checked by search, not proved. The correct refusal rate has a resolution of 20 points and is descriptive only.
 
@@ -187,7 +189,7 @@ All runs record: configuration file, git commit hash, dataset snapshot id (from 
 | Golden set to 60 (multi-turn, multi-hop) | W5-D1-LDN-1 | 27 Oct |
 | End-to-end answer runner | W5-D4-LDN-1 | 28 Oct |
 | User-study protocol, run plan (`RUNS.md`) | W6-D3-LDN-1 / W6-D5-LDN-1 | 29-30 Oct |
-| Final retrieval runs, faithfulness, user study, `final.md` | W7-D1..D5-LDN-1 | 31 Oct - 3 Nov |
+| Final retrieval runs, faithfulness, `final.md` (user study cancelled, ADR 0013) | W7-D1..D5-LDN-1 | 31 Oct - 3 Nov |
 
 Task dates follow `docs/plan/calendar.md`. LDN is away on 23-26 October; DAT proposed a replan on issue #10 (W4 tasks pulled forward or moved to D12-D13). The dates of the W4 tasks above will change once the replan is agreed and written into `docs/plan/week-03.md` and `week-04.md`.
 

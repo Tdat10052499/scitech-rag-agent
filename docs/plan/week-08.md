@@ -89,7 +89,7 @@ Thursday 2026-11-05
 ### LDN (@Yui-Mika)
 
 #### W8-D2-LDN-1 Figures and tables
-- Do: produce final charts (retrieval comparison, ablations, latency/scaling, user ratings) with consistent style, readable labels and units; put sources under `docs/report/figures/` with the script that made them.
+- Do: produce final charts (retrieval comparison, ablations, latency/scaling; no user ratings, the study is cancelled by ADR 0013) with consistent style, readable labels and units; put sources under `docs/report/figures/` with the script that made them.
 - Done when: figures referenced in the chapters.
 - Depends on: W8-D1-LDN-1, W7-D2-FAO-1
 
@@ -150,7 +150,7 @@ Tuesday 2026-11-10 · Product presentation
 ### LDN (@Yui-Mika)
 
 #### W8-D5-LDN-1 Final journal and retrospective input
-- Do (after the presentation): complete your journal; write 5 lines of retrospective; archive user-study raw data according to the consent you gave participants.
+- Do (after the presentation): complete your journal; write 5 lines of retrospective. (No user-study data to archive: the study was cancelled, ADR 0013.)
 - Done when: merged.
 - Depends on: none
 

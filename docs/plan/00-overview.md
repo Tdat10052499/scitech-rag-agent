@@ -32,7 +32,7 @@ Review rule: approvals are not enforced by GitHub; the author may merge once CI 
 | W4 | 10-23 to 10-26 | D10-D12 | RAG MVP | End-to-end demo: question to cited streamed answer to follow-ups, with a real LLM; tag `v0.4-mvp`; demo video v1; user-study invitations sent |
 | W5 | 10-27 to 10-28 | D13-D14 | Agent v2 (reduced) | Query rewriting, evidence check, step limits, per-request traces, `Agent.run_batch`; golden set >= 60; answer runner works; incremental ingestion kept or cut (decision recorded) |
 | W6 | 10-29 to 10-30 | D15-D16 | Complete product | Rating buttons + `POST /feedback`, UI states, one-command stack (`make up`), runbooks, study protocol and participants confirmed; feature freeze; tag `v0.6-rc`; `SNAPSHOT.md`, `RUNS.md` |
-| W7 | 10-31 to 11-03 | D17-D19 | Evaluation | All experiments run on the frozen system; user study done; `evaluation/reports/final.md` draft (merged by D20 10:00 at the latest) |
+| W7 | 10-31 to 11-03 | D17-D19 | Evaluation | All experiments run on the frozen system; user study cancelled (ADR 0013); `evaluation/reports/final.md` draft (merged by D20 10:00 at the latest) |
 | W8 | 11-04 to 11-10 | D20-D25 | Delivery and presentation | D22: report, demo video, clean-clone reproduction check, tag `v1.0`. D23-D24: slides, rehearsal, dry run. D25: product presentation |
 
 ## Critical path
@@ -75,7 +75,7 @@ Applied on 2026-10-13 (ADR 0010):
 2. Reranker: **cut**
 3. UI extras (data page, `GET /stats`, step/status display, debug view): **cut**
 4. Query decomposition: **cut** (keep rewriting and evidence check)
-5. User study size: **applied**, 5-6 participants
+5. User study size: **applied**, 5-6 participants. Then **cut entirely** on 2026-11-03 (ADR 0013): no study, RQ3 not evaluated
 6. Incremental ingestion: **decision at the Week 5 gate (D14)**; if cut, keep the batch pipeline and describe the design in the report. Kept (ADR 0008); scheduled every 2 hours from D20 (ADR 0011), first thing to switch off if the soak test fails
 
 Additional cuts (outside the original list, proposed in ADR 0010): follow-ups v2, response caching.

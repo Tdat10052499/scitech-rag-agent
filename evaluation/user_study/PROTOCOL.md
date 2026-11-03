@@ -1,5 +1,7 @@
 # User study protocol (draft 3)
 
+> **Cancelled on 2026-11-03 ([ADR 0013](../../docs/decisions/0013-user-study-cancelled.md)).** No session is held and no data is collected. This file is kept only as a record of what was planned.
+
 Status: draft by LDN for DAT's and FAO's review (task W6-D3-LDN-1). No item is marked **[TBC]** any more. Drafted with AI assistance (Claude); LDN is responsible for the final text.
 
 Decisions this draft follows: issue #134 (DAT, 2026-10-27: option A, moderated sessions; FAO confirmed his laptop as host), DAT's answers on #111 (UI version, logged fields, no screen recording), the reviews of FAO and DAT on #143 (trace file, operator, schedule wording), and the schedule FAO confirmed on #134 on 2026-10-30. Since `POST /feedback` merged (#146), the feedback log is part of the data (sections 4, 8, 10).
