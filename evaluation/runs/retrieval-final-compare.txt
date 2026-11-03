@@ -1,0 +1,31 @@
+Runs
+  A  retrieval-final-hybrid  type=hybrid  embedding=BAAI/bge-small-en-v1.5  index=scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37  dataset=kaggle-arxiv-v307-cs.CL-2026-10-10
+     commit 3a2b92d43197  golden all/en n=60  query=question  search median 0.033 s
+     notes: hybrid on all answerable English items (dev and test); Qdrant collection scitech_chunks, exact search; BM25 index in data/index/bm25 (chunked_at 2026-10-17T05:19:12).
+  B  retrieval-final-dense  type=dense  embedding=BAAI/bge-small-en-v1.5  index=scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37  dataset=kaggle-arxiv-v307-cs.CL-2026-10-10
+     commit 3a2b92d43197  golden all/en n=60  query=question  search median 0.017 s
+     notes: dense on all answerable English items (dev and test); Qdrant collection scitech_chunks, exact search.
+  C  retrieval-final-bm25  type=bm25  embedding=-  index=scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37  dataset=kaggle-arxiv-v307-cs.CL-2026-10-10
+     commit 3a2b92d43197  golden all/en n=60  query=question  search median 0.006 s
+     notes: bm25 on all answerable English items (dev and test); BM25 index in data/index/bm25, built from the same chunks.parquet; its _bm25_manifest.json chunked_at must read 2026-10-17T05:19:12.
+
+Metrics (mean and 95% bootstrap interval over questions)
+metric     A                     B                     C
+recall@1   0.358 [0.250, 0.475]  0.300 [0.183, 0.417]  0.358 [0.250, 0.467]
+recall@5   0.508 [0.383, 0.625]  0.458 [0.350, 0.575]  0.508 [0.392, 0.633]
+recall@10  0.583 [0.458, 0.700]  0.492 [0.383, 0.600]  0.567 [0.450, 0.692]
+mrr        0.474 [0.363, 0.590]  0.420 [0.309, 0.529]  0.486 [0.375, 0.601]
+
+B against A, 60 questions in common (difference B - A; wins and losses are B's; 'questions' is the mean difference times 60, recall rows only)
+metric     mean diff  questions  95% interval      wins  losses  ties
+recall@1   -0.058     -3.5       [-0.150, +0.025]  4     7       49
+recall@5   -0.050     -3.0       [-0.133, +0.033]  3     7       50
+recall@10  -0.092     -5.5       [-0.167, -0.025]  1     8       51
+mrr        -0.054     -          [-0.128, +0.013]  8     14      38
+
+C against A, 60 questions in common (difference C - A; wins and losses are C's; 'questions' is the mean difference times 60, recall rows only)
+metric     mean diff  questions  95% interval      wins  losses  ties
+recall@1   +0.000     +0.0       [-0.083, +0.083]  5     4       51
+recall@5   +0.000     +0.0       [-0.075, +0.075]  5     5       50
+recall@10  -0.017     -1.0       [-0.092, +0.058]  4     5       51
+mrr        +0.012     -          [-0.059, +0.083]  9     12      39

@@ -5,6 +5,7 @@
 .ui-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  position: relative; /* contains the absolutely placed .ui-visually-hidden status text, so it cannot make the page itself scrollable */
   height: 100dvh;
   overflow: hidden;
   background: var(--color-bg-canvas);

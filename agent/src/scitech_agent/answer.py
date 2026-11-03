@@ -275,14 +275,24 @@ def _inside_source(text: str) -> str:
     return _escape(text, "source")
 
 
-def format_sources(evidence: Sequence[ScoredChunk]) -> str:
-    """Numbered sources; the numbers are the citation markers `[n]` of the answer."""
+def format_sources(evidence: Sequence[ScoredChunk], metadata: bool = False) -> str:
+    """Numbered sources; the numbers are the citation markers `[n]` of the answer. With
+    `metadata`, each source also shows its id (`arXiv: ...` for arXiv) and publication date."""
     blocks = [
         f'<source id="{n}">\nTitle: {_inside_source(chunk.title)}\n'
+        f"{_metadata(chunk) if metadata else ''}"
         f"Text: {_inside_source(chunk.text)}\n</source>"
         for n, chunk in enumerate(evidence, start=1)
     ]
     return "\n\n".join(blocks)
+
+
+def _metadata(chunk: ScoredChunk) -> str:
+    label = "arXiv" if chunk.source == "arxiv" else "ID"
+    lines = f"{label}: {_inside_source(chunk.doc_id)}\n"
+    if chunk.published_at:
+        lines += f"Published: {_inside_source(chunk.published_at[:10])}\n"
+    return lines
 
 
 def format_conversation(history: Sequence[ConversationTurn]) -> str:
@@ -297,11 +307,12 @@ def answer_user_message(
     question: str,
     evidence: Sequence[ScoredChunk],
     history: Sequence[ConversationTurn] = (),
+    metadata: bool = False,
 ) -> str:
     parts = []
     if history:
         parts.append(f"Conversation so far:\n\n{format_conversation(history)}")
-    parts.append(f"Sources:\n\n{format_sources(evidence)}")
+    parts.append(f"Sources:\n\n{format_sources(evidence, metadata)}")
     parts.append(f"Question: {question}")
     return "\n\n".join(parts)
 
@@ -311,10 +322,11 @@ def answer_messages(
     question: str,
     evidence: Sequence[ScoredChunk],
     history: Sequence[ConversationTurn] = (),
+    metadata: bool = False,
 ) -> list[Message]:
     return [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": answer_user_message(question, evidence, history)},
+        {"role": "user", "content": answer_user_message(question, evidence, history, metadata)},
     ]
 
 

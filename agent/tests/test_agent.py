@@ -206,10 +206,18 @@ def test_history_is_kept_per_session_and_given_to_rewrite() -> None:
 
 
 def test_config_from_env() -> None:
-    assert AgentConfig.from_env({}) == AgentConfig()
+    # Search modes are on when AGENT_SEARCH_MODES is empty; the dataclass default stays off.
+    assert AgentConfig.from_env({}) == AgentConfig(search_modes=True)
     config = AgentConfig.from_env({"RETRIEVAL_TOP_K": "8", "RETRIEVAL_MIN_SCORE": "0.35"})
     assert (config.top_k, config.min_score) == (8, 0.35)
-    for env in ({"RETRIEVAL_TOP_K": "0"}, {"RETRIEVAL_MIN_SCORE": "high"}):
+    config = AgentConfig.from_env({"AGENT_SEARCH_MODES": "off", "RETRIEVAL_LIST_TOP_K": "7"})
+    assert (config.search_modes, config.list_top_k) == (False, 7)
+    for env in (
+        {"RETRIEVAL_TOP_K": "0"},
+        {"RETRIEVAL_MIN_SCORE": "high"},
+        {"RETRIEVAL_LIST_TOP_K": "0"},
+        {"AGENT_SEARCH_MODES": "maybe"},
+    ):
         with pytest.raises(ValueError):
             AgentConfig.from_env(env)
 

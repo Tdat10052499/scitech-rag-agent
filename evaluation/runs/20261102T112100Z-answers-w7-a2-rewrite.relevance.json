@@ -1,0 +1,406 @@
+{
+  "schema_version": 1,
+  "kind": "relevance",
+  "name": "relevance-w7",
+  "timestamp": "20261102T172349Z",
+  "git_commit": "61e7e42de71e3cc63709539cc8d60fb5de262dce",
+  "answers_file": {
+    "name": "20261102T112100Z-answers-w7-a2-rewrite.answers.jsonl",
+    "sha256": "f97adadc243ac3b7c66843e523dfa5c33619683444cded24328f701f237db32b"
+  },
+  "golden": {
+    "path": "evaluation/golden_set/golden.jsonl",
+    "sha256": "1d05086d71904dcc479793c930b7586fd2afb0a0e4c1543b30c46f0ed3ec50bc"
+  },
+  "judge": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48",
+    "temperature": 0,
+    "max_tokens": 200,
+    "prompt": {
+      "path": "evaluation\\prompts\\relevance-judge.md",
+      "sha256": "7f504a48b4af5331101bc9690fa058f7ccd412c5b0964cbea9312cddd9b9a072",
+      "commit": "eaa052eea2eddc5b980630c795da82de61ab002b"
+    },
+    "context_tokens": 4096,
+    "max_prompt_chars": 3942,
+    "approx_max_prompt_tokens": 986,
+    "prompt_fits_context": true,
+    "errors": {},
+    "fixed_no_answer": 0
+  },
+  "counts": {
+    "answers_in_file": 65,
+    "left_out": {
+      "error": 0,
+      "refused": 9,
+      "unanswerable_item": 1
+    },
+    "rateable": 55,
+    "rated": 55,
+    "judge_error": 0
+  },
+  "metrics": {
+    "relevance": {
+      "n": 55,
+      "mean": 2.4363636363636365,
+      "ci95": [
+        2.2363636363636363,
+        2.618181818181818
+      ]
+    },
+    "distribution": {
+      "1": 8,
+      "2": 15,
+      "3": 32
+    }
+  },
+  "per_answer": [
+    {
+      "id": "gs-001",
+      "type": "multi_hop",
+      "rating": 2,
+      "reason": "The answer addresses the reasons for AI chatbots making things up but does not provide specific methods to reduce it."
+    },
+    {
+      "id": "gs-002",
+      "type": "explanatory",
+      "rating": 2,
+      "reason": "The answer addresses the question but leaves the specific reason for performance degradation when too many documents are provided unanswered."
+    },
+    {
+      "id": "gs-003",
+      "type": "factual",
+      "rating": 2,
+      "reason": "The answer addresses whether large language models can hold back but does not fully explain the method or reason behind the behavior."
+    },
+    {
+      "id": "gs-004",
+      "type": "comparison",
+      "rating": 2,
+      "reason": "The answer addresses the question but does not fully explain the difference between the two methods."
+    },
+    {
+      "id": "gs-005",
+      "type": "comparison",
+      "rating": 3,
+      "reason": "The answer fully addresses how chunk size affects answer quality and mentions the potential benefits of multi-level chunking."
+    },
+    {
+      "id": "gs-006",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer fully addresses how a token-level hallucination detector for RAG can use the retrieved documents to find ungrounded tokens."
+    },
+    {
+      "id": "gs-007",
+      "type": "multi_hop",
+      "rating": 1,
+      "reason": "The answer does not address the question as it does not provide methods for detecting hallucination from a language model's internal states."
+    },
+    {
+      "id": "gs-009",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer provides the core definition of In-Context RALM and explains why it is easier to deploy, addressing both parts of the question."
+    },
+    {
+      "id": "gs-010",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer provides the performance differences of LongRAG compared to ordinary RAG and long-context LLMs on multi-hop question answering over long documents."
+    },
+    {
+      "id": "gs-011",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer fully addresses whether the prompt layout affects model performance and provides examples and reasons."
+    },
+    {
+      "id": "gs-013",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer fully addresses whether preference tuning on English data alone can make a multilingual language model less toxic in other languages."
+    },
+    {
+      "id": "gs-014",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer fully addresses whether the order of answer choices affects AI model performance and provides the method and reason for the effect."
+    },
+    {
+      "id": "gs-015",
+      "type": "multi_hop",
+      "rating": 2,
+      "reason": "The answer addresses the reasons for misleading scores but does not explain how a small number of human labels can be used to correct them."
+    },
+    {
+      "id": "gs-016",
+      "type": "comparison",
+      "rating": 3,
+      "reason": "The answer fully addresses the differences between SetFit and LoRA fine-tuning, providing the methods and reasons for their differences."
+    },
+    {
+      "id": "gs-017",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer addresses the core of the question by explaining how high-precision scoring resolves tied relevance scores and reduces variability in results."
+    },
+    {
+      "id": "gs-019",
+      "type": "follow_up",
+      "rating": 3,
+      "reason": "The answer provides the core elements of the question by mentioning the issues with test-time scaling methods."
+    },
+    {
+      "id": "gs-020",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer provides a method and a reason for routing questions to different language models while respecting each user's balance between cost and quality."
+    },
+    {
+      "id": "gs-022",
+      "type": "follow_up",
+      "rating": 3,
+      "reason": "The answer fully addresses whether speculative decoding works equally well for every kind of task and provides the reason for its varying effectiveness."
+    },
+    {
+      "id": "gs-023",
+      "type": "follow_up",
+      "rating": 3,
+      "reason": "The answer provides a method (Self-Guard) and explains how it works, addressing the question fully."
+    },
+    {
+      "id": "gs-025",
+      "type": "multi_hop",
+      "rating": 1,
+      "reason": "The answer does not address what researchers have done about gender bias in Chinese text or machine translation."
+    },
+    {
+      "id": "gs-026",
+      "type": "comparison",
+      "rating": 1,
+      "reason": "The answer does not address whether the text was part of the language model's training data by testing the model or searching the training corpus."
+    },
+    {
+      "id": "gs-027",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer provides the core information about the number of parameters per token and the amount of training data, which fully addresses the question."
+    },
+    {
+      "id": "gs-028",
+      "type": "explanatory",
+      "rating": 1,
+      "reason": "The answer does not address how to change the vocabulary to make the language model cheaper to run in a specialised domain."
+    },
+    {
+      "id": "gs-029",
+      "type": "explanatory",
+      "rating": 2,
+      "reason": "The answer addresses the relationship between model size and performance but does not directly answer whether language models get better at knowing when they are wrong as they are trained."
+    },
+    {
+      "id": "gs-030",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer fully addresses how a question can be rewritten to stand on its own and mentions that this can be learned without human-labelled data."
+    },
+    {
+      "id": "gs-031",
+      "type": "factual",
+      "rating": 2,
+      "reason": "The answer addresses the amount of fine-tuning needed but does not specify the number of training samples."
+    },
+    {
+      "id": "gs-032",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer provides the accuracy of both the differentially private and non-private BERT models, addressing the comparison asked in the question."
+    },
+    {
+      "id": "gs-033",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer fully addresses the question by providing the source of the claims and the performance of the best model."
+    },
+    {
+      "id": "gs-034",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer provides the core information about the performance of contrastive pruning on QQP and MNLI tasks with 3% parameter retention."
+    },
+    {
+      "id": "gs-035",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer fully addresses whether combining models works better and provides the core information about the performance in a zero-shot context."
+    },
+    {
+      "id": "gs-036",
+      "type": "explanatory",
+      "rating": 2,
+      "reason": "The answer addresses the method and the reason but does not mention the concept of redundant heads or the ensemble effect."
+    },
+    {
+      "id": "gs-037",
+      "type": "explanatory",
+      "rating": 1,
+      "reason": "The answer does not address the question about performance improvement over rounds."
+    },
+    {
+      "id": "gs-038",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer fully addresses how the game-theoretic rationalization framework stops a toxic-language detector from linking dialect or identity words to toxicity."
+    },
+    {
+      "id": "gs-039",
+      "type": "comparison",
+      "rating": 3,
+      "reason": "The answer provides the core differences in the methods used by SeqXGPT and STADEE for detecting machine-generated text."
+    },
+    {
+      "id": "gs-040",
+      "type": "comparison",
+      "rating": 2,
+      "reason": "The answer addresses the difference in how the methods speed up the model but does not explain the core mechanism of grouped-query attention as in the reference answer."
+    },
+    {
+      "id": "gs-041",
+      "type": "multi_hop",
+      "rating": 2,
+      "reason": "The answer addresses the question but leaves one part of it unanswered, specifically the method for judging reliability is not fully aligned with the reference answer."
+    },
+    {
+      "id": "gs-042",
+      "type": "multi_hop",
+      "rating": 2,
+      "reason": "The answer addresses the comparison between exact and approximate search but does not fully explain how an approximate tree index can lose less retrieval quality."
+    },
+    {
+      "id": "gs-043",
+      "type": "follow_up",
+      "rating": 1,
+      "reason": "The answer does not address what happens when questions use brand names."
+    },
+    {
+      "id": "gs-044",
+      "type": "follow_up",
+      "rating": 3,
+      "reason": "The answer fully addresses whether detectors can be fooled and provides a reason for it."
+    },
+    {
+      "id": "gs-045",
+      "type": "follow_up",
+      "rating": 3,
+      "reason": "The answer addresses the performance of a language model trained in a day on one graphics card and provides examples, but it does not explicitly mention BERT or the specific performance comparison to BERT as in the reference answer."
+    },
+    {
+      "id": "gs-046",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer provides the core information about the model's hit rates for the initial reaction to the headlines."
+    },
+    {
+      "id": "gs-047",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer provides the number of benchmark datasets and the performance difference in the ADVETA (RPL) scenario, fully addressing the question."
+    },
+    {
+      "id": "gs-048",
+      "type": "factual",
+      "rating": 3,
+      "reason": "The answer fully addresses the question by providing the number of multilingual examples needed and the outcome of their addition."
+    },
+    {
+      "id": "gs-049",
+      "type": "explanatory",
+      "rating": 1,
+      "reason": "The answer does not address why training makes the model more likely to produce the response it was told to avoid."
+    },
+    {
+      "id": "gs-050",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer addresses the core of the question by mentioning the substantial improvement in alignment between confidence and correctness when using distractor options."
+    },
+    {
+      "id": "gs-051",
+      "type": "explanatory",
+      "rating": 3,
+      "reason": "The answer fully addresses how soft prompts can help a compressed LLaMA-7B model recover its accuracy."
+    },
+    {
+      "id": "gs-052",
+      "type": "comparison",
+      "rating": 2,
+      "reason": "The answer does not fully address where the nearest-neighbour information is used in each method."
+    },
+    {
+      "id": "gs-053",
+      "type": "comparison",
+      "rating": 3,
+      "reason": "The answer fully addresses what the question asks by explaining the core problems each method addresses and how they differ."
+    },
+    {
+      "id": "gs-054",
+      "type": "multi_hop",
+      "rating": 3,
+      "reason": "The answer provides the core methods for both parts of the question asked."
+    },
+    {
+      "id": "gs-055",
+      "type": "multi_hop",
+      "rating": 3,
+      "reason": "The answer provides the core methods requested by the question."
+    },
+    {
+      "id": "gs-056",
+      "type": "multi_hop",
+      "rating": 3,
+      "reason": "The answer provides the core information about both PURPLE and FinSQL as requested by the question."
+    },
+    {
+      "id": "gs-057",
+      "type": "multi_hop",
+      "rating": 1,
+      "reason": "The answer does not address the question about the cause of model collapse after a single ROME edit or how edited models still fail on reasoning questions."
+    },
+    {
+      "id": "gs-058",
+      "type": "follow_up",
+      "rating": 2,
+      "reason": "The answer addresses whether carefully selected languages work better than random selection but does not explicitly state a yes or no."
+    },
+    {
+      "id": "gs-059",
+      "type": "follow_up",
+      "rating": 2,
+      "reason": "The answer addresses the question but does not mention the specific method or model used for detection after editing."
+    },
+    {
+      "id": "gs-060",
+      "type": "follow_up",
+      "rating": 2,
+      "reason": "The answer addresses whether some models can check their own answers but does not provide a specific method or framework like the reference answer."
+    }
+  ],
+  "config": {
+    "name": "relevance-w7",
+    "golden_path": "evaluation/golden_set/golden.jsonl",
+    "bootstrap": {
+      "resamples": 1000,
+      "seed": 0
+    },
+    "judge": {
+      "prompt_path": "evaluation/prompts/relevance-judge.md",
+      "digest": "845dbda0ea48",
+      "temperature": 0,
+      "max_tokens": 200,
+      "context_tokens": 4096
+    }
+  },
+  "note": "The judge is a 7B model whose relevance ratings have not been checked against human ratings when this file was written; the manual rating of the same sample (PLAN.md 4.2) decides where they differ. Relevance means addressing what the question asks, not being correct or supported. One run per condition; never compare runs with different judges or prompts."
+}
