@@ -56,4 +56,6 @@ records = [r.to_dict() for r in results]
 
 ## User study
 
+**Cancelled on 2026-11-03 (ADR 0013):** no study session was held, so no study traces exist. The rule below is kept for a future study.
+
 Traces of study sessions contain the questions participants type. Before a session, note the time or move the file aside; after it, keep only the lines of the study's `session_id`s for analysis, and delete the file when the study data is deleted.

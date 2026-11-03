@@ -29,6 +29,8 @@ The full steps are in `README.md`. In short:
 | 0009 | Default retrieval configuration (hybrid, RRF) | accepted 2026-10-22 |
 | 0010 | Compressed schedule: 2026-10-13 to 2026-11-06, and the features it cut | accepted 2026-10-13 |
 | 0011 | Scheduled incremental ingestion every 2 hours on a separate serving index | accepted 2026-10-30 |
+| 0012 | Read a paper's full text on demand, without indexing it | accepted 2026-11-03 |
+| 0013 | Cancel the user study (RQ3 is not evaluated) | accepted 2026-11-03 |
 
 Each file is `docs/decisions/<number>-<slug>.md`. It has the context, the options, the decision, its consequences, and the measurements behind it.
 

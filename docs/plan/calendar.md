@@ -30,8 +30,8 @@ To change dates again, regenerate this table, the "Gate" lines of the week files
 | 2026-10-30 | Fri | D16 | W6 | Gate W6, feature freeze, tag `v0.6-rc` | [week-06.md](week-06.md#d16) |
 | 2026-10-31 | Sat | D17 | W7 | | [week-07.md](week-07.md#d17) |
 | 2026-11-01 | Sun | buffer | - | | - |
-| 2026-11-02 | Mon | D18 | W7 | User study part 1 | [week-07.md](week-07.md#d18) |
-| 2026-11-03 | Tue | D19 | W7 | User study part 2, Gate W7 | [week-07.md](week-07.md#d19) |
+| 2026-11-02 | Mon | D18 | W7 | ~~User study part 1~~ (cancelled, ADR 0013) | [week-07.md](week-07.md#d18) |
+| 2026-11-03 | Tue | D19 | W7 | Gate W7 (user study cancelled, ADR 0013) | [week-07.md](week-07.md#d19) |
 | 2026-11-04 | Wed | D20 | W8 | | [week-08.md](week-08.md#d20) |
 | 2026-11-05 | Thu | D21 | W8 | | [week-08.md](week-08.md#d21) |
 | 2026-11-06 | Fri | D22 | W8 | Final gate, tag `v1.0`, report final (internal deadline) | [week-08.md](week-08.md#d22) |

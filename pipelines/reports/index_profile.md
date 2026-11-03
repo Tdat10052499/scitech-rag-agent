@@ -102,8 +102,8 @@ Related times from the same evening:
 
 - **One machine, one run.** The p95 values rest on 100 queries; read differences of a few
   milliseconds as noise.
-- **Sequential queries only.** Latency under concurrent users is not measured; the user study
-  (W7) will be the first time several people search at once.
+- **Sequential queries only.** Latency under concurrent users is not measured. (The user study,
+  which was cancelled by ADR 0013, ran one session at a time and would not have measured it either.)
 - **Process memory of the agent is not measured.** The BM25 index and the embedding model live
   in the backend process. DAT measured a peak of 1,184 MB for the BM25 build.
 - **Exact search.** If the corpus grows a lot (W5, W6), exact search costs grow linearly, and the

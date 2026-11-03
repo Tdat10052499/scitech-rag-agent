@@ -88,6 +88,8 @@ L1 is already measured (DAT, #161, `docs/runbooks/performance.md`, run B `202610
 
 ## 5. User study (RQ3), W7-D3-LDN-1 and W7-D4-LDN-1
 
+**Cancelled on 2026-11-03 ([ADR 0013](../docs/decisions/0013-user-study-cancelled.md)).** U1 is not run and no session is held. The rest of this section is the original plan, kept as a record.
+
 | Run | What | Owner | Where the result goes |
 |---|---|---|---|
 | U1 | Moderated sessions, n >= 5, following `evaluation/user_study/PROTOCOL.md` | LDN observer, FAO operator and host | questionnaire and observer sheets (anonymised) in `evaluation/user_study/responses/`; study trace and `feedback-<date>.jsonl` in LDN's private folder |
@@ -121,7 +123,7 @@ After every run: check that `counts` and `golden.n_items` match the other runs, 
 | V2 (A2) | `evaluation/runs/20261102T112100Z-answers-w7-a2-rewrite.relevance.json` | 2026-11-02 | `61e7e42` (code = `4036333`) | DAT laptop | `1d05086d…` | done: relevance n=55, mean 2.44 [2.24, 2.62], ratings 1/2/3 = 8/15/32 |
 | L1 | `docs/runbooks/performance.md` (run B `20261030T083604Z`) | 2026-10-30 | `v0.6-rc` + files of #148 | DAT laptop | | done (DAT, #161) |
 | S1 | `pipelines/reports/scaling.md` | | | | | done in W6 |
-| U1 | | | | | | not run |
+| U1 | | | | | | cancelled (ADR 0013) |
 
 Notes on this log (DAT, 2026-11-02):
 - All seven runs used the same code. The script committed each run file as soon as it finished, so the runner recorded the commit that holds the previous run files: `1638c06`, `dac3848`, `32cf09d` and `367ccdc`. `git diff 3a2b92d 01da803 -- . ':!evaluation/runs'` is empty, so the code, prompts and configs are those of `3a2b92d` (`main` after #166, #168 and #160).
