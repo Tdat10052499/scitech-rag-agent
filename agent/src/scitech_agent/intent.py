@@ -88,6 +88,8 @@ class SearchPlan:
     k: int | None = None  # None: AgentConfig.top_k
     list_papers: bool = False
     fallback: bool = field(default=False, compare=False)  # filtered search was empty
+    # Full text of the named papers (ADR 0012): None (not tried), "read", "cached", "unavailable"
+    fulltext: str | None = field(default=None, compare=False)
 
     @property
     def active(self) -> bool:
@@ -101,6 +103,7 @@ class SearchPlan:
             "k": self.k,
             "list_papers": self.list_papers,
             "fallback": self.fallback,
+            "fulltext": self.fulltext,
         }
 
 
