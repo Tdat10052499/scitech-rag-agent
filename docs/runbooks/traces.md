@@ -22,6 +22,7 @@ Since W5-D4-DAT-1 the agent writes one JSON line per question to `data/logs/trac
 | `message` | string | The question as the user typed it. |
 | `query` | string | The search query: the rewrite (`AGENT_REWRITE=on`, follow-up messages) or `message`. |
 | `rewritten` | bool | `query != message`. |
+| `search` | object or null | The search plan of a paper-finding question (`AGENT_SEARCH_MODES=on`, `scitech_agent.intent`): `reasons` (`arxiv_id`, `year`, `recent`, `list`), `filters` (as sent to the retriever), `arxiv_ids`, `k` (null: `top_k`), `list_papers`, `fallback` (the filtered search was empty and the search was repeated without filters). Null for every other question (the default search). Added after `trace_version` 1 without a version change (no field renamed or removed). |
 | `retrieved` | list | Every hit of the retriever, in its order: `{chunk_id, doc_id, score}` (score on the retriever's scale: cosine, BM25 or RRF). No chunk text. |
 | `evidence` | object | `min_score` (`RETRIEVAL_MIN_SCORE`), `above_min_score` (hits kept), `self_check` (`off`, `skipped`, `error`, `unreadable`, `yes`, `partly`, `no`), `decision` (`answer`, `refuse_no_evidence`, `refuse_self_check`; null if retrieval failed). |
 | `sources` | list | `chunk_id`s sent as `sources` (`[n]` is the n-th); empty on a refusal. |

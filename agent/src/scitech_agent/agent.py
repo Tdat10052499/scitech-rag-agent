@@ -10,6 +10,10 @@ refuses with a fixed message and suggestions, without an answer call (agent/AGEN
 and `AGENT_TIMEOUT_S` seconds. The answer prompt and its citation checks live in
 `scitech_agent.answer` (W4-D1-DAT-1). Every request leaves one trace (`scitech_agent.trace`,
 W5-D4-DAT-1), and `Agent.run_batch` answers a list of questions without the API (evaluation).
+With `AGENT_SEARCH_MODES=on` (empty: on), a paper-finding question (a list of papers, a year,
+"latest", an arXiv id) gets a `scitech_agent.intent.SearchPlan`: filtered retrieval, more hits
+for a list, the sources' dates and ids in the answer prompt and `prompts/answer_papers.md` added
+to its rules. Any other question is answered exactly as before.
 """
 
 from __future__ import annotations
@@ -21,7 +25,8 @@ import time
 import uuid
 from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from scitech_agent.answer import (
@@ -51,6 +56,7 @@ from scitech_agent.evidence import (
     self_check_messages,
 )
 from scitech_agent.followups import followups_user_message, parse_followups
+from scitech_agent.intent import SearchPlan, plan_search
 from scitech_agent.llm import LLMClient, LLMError, Message, split_fragments
 from scitech_agent.retrieval import Retriever, ScoredChunk
 from scitech_agent.rewrite import rewrite_query
@@ -103,24 +109,33 @@ class AgentConfig:
     self_check_max_tokens: int = 8
     max_llm_calls: int = 4  # AGENT_MAX_LLM_CALLS: rewrite, self-check, answer, follow-ups
     timeout_s: float = 120.0  # AGENT_TIMEOUT_S: whole request, checked between steps
+    # AGENT_SEARCH_MODES: search plans for paper-finding questions (scitech_agent.intent). The
+    # dataclass default is off so the demo agent and older tests are unchanged; empty env: on.
+    search_modes: bool = False
+    list_top_k: int = 10  # RETRIEVAL_LIST_TOP_K: hits for a "list papers" question
+    list_max_tokens: int = 900  # answer tokens for a list of up to list_top_k papers
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> AgentConfig:
         """Read `RETRIEVAL_TOP_K`, `RETRIEVAL_MIN_SCORE`, `AGENT_REWRITE`, `AGENT_SELF_CHECK`,
-        `AGENT_MAX_LLM_CALLS` and `AGENT_TIMEOUT_S` (empty: 5, 0.0, off, off, 4 and 120)."""
+        `AGENT_MAX_LLM_CALLS`, `AGENT_TIMEOUT_S`, `AGENT_SEARCH_MODES` and `RETRIEVAL_LIST_TOP_K`
+        (empty: 5, 0.0, off, off, 4, 120, on and 10)."""
         env = os.environ if env is None else env
         try:
             top_k = int(env.get("RETRIEVAL_TOP_K") or 5)
             min_score = float(env.get("RETRIEVAL_MIN_SCORE") or 0.0)
             max_llm_calls = int(env.get("AGENT_MAX_LLM_CALLS") or 4)
             timeout_s = float(env.get("AGENT_TIMEOUT_S") or 120.0)
+            list_top_k = int(env.get("RETRIEVAL_LIST_TOP_K") or 10)
         except ValueError as exc:
             raise ValueError(
-                "RETRIEVAL_TOP_K / RETRIEVAL_MIN_SCORE / AGENT_MAX_LLM_CALLS / AGENT_TIMEOUT_S "
-                f"must be numbers: {exc}"
+                "RETRIEVAL_TOP_K / RETRIEVAL_MIN_SCORE / AGENT_MAX_LLM_CALLS / AGENT_TIMEOUT_S / "
+                f"RETRIEVAL_LIST_TOP_K must be numbers: {exc}"
             ) from None
         if top_k <= 0:
             raise ValueError("RETRIEVAL_TOP_K must be > 0")
+        if list_top_k <= 0:
+            raise ValueError("RETRIEVAL_LIST_TOP_K must be > 0")
         if max_llm_calls < 1:
             raise ValueError("AGENT_MAX_LLM_CALLS must be >= 1 (the answer call)")
         if not timeout_s > 0:
@@ -132,14 +147,20 @@ class AgentConfig:
             self_check=_flag(env, "AGENT_SELF_CHECK"),
             max_llm_calls=max_llm_calls,
             timeout_s=timeout_s,
+            search_modes=_flag(env, "AGENT_SEARCH_MODES", default=True),
+            list_top_k=list_top_k,
         )
 
 
-def _flag(env: Mapping[str, str], name: str) -> bool:
+def _flag(env: Mapping[str, str], name: str, default: bool = False) -> bool:
     value = (env.get(name) or "").strip().lower()
     if value not in _FLAGS:
         raise ValueError(f"{name} must be on or off, not {value!r}")
-    return _FLAGS[value]
+    return default if value == "" else _FLAGS[value]
+
+
+def _utc_today() -> date:
+    return datetime.now(timezone.utc).date()
 
 
 @dataclass(frozen=True)
@@ -158,13 +179,16 @@ class Agent:
         *,
         clock: Callable[[], float] = time.monotonic,
         tracer: TraceWriter | None = None,
+        today: Callable[[], date] = _utc_today,
     ) -> None:
         self.retriever = retriever
         self.llm = llm
         self.config = config or AgentConfig()
         self.clock = clock
+        self.today = today  # "latest" means the last intent.RECENT_DAYS days before this date
         self.tracer = tracer  # None: traces are built (run_batch) but not written
         self.answer_prompt = load_prompt("answer")
+        self.papers_prompt = load_prompt("answer_papers")
         self.followups_prompt = load_prompt("followups")
         self.rewrite_prompt = load_prompt("rewrite")
         self.self_check_prompt = load_prompt("self_check")
@@ -252,8 +276,10 @@ class Agent:
         with trace.step("rewrite", record=self.config.rewrite):
             query = self.rewrite(message, history, budget)
         trace.query = query
+        plan = self.plan(message, query)
         with trace.step("retrieve"):
-            hits = self.retrieve(query)
+            hits, plan = self.retrieve_planned(query, plan)
+        trace.search = plan.to_dict() if plan.active or plan.fallback else None
         trace.set_retrieved(hits)
         evidence = self.check_evidence(hits)
         trace.evidence_count = len(evidence)
@@ -282,7 +308,7 @@ class Agent:
         yield SourcesEvent(evidence)
         parts: list[str] = []
         with trace.step("answer"):
-            for fragment in self.answer(message, evidence, history, budget, trace):
+            for fragment in self.answer(message, evidence, history, budget, trace, plan):
                 parts.append(fragment)
                 yield TokenEvent(fragment)
         answer = "".join(parts)
@@ -355,9 +381,53 @@ class Agent:
         logger.info("rewrote %r as %r", message, query)
         return query
 
-    def retrieve(self, query: str) -> list[ScoredChunk]:
+    def plan(self, message: str, query: str) -> SearchPlan:
+        """The search plan of `message` (`scitech_agent.intent`); the empty plan when search
+        modes are off."""
+        if not self.config.search_modes:
+            return SearchPlan()
+        return plan_search(
+            message,
+            query,
+            self.today(),
+            top_k=self.config.top_k,
+            list_top_k=self.config.list_top_k,
+        )
+
+    def retrieve_planned(
+        self, query: str, plan: SearchPlan
+    ) -> tuple[list[ScoredChunk], SearchPlan]:
+        """Hits for `plan`, and the plan actually used. An arXiv id is one filtered search per
+        id; a year or "latest" filters the search. When the filters keep nothing, the search is
+        repeated without them: a list question stays a list, any other plan becomes the empty
+        plan, so the question is answered as it was before search plans."""
+        if not plan.active:
+            return self.retrieve(query), plan
+        k = plan.k or self.config.top_k
+        if plan.arxiv_ids:
+            per_id = max(1, k // len(plan.arxiv_ids))
+            hits = [
+                hit
+                for doc_id in plan.arxiv_ids
+                for hit in self.retrieve(query, k=per_id, filters={"doc_id": doc_id})
+            ]
+        else:
+            hits = self.retrieve(query, k=k, filters=plan.filters)
+        if hits:
+            return hits, plan
+        logger.info("search plan %s found nothing; searching without filters", plan.reasons)
+        if plan.list_papers:
+            fallback = replace(plan, reasons=("list",), filters=None, arxiv_ids=(), fallback=True)
+            return self.retrieve(query, k=k), fallback
+        return self.retrieve(query), SearchPlan(fallback=True)
+
+    def retrieve(
+        self, query: str, k: int | None = None, filters: Mapping[str, object] | None = None
+    ) -> list[ScoredChunk]:
         try:
-            return self.retriever.search(query, k=self.config.top_k)
+            if filters:
+                return self.retriever.search(query, k=k or self.config.top_k, filters=filters)
+            return self.retriever.search(query, k=k or self.config.top_k)
         except Exception as exc:
             logger.exception("retrieval failed")
             raise AgentError("retrieval_failed", ERROR_MESSAGES["retrieval_failed"]) from exc
@@ -414,19 +484,26 @@ class Agent:
         history: list[Turn] | None = None,
         budget: RequestBudget | None = None,
         trace: RequestTrace | None = None,
+        plan: SearchPlan | None = None,
     ) -> Iterator[str]:
         """Streamed answer; markers that cite no source are dropped from it (`CitationFilter`).
         Raises `AgentError("timeout")` when the request's time runs out while it streams. The
-        LLM's text before that filter goes to `trace.answer_raw` (invalid-citation rate)."""
+        LLM's text before that filter goes to `trace.answer_raw` (invalid-citation rate).
+        An active search plan adds the sources' ids and dates and `prompts/answer_papers.md`."""
         keep = self.config.answer_history_turns
         recent = (history or [])[-keep:] if keep > 0 else []
-        messages = answer_messages(self.answer_prompt, question, evidence, recent)
+        planned = plan is not None and plan.active
+        system = f"{self.answer_prompt}\n\n{self.papers_prompt}" if planned else self.answer_prompt
+        messages = answer_messages(system, question, evidence, recent, metadata=planned)
+        max_tokens = self.config.answer_max_tokens
+        if planned and plan.list_papers:
+            max_tokens = max(max_tokens, self.config.list_max_tokens)
         stream = None
         try:
             stream = self.llm.stream_chat(
                 messages,
                 temperature=self.config.temperature,
-                max_tokens=self.config.answer_max_tokens,
+                max_tokens=max_tokens,
             )
             raw = stream if trace is None else _tee(stream, trace)
             for fragment in CitationFilter(len(evidence)).filter(raw):

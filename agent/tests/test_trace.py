@@ -54,6 +54,7 @@ FIELDS = {
     "error",
     "message",
     "query",
+    "search",
     "rewritten",
     "retrieved",
     "evidence",
@@ -107,6 +108,7 @@ def test_answered_request_writes_one_complete_trace() -> None:
     assert trace["timestamp"].endswith("+00:00")
     assert (trace["session_id"], trace["status"], trace["error"]) == ("s1", "ok", None)
     assert trace["message"] == trace["query"] == QUESTION and trace["rewritten"] is False
+    assert trace["search"] is None  # no search plan: the default search
     assert [h["chunk_id"] for h in trace["retrieved"]] == ["2409.02060#0", "1810.04805#0"]
     assert all(set(h) == {"chunk_id", "doc_id", "score"} for h in trace["retrieved"])
     assert trace["evidence"] == {
