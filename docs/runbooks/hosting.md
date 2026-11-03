@@ -74,6 +74,7 @@ Other settings:
 | `QDRANT_SEARCH_EXACT` | variable | `true` |
 | `AGENT_REWRITE` / `AGENT_SELF_CHECK` | variable | `on` / `off` (the A2 product configuration) |
 | `AGENT_SEARCH_MODES` | variable (optional) | empty or `on`: search plans for paper-finding questions; `off` restores the W7 behaviour |
+| `AGENT_FULLTEXT` | variable (optional) | empty or `on`: a question naming an arXiv id reads the paper's HTML full text (ADR 0012; the Space must reach arxiv.org); `off` keeps abstracts only |
 | `CHAT_PER_MINUTE`, `CHAT_TOTAL_PER_MINUTE` | variable | §2 |
 
    Changing a variable restarts the Space.
