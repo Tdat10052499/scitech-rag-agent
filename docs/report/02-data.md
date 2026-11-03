@@ -1,9 +1,8 @@
 # 2. Data
 
-<!-- Draft (W7-D4-FAO-1, written early on D13, updated on D16 for ADR 0011 and the final
-snapshot). Every number cites the file or run it comes from.
-Open items are marked TODO with the task that fills them. Page budget: set by the outline
-(docs/report/00-outline.md, W7-D5-DAT-1); trim in W8-D1-FAO-1. -->
+<!-- W7-D4-FAO-1, final numbers as of Gate W7 (2026-11-03). Every number cites the file or run
+it comes from. Open items are marked TODO with the task that fills them. Page budget: 5 pages
+(docs/report/00-outline.md); trim in W8-D1-FAO-1. -->
 
 This chapter describes the corpus behind the agent: where it comes from and under which licence,
 how large it is, how the pipeline turns it into a searchable index, why the processing engine is
@@ -85,7 +84,8 @@ chains them; each step runs as its own process and logs to `data/logs/`.
 | load | upsert into Qdrant, ids `uuid5(chunk_id)`, exact count check | 135.2 s | where Qdrant runs |
 | BM25 build | Okapi BM25 over chunk text | 36.7 s | any machine |
 
-Times: `pipelines/README.md` (#60), data profile §3, ADR 0007, index profile (#68).
+Times: `docs/runbooks/data-pipeline.md` (measured times), data profile §3, ADR 0007, index profile
+(#68).
 
 Design choices:
 - **Counts must chain.** The manifests carry the counts from step to step (121,860 documents →
@@ -181,8 +181,8 @@ The schedule writes only to a separate serving index, `scitech_chunks_live` with
 `data/index/bm25-live`, created as a copy of the frozen one. It refuses the frozen collection
 (`--frozen-collection`), so the evaluation index of §2.7 never changes. Freshness is bounded by
 arXiv, which announces new papers once a day: the 2-hour interval picks them up within 2 hours of
-that, not as they are submitted. The code was built on a branch during Week 7 (#152, #155) and
-merged after Gate W7, so no evaluation run saw it.
+that, not as they are submitted. The code is built on a branch during Week 7 (#152, #155) and
+merged only after Gate W7, so no evaluation run sees it.
 
 <!-- TODO(W8-D6-FAO-1): soak result from D20 to D22: runs logged in data/logs/incremental.log,
 failed or overlapping runs, papers added, time per run, BM25 switch. If the soak fails, ADR 0011
