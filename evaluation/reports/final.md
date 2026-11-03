@@ -158,7 +158,7 @@ Development and test items (macro faithfulness, judged answers in brackets): A1 
 
 **Measured.** The only types where A1 and A2 differ are follow-up questions, because the rewrite changes only follow-up turns. On the 53 answers judged in both runs, the paired faithfulness difference is +0.031 [-0.009, 0.082] (A2 better on 4 answers, worse on 1, equal on 48). The relevance difference on the same 53 answers is +0.094 [0.000, 0.208]. Over-refusal goes from 6/60 to 5/60.
 
-**Interpretation.** The direction is the one the plan expected (rewriting helps follow-ups). The gain on follow-ups (0.48 to 0.70) rests on 8 and 9 answers, and the two sets of answered items are not the same (A1 refused `gs-018`, A2 answered `gs-022` and `gs-060` additionally). Each condition was run once, so differences like these are inside the run-to-run variation the plan warns about. We report the numbers and do not claim an effect.
+**Interpretation.** The direction is the one the plan expected (rewriting helps follow-ups). The gain on follow-ups (0.48 to 0.70) rests on 8 and 9 answers, and the two sets of answered items are not the same (A2 refused `gs-018`, which A1 answered; A1 refused `gs-022` and `gs-060`, which A2 answered). Each condition was run once, so differences like these are inside the run-to-run variation the plan warns about. We report the numbers and do not claim an effect.
 
 ### 4.3 Evidence check (A3 and A4)
 
