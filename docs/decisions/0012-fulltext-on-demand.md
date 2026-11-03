@@ -31,6 +31,7 @@ Facts and estimates:
 ## Consequences
 - Deep questions about one paper can be answered from its body, and the answer stays grounded: it cites passages that were actually retrieved. It also works for papers outside the `cs.CL` index when the user gives their id.
 - The evaluation numbers do not change: the frozen index is untouched, and no golden item names an arXiv id. The new mode has no measured quality yet. It needs a small set of 5–10 deep questions whose answers are in the body, reported apart from the W7 numbers.
+- The laptop check (2026-11-03, llama3.2:3b) showed the small model citing a passage for perplexity numbers that are in no source (the paper shows them in figures). A full-text answer therefore gets a visible warning when it cites nothing or has numbers its cited sources do not contain (`check_numbers`). The warning flags the problem; it does not correct the answer.
 - Risks:
   - The Space must reach arxiv.org. The cloud container used for development could not, so the fetch was tested with a fake client only.
   - The first question about a paper is slower: one fetch, plus embedding about 50 to 400 passages on CPU. This has not been measured.

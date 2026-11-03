@@ -31,6 +31,7 @@ from pathlib import Path
 
 from scitech_agent.answer import (
     CitationFilter,
+    NumberMismatch,
     answer_messages,
     answer_user_message,
     answer_words,
@@ -91,6 +92,32 @@ _FLAGS = {"on": True, "true": True, "1": True, "off": False, "false": False, "0"
 
 def load_prompt(name: str) -> str:
     return (PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8").strip()
+
+
+def _vietnamese(text: str) -> bool:
+    """True when `text` has non-ASCII letters: the users write English or Vietnamese."""
+    return any(ord(c) > 127 and c.isalpha() for c in text)
+
+
+def fulltext_note(message: str, cited: Sequence[str], mismatches: Sequence[NumberMismatch]) -> str:
+    """Warning appended to an answer built from full-text passages (ADR 0012) when it cannot be
+    checked: it cites nothing, or it has numbers that none of its cited sources contain. Small
+    models fill in numbers that a paper shows only in figures; the user must know that."""
+    vi = _vietnamese(message)
+    if not cited:
+        if vi:
+            return ("Lưu ý: câu trả lời này không trích dẫn nguồn nào, nên chưa được đối chiếu "
+                    "với nội dung bài báo.")
+        return "Note: this answer cites no source, so it was not checked against the paper's text."
+    numbers = list(dict.fromkeys(m.number for m in mismatches))
+    if not numbers:
+        return ""
+    shown = ", ".join(numbers)
+    if vi:
+        return (f"Lưu ý: các con số sau không có trong nguồn được trích và có thể sai: {shown}. "
+                "Hãy kiểm tra lại trong bài báo.")
+    return (f"Note: these numbers are not in the cited sources and may be wrong: {shown}. "
+            "Please check them in the paper.")
 
 
 @dataclass(frozen=True)
@@ -343,6 +370,11 @@ class Agent:
                 yield TokenEvent(fragment)
         elif not cited:
             logger.info("answer cites no source and is not a refusal")
+        if not refused and plan.fulltext in ("read", "cached"):
+            note = fulltext_note(message, cited, mismatches)
+            if note:
+                for fragment in split_fragments("\n\n" + note):
+                    yield TokenEvent(fragment)
         # Follow-ups grounded in sources that did not answer would point to more of the same.
         questions: list[str] = []
         if not refused:

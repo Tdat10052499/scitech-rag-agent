@@ -286,3 +286,34 @@ def test_fulltext_off_does_not_fetch() -> None:
     agent.config = AgentConfig(search_modes=True, fulltext=False)
     list(agent.run("s1", f"What perplexity does {PAPER_ID} report?"))
     assert fetcher.calls == 0 and tracer.traces[0]["search"]["fulltext"] is None
+
+
+def answer_text(events) -> str:
+    return "".join(e.text for e in events if type(e).__name__ == "TokenEvent")
+
+
+def test_fulltext_answer_warns_about_numbers_not_in_its_sources() -> None:
+    agent, llm, _ = make_agent(CountingFetcher())
+    llm.outputs = ["Perplexity is 106.1 and 106.1 [1].", "[]"]
+    text = answer_text(agent.run("s1", f"What perplexity does {PAPER_ID} report?"))
+    assert text.endswith("may be wrong: 106.1. Please check them in the paper.")
+    llm.outputs = ["Perplexity giảm còn 106.1 [1].", "[]"]
+    text = answer_text(agent.run("s2", f"Bài {PAPER_ID} báo cáo perplexity bao nhiêu?"))
+    assert "Lưu ý: các con số sau" in text and "106.1" in text.split("Lưu ý")[1]
+
+
+def test_fulltext_answer_warns_when_it_cites_nothing() -> None:
+    agent, llm, _ = make_agent(CountingFetcher())
+    llm.outputs = ["Bài này đề xuất một phương pháp mới.", "[]"]
+    text = answer_text(agent.run("s1", f"Giải thích dễ hiểu bài {PAPER_ID} giúp tôi"))
+    assert text.endswith("chưa được đối chiếu với nội dung bài báo.")
+
+
+def test_grounded_or_abstract_only_answers_get_no_note() -> None:
+    agent, _, _ = make_agent(CountingFetcher())
+    text = answer_text(agent.run("s1", f"What perplexity does {PAPER_ID} report?"))
+    assert "Note:" not in text  # the fake answer cites [2] and has no number
+    agent, llm, _ = make_agent(BrokenFetcher())
+    llm.outputs = ["Perplexity is 106.1.", "[]"]
+    text = answer_text(agent.run("s1", f"What perplexity does {PAPER_ID} report?"))
+    assert "Note:" not in text  # no full text was read
