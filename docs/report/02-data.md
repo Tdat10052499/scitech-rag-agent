@@ -219,8 +219,8 @@ Incremental loads never write to the collection: the live test ran on a copy, an
 refuses it (ADR 0011). Checks against the file:
 - 2026-10-27, FAO's laptop: same id, 121,926 points, all 57 relevant documents of the golden set
   present;
-- 2026-10-30, after the feature freeze: 121,926 points on both serving machines, FAO's laptop (the
-  user-study host, #146) and DAT's laptop (the Week 7 host, which also matched the id and the BM25
+- 2026-10-30, after the feature freeze: 121,926 points on both serving machines, FAO's laptop (#146)
+  and DAT's laptop (the Week 7 host, which also matched the id and the BM25
   `chunked_at`; `evaluation/SNAPSHOT.md` §1, #164);
 - 2026-10-31, final golden set (65 items: 60 answerable, 5 unanswerable; #168): all 78 relevant
   documents in the chunks and in Qdrant (W7-D1-FAO-1, #156).
