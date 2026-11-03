@@ -235,7 +235,8 @@ index. The plan for the soak test is in chapter 6.
 - A visible warning is shown when a full-text answer cites nothing or contains numbers that its
   cited sources do not.
 - The quality of this mode is not measured: no golden item names an arXiv id. On 2026-11-03 the
-  Space passed the full-text questions of a 25-question trap test.
+  Space passed the full-text question of a manual trap test (`docs/report/demo-script.md`,
+  question 3.1).
 - The flag is `AGENT_FULLTEXT`.
 
 ## 3.8 Design decisions and known limits
@@ -264,8 +265,10 @@ illustration, not a measurement.
   - 3 of the 20 analysed cases were answered although no relevant document was among the sources
     (§4.3);
   - the unanswerable `gs-u05` was answered;
-  - 5 of 60 answerable items were refused. Only one of them, `gs-008`, had its relevant document
-    in the top 5 (§4.2).
+  - 5 of 60 answerable items were refused (§4.2):
+    - one true over-refusal (`gs-008`);
+    - two retrieval misses (`gs-012`, `gs-021`);
+    - two follow-up turns whose cause is open (`gs-018`, `gs-024`).
 
   The self-check that was meant to be this gate refused 60 of 60 answerable items (A3, A4; §5).
 - **Refusal detection is a phrase match.** An uncited answer counts as a refusal when it matches
@@ -278,7 +281,7 @@ illustration, not a measurement.
   source, not that the source supports the claim. Faithfulness (RQ2) measures the semantic part.
   It also does not require a marker on every sentence. Missing citations are the largest cause in
   the error analysis: 12 of 20 cases. In A2, 64 of the 85 unsupported sentences have no `[n]`,
-  while 67 of 88 cited sentences are supported (§4.1).
+  while 67 of 88 cited sentences are supported (§2 and §4.1).
 - **Out-of-scope questions** are not detected before retrieval. Examples are questions about
   products, links, or research ideas.
 - **Paper links are not in the prompt** of the frozen system. The sources panel shows the arXiv
