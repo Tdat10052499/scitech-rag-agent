@@ -31,6 +31,7 @@ python -m scitech_pipelines --help
 
 - `download` needs a Kaggle account: `kaggle auth login` once (the token stays in your user profile, never in the repository).
 - `clean` needs Java 17 or newer (`java -version`). Java 8 counts as none: `clean` then stops with an error and its tests skip.
+- If Spark or Hadoop is already installed, a `SPARK_HOME`, `HADOOP_CONF_DIR` or `PYSPARK_PYTHON` set in the shell can make `clean` fail. In that shell, first run `unset SPARK_HOME HADOOP_CONF_DIR HADOOP_HOME HADOOP_MAPRED_HOME PYSPARK_PYTHON` (PowerShell: `Remove-Item Env:SPARK_HOME, Env:HADOOP_CONF_DIR, Env:HADOOP_HOME, Env:HADOOP_MAPRED_HOME, Env:PYSPARK_PYTHON -ErrorAction SilentlyContinue`). Found by LDN on 2026-11-03.
 - Every step writes under `--data-dir` (env `DATA_DIR`, default `data`). `data/` is git-ignored; on a small `C:` drive, point it at another disk (for example a junction from `data\raw` to `D:\scitech-data\raw`).
 
 ## Full rebuild
@@ -99,7 +100,7 @@ PYTHONPATH=pipelines/src:agent/src python -m scitech_pipelines run-all --limit 2
 2,000 records -> 2,000 documents (all `validate` checks PASS) -> 2,002 chunks -> 2,002 vectors -> 2,002 points. `embed` takes most of the time on a CPU. On a T4 it would take about 15 s (estimate from the full run's 141 chunks/s, not measured for this run). The download step is not in this time: Kaggle serves only the whole 1.86 GB snapshot (150 s on FAO's laptop, table above).
 
 ## Small run (weak machine, or to try the steps)
-The 20 records of `pipelines/tests/fixtures/sample.jsonl` (in git) go through every step in seconds. Measured on a Linux VM (4 CPUs): `clean` 22 s including Spark start-up, `validate` 0.3 s, `chunk` 0.2 s; 20 documents, 20 chunks, under 200 KB.
+The 20 records of `pipelines/tests/fixtures/sample.jsonl` (in git) go through every step in seconds. Measured on a Linux VM (4 CPUs): `clean` 22 s including Spark start-up, `validate` 0.3 s, `chunk` 0.2 s; 20 documents, 20 chunks, under 200 KB. Reproduced by LDN on 2026-11-03 under WSL2 (Python 3.12.3, Java 17, PySpark 4.3.0): `clean` 20 of 20 records in 10.9 s, `validate` 13 checks passed, `chunk` 20 chunks, `data/small` 156 KB; `embed` and `load` not run.
 
 ```bash
 python -m scitech_pipelines --data-dir data/small clean --input pipelines/tests/fixtures/sample.jsonl --sample-size 0
