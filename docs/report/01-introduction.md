@@ -42,33 +42,40 @@ In scope:
 - **Big-data processing.** A two-tier pipeline. The processing tier reads the whole arXiv metadata
   snapshot (3,205,432 records, 5.61 GB) with PySpark. The index holds only `cs.CL` (chapter 2).
 - **Incremental ingestion** of newly announced papers, as a batch job (ADR 0008). A scheduled run
-  every 2 hours was added as a controlled exception after the feature freeze (ADR 0011).
+  every 2 hours was built as a controlled exception after the feature freeze (ADR 0011). It is not
+  deployed in v1.0: its soak test was postponed until after the presentation (section 3.7).
 - **LLM access** through an OpenAI-compatible interface, with an open-weights model served by the
   team (ADR 0001, ADR 0006).
-- **Evaluation** of retrieval, answers and follow-up suggestions.
+- **Evaluation** of retrieval and answers. The planned user study of the follow-up suggestions
+  was cancelled on 2026-11-03 (ADR 0013).
 
 Out of scope:
 - training or fine-tuning a model;
-- full-text PDFs;
+- indexing full-text PDFs (a single paper's HTML full text can be read on demand, section 3.7);
 - user accounts and production-grade scaling;
 - high-stakes advice;
 - topics outside LLM/NLP.
 
-Because the corpus has abstracts only, the system can answer what a paper does and reports in its
-abstract, but not details found only in the full text. Section 3.8 and chapter 4 return to this
-limit.
+Because the index has abstracts only, the system can answer what a paper does and reports in its
+abstract, but not details found only in the full text. The one exception was added after the
+evaluation: a question that names a paper by arXiv id can read that paper's full text on demand
+(ADR 0012). Section 3.8 and chapter 4 return to this limit.
 
 ## 1.4 Research questions
 
-The evaluation answers three questions, fixed before the runs (`evaluation/PLAN.md` §2):
+Three questions were fixed before the runs (`evaluation/PLAN.md` §2). The evaluation answers
+RQ1 and RQ2; RQ3 was dropped when the user study was cancelled (ADR 0013).
 
 - **RQ1 (retrieval).** Does hybrid retrieval (dense + BM25, reciprocal rank fusion) give higher
   recall@k and MRR than dense-only or BM25-only retrieval on the golden set?
 - **RQ2 (agent steps).** Do query rewriting and the evidence check improve faithfulness compared
   with a plain retrieve-then-answer pipeline? Four conditions are compared: MVP, +rewrite,
   +evidence check, and full agent.
-- **RQ3 (follow-up suggestions).** Do users rate the suggested follow-up questions as useful, and
-  do they click them? The user study is small, so RQ3 is answered with descriptive statistics only.
+- **RQ3 (follow-up suggestions), dropped.** Do users rate the suggested follow-up questions as
+  useful, and do they click them? The evidence was to come from a small user study (descriptive
+  statistics only). The study was cancelled on 2026-11-03 before its first session (ADR 0013), so
+  RQ3 is not evaluated. The suggestions stay in the product (sections 3.4 and 5), and a user
+  study is future work (chapter 6).
 
 Answer latency and the behaviour of the index as the corpus grows are measured too
 (`docs/runbooks/performance.md`, `pipelines/reports/scaling.md`). They are reported as properties
@@ -92,7 +99,7 @@ of the system on the stated hardware, not as research questions.
 - **Schedule.** The project ran from 2026-10-13 to the presentation on 2026-11-10. The original plan of 8
   weeks was compressed into 22 working days in 8 phases. Five features were cut early to protect the evaluation and the
   report: Kafka, the reranker, UI extras, query decomposition, and a larger user study
-  (ADR 0010).
+  (ADR 0010). The user study was then cancelled entirely on 2026-11-03 (ADR 0013).
 - **Quality rules.** Every change went through a pull request with CI (lint and tests). Evaluation
   runs and contract changes needed a review by a second member.
 - **AI coding tools.** Team members used AI coding assistants. The repository rules for them are in
@@ -102,6 +109,6 @@ of the system on the stated hardware, not as research questions.
 
 - Chapter 2 describes the data and the pipeline.
 - Chapter 3 describes the system: architecture, retrieval, the agent and the design decisions.
-- Chapter 4 reports the evaluation for RQ1–RQ3, with latency and an error analysis.
+- Chapter 4 reports the evaluation for RQ1 and RQ2, with latency and an error analysis.
 - Chapter 5 presents the user interface.
 - Chapter 6 summarises the results, the limitations and future work.
