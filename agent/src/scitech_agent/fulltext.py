@@ -50,15 +50,17 @@ MIN_PARAGRAPH_WORDS = 5
 MIN_PAPER_WORDS = 150  # less than this is a stub page ("no HTML for this paper"), not a paper
 
 _SKIP_TAGS = {"script", "style", "nav", "header", "footer", "annotation", "annotation-xml"}
-_SKIP_CLASSES = (
-    "ltx_bibliography",
-    "ltx_page_footer",
-    "ltx_page_header",
-    "ltx_authors",
-    "ltx_dates",
-    "ltx_role_affiliation",
-    "ltx_TOC",
-    "ltx_note_outer",
+_SKIP_CLASSES = frozenset(
+    (
+        "ltx_bibliography",
+        "ltx_page_footer",
+        "ltx_page_header",
+        "ltx_authors",
+        "ltx_dates",
+        "ltx_role_affiliation",
+        "ltx_TOC",
+        "ltx_note_outer",
+    )
 )
 _HEADINGS = {"h2", "h3", "h4"}
 _BLOCKS = {"p", "figcaption", "li", "td", "th", "div"}
@@ -125,11 +127,13 @@ class _PaperParser(HTMLParser):
         if tag in _VOID:
             return
         values = dict(attrs)
-        classes = values.get("class") or ""
-        if self._doc_depth is None and "ltx_document" in classes.split():
+        # Class tokens, matched exactly: arXiv's article is `ltx_document ltx_authors_1line`, and
+        # a substring test for `ltx_authors` skipped the whole paper (laptop check 2026-11-03).
+        classes = set((values.get("class") or "").split())
+        if self._doc_depth is None and "ltx_document" in classes:
             self._doc_depth = len(self._stack)
             self.found_document = True
-        skipped = tag in _SKIP_TAGS or any(c in classes for c in _SKIP_CLASSES)
+        skipped = tag in _SKIP_TAGS or bool(classes & _SKIP_CLASSES)
         role = ""
         if not self._skipping() and not skipped and not self._role:
             if tag == "h1" and "ltx_title" in classes:
@@ -150,8 +154,14 @@ class _PaperParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag in _VOID:
             return
-        # Pop to the matching tag; HTMLParser does not repair unclosed elements.
-        for i in range(len(self._stack) - 1, -1, -1):
+        # Pop to the matching tag; HTMLParser does not repair unclosed elements. Inside the
+        # article, a stray end tag never closes anything outside it.
+        floor = 0
+        if self._doc_depth is not None:
+            floor = (
+                self._doc_depth if tag == self._stack[self._doc_depth][0] else self._doc_depth + 1
+            )
+        for i in range(len(self._stack) - 1, floor - 1, -1):
             if self._stack[i][0] == tag:
                 closed = self._stack[i:]
                 del self._stack[i:]

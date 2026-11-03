@@ -33,7 +33,7 @@ HTML = (
 <div class="ltx_page_main"><dialog><p>Content selection saved. Describe the issue below:</p>
 </dialog></div>
 <nav class="ltx_page_navbar">Contents Introduction Method</nav>
-<article class="ltx_document">
+<article class="ltx_document ltx_authors_1line">
 <h1 class="ltx_title ltx_title_document">In-Context Retrieval-Augmented Language Models</h1>
 <div class="ltx_authors"><span class="ltx_personname">Ori Ram, Yoav Levine</span></div>
 <div class="ltx_abstract"><h6 class="ltx_title">Abstract</h6>
@@ -41,7 +41,7 @@ HTML = (
 relevant documents from a grounding corpus during generation.</p></div>
 <section class="ltx_section" id="S1">
 <h2 class="ltx_title ltx_title_section"><span class="ltx_tag">1 </span>Introduction</h2>
-<div class="ltx_para" id="S1.p1"><p class="ltx_p">Language models hallucinate facts, and
+<div class="ltx_para" id="S1.p1"></span><p class="ltx_p">Language models hallucinate facts, and
 grounding them in retrieved documents is one remedy that we study in this work.</p></div>
 <div class="ltx_para" id="S1.p2"><p class="ltx_p">"""
     + " ".join(["Prior work changes the model."] * 30)
