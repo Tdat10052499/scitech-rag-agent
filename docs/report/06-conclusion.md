@@ -80,8 +80,11 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
 
 **Data scope.**
 - **Abstracts only:** the corpus is the titles and abstracts of 121,860 arXiv `cs.CL` papers
-  (Kaggle snapshot version 307, 2026-10-10). Full texts are not used: their licences differ per
-  paper (chapter 2.1), so the agent can answer only what an abstract states.
+  (Kaggle snapshot version 307, 2026-10-10). Full texts are not indexed, because their licences
+  differ per paper (chapter 2.1), so the evaluated system answers only what an abstract states.
+  After the freeze, ADR 0012 added one exception: when a question names a paper by its arXiv id,
+  the agent reads that paper's HTML full text on demand, keeps it in memory only, and cites its
+  sections. This mode has no measured quality yet, and no golden item uses it.
 - **One field:** NLP and computational linguistics, including cross-lists. Questions from other
   fields fall outside the corpus.
 - **English only:** the embedding model `bge-small-en-v1.5` is English-only. The Vietnamese question
@@ -147,8 +150,9 @@ so the cut list was applied at the start instead of at the first delay (ADR 0010
 
 ## 6.3 Future work
 
-- **Full texts** where the licence allows it, so answers can draw on methods and results, not
-  only abstracts.
+- **Full texts:** measure the on-demand mode of ADR 0012 on a small set of 5 to 10 deep questions
+  whose answers are in a paper's body, reported apart from the W7 numbers, and add the PDF fallback
+  it leaves for later. Indexing full texts stays limited to papers whose licence allows it.
 - **A multilingual embedding model**, measured on a Vietnamese question group with the same
   golden-set rules (ADR 0007).
 - **HNSW search** with its recall checked against exact search (#87) once the corpus grows, and
