@@ -1,8 +1,8 @@
 # 6. Conclusion
 
 <!-- Draft (W8-D2-FAO-1, written early on D13, updated on D16 with the Week 7 latency and
-ablation runs and ADR 0011, and on D18 with the W7 runs R1-R3 and A1-A4 of #179 and the two error
-analyses, #179 and #180). The RQ1 and RQ2 numbers below come from the run files of #179; when
+ablation runs and ADR 0011, on D18 with the W7 runs R1-R3 and A1-A4 of #179 and the two error
+analyses, #179 and #180, and on D19 with the judge check of `final.md` §5, #196). The RQ1 and RQ2 numbers below come from the run files of #179; when
 `final.md` (W7-D5-LDN-1) is merged, the citations move to it. RQ3 is not evaluated: the user study was cancelled on 2026-11-03,
 ADR 0013. -->
 
@@ -57,8 +57,14 @@ Not measurably. The final runs A1 to A4 used all 65 items on the Week 7 host (`e
   Sentences that do cite a passage are supported 76% of the time (DAT's error analysis, #179).
   So the low score is partly a citation-format failure of the 3B generator, not only unfaithfulness.
 
-<!-- TODO(W7-D2-LDN-1, W7-D5-LDN-1): the manual check of the judge (agreement on the 20% sample)
-and, if #171 is used, answer relevance per condition. -->
+- **The judge against people.** On a 20% sample (11 answers per run, labelled by LDN and FAO
+  without seeing the judge), the judge gave the human label on 47 of 55 sentences (0.855, Cohen's
+  kappa 0.734). On those answers it scored faithfulness higher than the people did (A1 0.50
+  against 0.39, A2 0.58 against 0.52), so the numbers above may be a little optimistic
+  (`final.md` §5, #196).
+- **Answer relevance** (judge, 1 to 3): 2.31 [2.11, 2.52] for A1 (n = 54) and 2.44 [2.24, 2.62]
+  for A2 (n = 55) (`evaluation/RUNS.md` §7, V1 and V2). On the 22 sampled ratings the judge
+  agreed with people 15 times (kappa 0.389), too few to trust these means much.
 
 **RQ3 (follow-up suggestions): do users find them useful and click them?**
 Not answered. The user study that was its only evidence was cancelled on 2026-11-03 (ADR 0013),
@@ -115,8 +121,9 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
 
 **Judge bias.**
 - **Judge:** faithfulness is judged by an LLM that is not the generator (`evaluation/PLAN.md` §5).
-  It is checked by hand on a sample only, so its errors can remain in the rest.
-  <!-- TODO(W7-D2-LDN-1): the agreement between judge and manual labels. -->
+  It is checked by hand on a sample only, so its errors can remain in the rest. On that sample
+  it matched people on 85% of sentences (kappa 0.73) but scored faithfulness higher than they
+  did, and it agreed on only 15 of 22 relevance ratings (`final.md` §5, #196).
 
 **Features cut by ADR 0010.** The plan was written for 40 working days and the project had 22,
 so the cut list was applied at the start instead of at the first delay (ADR 0010):
