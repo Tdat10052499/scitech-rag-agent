@@ -47,6 +47,7 @@ USER_AGENT = (
 PASSAGE_WORDS = 180
 MAX_PASSAGES = 400  # per paper; a very long paper keeps its first sections
 MIN_PARAGRAPH_WORDS = 5
+MIN_PAPER_WORDS = 150  # less than this is a stub page ("no HTML for this paper"), not a paper
 
 _SKIP_TAGS = {"script", "style", "nav", "header", "footer", "annotation", "annotation-xml"}
 _SKIP_CLASSES = (
@@ -108,8 +109,16 @@ class _PaperParser(HTMLParser):
         self._stack: list[tuple[str, bool, str]] = []  # (tag, skipped, role)
         self._text: list[str] = []
         self._role = ""  # "heading", "doc_title" or "block" while collecting
+        self._doc_depth: int | None = (
+            None  # stack depth of the LaTeXML <article class=ltx_document>
+        )
+        self.found_document = False
 
     def _skipping(self) -> bool:
+        # Only the paper itself counts: arXiv's pages also carry a toolbar, a feedback dialog
+        # ("Content selection saved. Describe the issue below") and notices outside the article.
+        if self._doc_depth is None:
+            return True
         return any(skipped for _, skipped, _ in self._stack)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -117,6 +126,9 @@ class _PaperParser(HTMLParser):
             return
         values = dict(attrs)
         classes = values.get("class") or ""
+        if self._doc_depth is None and "ltx_document" in classes.split():
+            self._doc_depth = len(self._stack)
+            self.found_document = True
         skipped = tag in _SKIP_TAGS or any(c in classes for c in _SKIP_CLASSES)
         role = ""
         if not self._skipping() and not skipped and not self._role:
@@ -146,6 +158,8 @@ class _PaperParser(HTMLParser):
                 for _, _, role in reversed(closed):
                     if role:
                         self._close(role)
+                if self._doc_depth is not None and len(self._stack) <= self._doc_depth:
+                    self._doc_depth = None  # left the article
                 return
 
     def handle_data(self, data: str) -> None:
@@ -175,8 +189,11 @@ def parse_paper_html(html: str, arxiv_id: str, url: str) -> Paper:
         for heading, paragraphs in parser.sections
         if paragraphs
     )
-    if not sections:
-        raise FullTextUnavailable(f"{arxiv_id}: no text found in {url}")
+    if not parser.found_document:
+        raise FullTextUnavailable(f"{arxiv_id}: no LaTeXML article in {url}")
+    words = sum(len(p.split()) for s in sections for p in s.paragraphs)
+    if words < MIN_PAPER_WORDS:
+        raise FullTextUnavailable(f"{arxiv_id}: only {words} words of text in {url}")
     return Paper(arxiv_id, parser.title, url, sections)
 
 
@@ -416,7 +433,11 @@ def main(argv: Sequence[str] | None = None, out: Callable[[str], None] = print) 
         out(f"unavailable: {exc}")
         return 1
     count = len(reader._cache[args.arxiv_id][0])
-    out(f"{args.arxiv_id}: {count} passages; best {len(passages)} for {args.question!r}:")
+    source = passages[0].url if passages else "?"
+    out(
+        f"{args.arxiv_id}: {count} passages from {source}; "
+        f"best {len(passages)} for {args.question!r}:"
+    )
     for p in passages:
         out(f"\n[{p.score}] {p.title}\n{p.text[:400]}")
     return 0
