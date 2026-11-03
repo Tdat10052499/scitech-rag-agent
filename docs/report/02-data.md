@@ -150,8 +150,8 @@ each run's chunks confirmed this, independently of the load's own count. Embeddi
 time, so a day of a few hundred papers takes about a minute on a CPU.
 
 **Scheduling** (ADR 0011, replacing ADR 0008 point 6). The course asks for near-real-time data, so
-an `ingest` container next to Qdrant runs `incremental-run` every 2 hours (`INGEST_EVERY_HOURS=2`)
-with its own Java 17. Each run:
+an `ingest` container next to Qdrant was built to run `incremental-run` every 2 hours
+(`INGEST_EVERY_HOURS=2`) with its own Java 17. Each run:
 
 - fetches up to today (UTC), so a record is picked up within 2 hours of its OAI-PMH datestamp;
 - processes only the ids whose `(id, datestamp)` changed, and stops with "nothing changed" when
@@ -162,15 +162,16 @@ with its own Java 17. Each run:
 
 The schedule writes only to a separate serving index (`scitech_chunks_live`, `data/index/bm25-live`)
 and refuses the frozen collection, so the evaluation index of §2.7 never changes. arXiv announces
-new papers once a day, so freshness is "within 2 hours of the announcement". The code is built on a
-branch during Week 7 (#152, #155) and merged only after Gate W7, so no evaluation run sees it.
+new papers once a day, so freshness is "within 2 hours of the announcement".
 
-<!-- TODO(W8-D6-FAO-1): soak result from D20 to D22: runs logged in data/logs/incremental.log,
-failed or overlapping runs, papers added, time per run, BM25 switch. If the soak fails, ADR 0011
-falls back to the manual command; rewrite this paragraph then. -->
+**Status in v1.0: built, not deployed.** The code is in two pull requests, the schedule (#152) and
+the BM25 reload with the `ingest` service (#178). On 2026-11-03 DAT postponed the soak test (at
+least 12 runs without a failure or an overlap) until after the presentation. Both stay unmerged
+for v1.0, which keeps the manual `incremental-run` command of ADR 0008, and no evaluation run
+sees the schedule.
 
 Known limits: deleted records stay until the next full rebuild, a replaced paper has no points for
-0.3 to 2.4 s during its load, and the schedule runs only while the serving laptop is awake (#119).
+0.3 to 2.4 s during its load, and the schedule would run only while the serving laptop is awake.
 
 ## 2.6 Scaling
 
