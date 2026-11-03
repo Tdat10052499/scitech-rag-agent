@@ -6,7 +6,7 @@
 
 1. **Working web app**: user asks a science/technology question, gets a streamed answer with numbered citations to retrieved sources, an explicit "insufficient evidence" answer when retrieval is weak, up to 4 clickable follow-up questions, and rating buttons.
 2. **Reproducible big-data pipeline**: open dataset to cleaned Parquet to chunks to embeddings to vector + keyword index; incremental ingestion of new items if kept at the Week 5 gate (otherwise its design is described in the report).
-3. **Evaluation report** (`evaluation/reports/final.md`): retrieval metrics (recall@k, MRR) for dense, BM25 and hybrid, answer faithfulness, ablations of agent steps (MVP, +rewrite, +evidence check, full), latency and scaling measurements, follow-up suggestion ratings from a small user study (n >= 5), with sample sizes and limitations stated.
+3. **Evaluation report** (`evaluation/reports/final.md`): retrieval metrics (recall@k, MRR) for dense, BM25 and hybrid, answer faithfulness, ablations of agent steps (MVP, +rewrite, +evidence check, full), latency and scaling measurements (the user study for follow-up ratings was cancelled, ADR 0013), with sample sizes and limitations stated.
 4. **Final report** (`docs/report/`) and **presentation** (slides + recorded demo video as fallback).
 5. **Repository** that a stranger can clone and run from the README (`v1.0` tag).
 
