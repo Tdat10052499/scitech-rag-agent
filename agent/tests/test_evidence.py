@@ -126,6 +126,19 @@ def test_uncited_refusal_is_insufficient_and_gets_the_hint() -> None:
     assert agent.history("s1")[-1].answer == REFUSAL  # the hint is not kept for later prompts
 
 
+def test_reworded_refusal_gets_no_followups() -> None:
+    # #167: the model refused in its own words; follow-ups about earlier turns were shown
+    refusal = (
+        "There is no evidence in the provided sources to answer this question. The sources "
+        "discuss recipe generation, but none of them provide a specific pizza recipe."
+    )
+    agent, _, llm = make_agent([refusal, FOLLOWUPS])
+    events = list(agent.run("s1", QUESTION))
+    assert text_of(events) == refusal + "\n\n" + REFUSAL_HINT
+    assert events[-1].insufficient_evidence
+    assert not any(isinstance(e, FollowupsEvent) for e in events) and len(llm.calls) == 1
+
+
 def test_uncited_answer_is_not_reported_as_insufficient() -> None:
     agent, _, llm = make_agent([UNCITED, FOLLOWUPS])
     events = list(agent.run("s1", QUESTION))
@@ -152,6 +165,11 @@ def test_cited_partial_answer_is_not_a_refusal() -> None:
         "I cannot answer this question from the given sources.",
         "The datasets are not specified in the provided abstracts.",
         "No source covers this.",
+        # #167: seen with llama3.2:3b on an out-of-scope question
+        "There is no evidence in the provided sources to answer this question.",
+        "The sources discuss recipe generation and ingredient substitution, but none of them "
+        "provide a specific pizza recipe.",
+        "There is no relevant information about pizza in the sources.",
     ],
 )
 def test_is_refusal(answer: str) -> None:

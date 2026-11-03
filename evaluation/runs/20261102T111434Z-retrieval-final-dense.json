@@ -1,0 +1,3567 @@
+{
+  "schema_version": 2,
+  "kind": "retrieval",
+  "name": "retrieval-final-dense",
+  "timestamp": "20261102T111434Z",
+  "git_commit": "3a2b92d4319799944241fdb5110798f52b2586f6+dirty",
+  "dataset_snapshot": "kaggle-arxiv-v307-cs.CL-2026-10-10",
+  "retriever_type": "dense",
+  "embedding_model": "BAAI/bge-small-en-v1.5",
+  "index_snapshot": "scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37",
+  "notes": "dense on all answerable English items (dev and test); Qdrant collection scitech_chunks, exact search.",
+  "timings": {
+    "run_seconds": 5.913635,
+    "search_seconds": {
+      "total": 5.865295,
+      "median": 0.017148,
+      "max": 4.844436
+    }
+  },
+  "golden": {
+    "path": "evaluation\\golden_set\\golden.jsonl",
+    "sha256": "1d05086d71904dcc479793c930b7586fd2afb0a0e4c1543b30c46f0ed3ec50bc",
+    "split": "all",
+    "language": "en",
+    "n_evaluated": 60,
+    "n_unanswerable_excluded": 5
+  },
+  "config": {
+    "name": "retrieval-final-dense",
+    "golden_path": "evaluation/golden_set/golden.jsonl",
+    "split": "all",
+    "language": "en",
+    "query": "question",
+    "ks": [
+      1,
+      5,
+      10
+    ],
+    "dataset_snapshot": "kaggle-arxiv-v307-cs.CL-2026-10-10",
+    "retriever_type": "dense",
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "index_snapshot": "scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37",
+    "notes": "dense on all answerable English items (dev and test); Qdrant collection scitech_chunks, exact search.",
+    "bootstrap": {
+      "resamples": 1000,
+      "seed": 0
+    },
+    "retriever": {
+      "factory": "scitech_eval.retrievers:agent_retriever",
+      "params": {
+        "retriever": "dense",
+        "EMBEDDING_MODEL": "BAAI/bge-small-en-v1.5",
+        "EMBEDDING_QUERY_PREFIX": "Represent this sentence for searching relevant passages:",
+        "QDRANT_SEARCH_EXACT": "true"
+      }
+    }
+  },
+  "metrics": {
+    "recall@1": {
+      "mean": 0.3,
+      "ci95": [
+        0.18333333333333332,
+        0.4166666666666667
+      ]
+    },
+    "recall@5": {
+      "mean": 0.4583333333333333,
+      "ci95": [
+        0.35,
+        0.575
+      ]
+    },
+    "recall@10": {
+      "mean": 0.49166666666666664,
+      "ci95": [
+        0.38333333333333336,
+        0.6
+      ]
+    },
+    "mrr": {
+      "mean": 0.42034391534391535,
+      "ci95": [
+        0.30883597883597885,
+        0.5293915343915344
+      ]
+    }
+  },
+  "by_type": {
+    "comparison": {
+      "n": 8,
+      "recall@1": 0.1875,
+      "recall@5": 0.3125,
+      "recall@10": 0.5,
+      "mrr": 0.41388888888888886
+    },
+    "explanatory": {
+      "n": 17,
+      "recall@1": 0.47058823529411764,
+      "recall@5": 0.7058823529411765,
+      "recall@10": 0.7058823529411765,
+      "mrr": 0.5607843137254902
+    },
+    "factual": {
+      "n": 13,
+      "recall@1": 0.5384615384615384,
+      "recall@5": 0.6923076923076923,
+      "recall@10": 0.6923076923076923,
+      "mrr": 0.6153846153846154
+    },
+    "follow_up": {
+      "n": 11,
+      "recall@1": 0.0,
+      "recall@5": 0.09090909090909091,
+      "recall@10": 0.09090909090909091,
+      "mrr": 0.018181818181818184
+    },
+    "multi_hop": {
+      "n": 11,
+      "recall@1": 0.13636363636363635,
+      "recall@5": 0.2727272727272727,
+      "recall@10": 0.3181818181818182,
+      "mrr": 0.3796536796536797
+    }
+  },
+  "per_question": [
+    {
+      "id": "gs-001",
+      "type": "multi_hop",
+      "query": "Why do AI chatbots sometimes make things up, and what are two ways to reduce it?",
+      "search_seconds": 4.844436,
+      "relevant_doc_ids": [
+        "2406.11267",
+        "2409.10011"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2006.02767#0",
+          "doc_id": "2006.02767"
+        },
+        {
+          "chunk_id": "2404.09375#0",
+          "doc_id": "2404.09375"
+        },
+        {
+          "chunk_id": "2410.16645#0",
+          "doc_id": "2410.16645"
+        },
+        {
+          "chunk_id": "2406.19648#0",
+          "doc_id": "2406.19648"
+        },
+        {
+          "chunk_id": "2206.07271#0",
+          "doc_id": "2206.07271"
+        },
+        {
+          "chunk_id": "2604.06188#0",
+          "doc_id": "2604.06188"
+        },
+        {
+          "chunk_id": "2106.01666#0",
+          "doc_id": "2106.01666"
+        },
+        {
+          "chunk_id": "2506.12090#0",
+          "doc_id": "2506.12090"
+        },
+        {
+          "chunk_id": "2201.06657#0",
+          "doc_id": "2201.06657"
+        },
+        {
+          "chunk_id": "2306.04765#0",
+          "doc_id": "2306.04765"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-002",
+      "type": "explanatory",
+      "query": "Is it always better to give an AI more retrieved documents when it answers a question?",
+      "search_seconds": 0.017487,
+      "relevant_doc_ids": [
+        "2410.05983"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2407.12017#0",
+          "doc_id": "2407.12017"
+        },
+        {
+          "chunk_id": "2609.36617#0",
+          "doc_id": "2609.36617"
+        },
+        {
+          "chunk_id": "2504.10861#0",
+          "doc_id": "2504.10861"
+        },
+        {
+          "chunk_id": "2607.17598#0",
+          "doc_id": "2607.17598"
+        },
+        {
+          "chunk_id": "2310.12150#0",
+          "doc_id": "2310.12150"
+        },
+        {
+          "chunk_id": "2604.07985#0",
+          "doc_id": "2604.07985"
+        },
+        {
+          "chunk_id": "2606.02814#0",
+          "doc_id": "2606.02814"
+        },
+        {
+          "chunk_id": "2501.01303#0",
+          "doc_id": "2501.01303"
+        },
+        {
+          "chunk_id": "2012.14005#0",
+          "doc_id": "2012.14005"
+        },
+        {
+          "chunk_id": "2310.14358#0",
+          "doc_id": "2310.14358"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-003",
+      "type": "factual",
+      "query": "Do large language models know when to hold back instead of answering a medical question?",
+      "search_seconds": 0.017299,
+      "relevant_doc_ids": [
+        "2605.15000"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2509.04304#0",
+          "doc_id": "2509.04304"
+        },
+        {
+          "chunk_id": "2608.01017#0",
+          "doc_id": "2608.01017"
+        },
+        {
+          "chunk_id": "2310.07225#0",
+          "doc_id": "2310.07225"
+        },
+        {
+          "chunk_id": "2608.09080#0",
+          "doc_id": "2608.09080"
+        },
+        {
+          "chunk_id": "2502.04381#0",
+          "doc_id": "2502.04381"
+        },
+        {
+          "chunk_id": "2207.08143#0",
+          "doc_id": "2207.08143"
+        },
+        {
+          "chunk_id": "2406.05845#0",
+          "doc_id": "2406.05845"
+        },
+        {
+          "chunk_id": "2504.01201#0",
+          "doc_id": "2504.01201"
+        },
+        {
+          "chunk_id": "2501.17190#0",
+          "doc_id": "2501.17190"
+        },
+        {
+          "chunk_id": "2601.11866#0",
+          "doc_id": "2601.11866"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-004",
+      "type": "comparison",
+      "query": "What is the difference between checking an answer by matching words and checking it by meaning?",
+      "search_seconds": 0.015741,
+      "relevant_doc_ids": [
+        "2511.17432",
+        "2206.12664"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2407.08824#0",
+          "doc_id": "2407.08824"
+        },
+        {
+          "chunk_id": "1806.04068#0",
+          "doc_id": "1806.04068"
+        },
+        {
+          "chunk_id": "1303.7310#0",
+          "doc_id": "1303.7310"
+        },
+        {
+          "chunk_id": "2506.04824#0",
+          "doc_id": "2506.04824"
+        },
+        {
+          "chunk_id": "2609.30151#0",
+          "doc_id": "2609.30151"
+        },
+        {
+          "chunk_id": "1801.00644#0",
+          "doc_id": "1801.00644"
+        },
+        {
+          "chunk_id": "2507.02856#0",
+          "doc_id": "2507.02856"
+        },
+        {
+          "chunk_id": "1912.13455#0",
+          "doc_id": "1912.13455"
+        },
+        {
+          "chunk_id": "2606.27103#0",
+          "doc_id": "2606.27103"
+        },
+        {
+          "chunk_id": "2012.15837#0",
+          "doc_id": "2012.15837"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-005",
+      "type": "comparison",
+      "query": "In RAG, how does the chunk size affect answer quality, and can chunks at several levels (multi-sentence, paragraph, section, document) do better than one level?",
+      "search_seconds": 0.019125,
+      "relevant_doc_ids": [
+        "2407.19794",
+        "2501.16952"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2607.24767#0",
+          "doc_id": "2607.24767"
+        },
+        {
+          "chunk_id": "2402.05131#0",
+          "doc_id": "2402.05131"
+        },
+        {
+          "chunk_id": "2606.00881#0",
+          "doc_id": "2606.00881"
+        },
+        {
+          "chunk_id": "2505.02171#0",
+          "doc_id": "2505.02171"
+        },
+        {
+          "chunk_id": "2410.13070#0",
+          "doc_id": "2410.13070"
+        },
+        {
+          "chunk_id": "2505.06914#0",
+          "doc_id": "2505.06914"
+        },
+        {
+          "chunk_id": "2603.25333#0",
+          "doc_id": "2603.25333"
+        },
+        {
+          "chunk_id": "2405.12363#0",
+          "doc_id": "2405.12363"
+        },
+        {
+          "chunk_id": "2607.07302#0",
+          "doc_id": "2607.07302"
+        },
+        {
+          "chunk_id": "2407.19794#0",
+          "doc_id": "2407.19794"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.5
+      },
+      "rr": 0.1
+    },
+    {
+      "id": "gs-006",
+      "type": "explanatory",
+      "query": "How can a token-level hallucination detector for RAG use the retrieved documents to find ungrounded tokens?",
+      "search_seconds": 0.018571,
+      "relevant_doc_ids": [
+        "2606.31033"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2607.00895#0",
+          "doc_id": "2607.00895"
+        },
+        {
+          "chunk_id": "2606.31033#0",
+          "doc_id": "2606.31033"
+        },
+        {
+          "chunk_id": "2506.09886#0",
+          "doc_id": "2506.09886"
+        },
+        {
+          "chunk_id": "2502.17125#0",
+          "doc_id": "2502.17125"
+        },
+        {
+          "chunk_id": "2104.08704#0",
+          "doc_id": "2104.08704"
+        },
+        {
+          "chunk_id": "2509.21875#0",
+          "doc_id": "2509.21875"
+        },
+        {
+          "chunk_id": "2509.03531#0",
+          "doc_id": "2509.03531"
+        },
+        {
+          "chunk_id": "2401.00396#0",
+          "doc_id": "2401.00396"
+        },
+        {
+          "chunk_id": "2604.15945#0",
+          "doc_id": "2604.15945"
+        },
+        {
+          "chunk_id": "2504.10168#0",
+          "doc_id": "2504.10168"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 0.5
+    },
+    {
+      "id": "gs-007",
+      "type": "multi_hop",
+      "query": "Name two approaches that detect hallucination from a language model's internal states instead of its output text.",
+      "search_seconds": 0.017014,
+      "relevant_doc_ids": [
+        "2312.02798",
+        "2606.31033"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2502.13490#0",
+          "doc_id": "2502.13490"
+        },
+        {
+          "chunk_id": "2504.17004#0",
+          "doc_id": "2504.17004"
+        },
+        {
+          "chunk_id": "2607.04029#0",
+          "doc_id": "2607.04029"
+        },
+        {
+          "chunk_id": "2411.04847#0",
+          "doc_id": "2411.04847"
+        },
+        {
+          "chunk_id": "2509.14254#0",
+          "doc_id": "2509.14254"
+        },
+        {
+          "chunk_id": "2403.12244#0",
+          "doc_id": "2403.12244"
+        },
+        {
+          "chunk_id": "2508.18473#0",
+          "doc_id": "2508.18473"
+        },
+        {
+          "chunk_id": "2510.11529#0",
+          "doc_id": "2510.11529"
+        },
+        {
+          "chunk_id": "2501.09997#0",
+          "doc_id": "2501.09997"
+        },
+        {
+          "chunk_id": "2404.04845#0",
+          "doc_id": "2404.04845"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-008",
+      "type": "factual",
+      "query": "Is there a single score that combines calibration, robustness and uncertainty to measure how reliable an LLM is?",
+      "search_seconds": 0.016808,
+      "relevant_doc_ids": [
+        "2512.24058"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2601.13885#0",
+          "doc_id": "2601.13885"
+        },
+        {
+          "chunk_id": "2403.09849#0",
+          "doc_id": "2403.09849"
+        },
+        {
+          "chunk_id": "2412.14737#0",
+          "doc_id": "2412.14737"
+        },
+        {
+          "chunk_id": "2603.29559#0",
+          "doc_id": "2603.29559"
+        },
+        {
+          "chunk_id": "2603.18014#0",
+          "doc_id": "2603.18014"
+        },
+        {
+          "chunk_id": "2505.03788#0",
+          "doc_id": "2505.03788"
+        },
+        {
+          "chunk_id": "2511.21140#0",
+          "doc_id": "2511.21140"
+        },
+        {
+          "chunk_id": "2506.10769#0",
+          "doc_id": "2506.10769"
+        },
+        {
+          "chunk_id": "2404.15993#0",
+          "doc_id": "2404.15993"
+        },
+        {
+          "chunk_id": "2404.04689#0",
+          "doc_id": "2404.04689"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-009",
+      "type": "explanatory",
+      "query": "What is In-Context RALM, and why is it easier to deploy than other retrieval-augmented language models?",
+      "search_seconds": 0.015841,
+      "relevant_doc_ids": [
+        "2302.00083"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2302.00083#0",
+          "doc_id": "2302.00083"
+        },
+        {
+          "chunk_id": "2408.04414#0",
+          "doc_id": "2408.04414"
+        },
+        {
+          "chunk_id": "2502.19779#0",
+          "doc_id": "2502.19779"
+        },
+        {
+          "chunk_id": "2310.01558#0",
+          "doc_id": "2310.01558"
+        },
+        {
+          "chunk_id": "2311.09210#0",
+          "doc_id": "2311.09210"
+        },
+        {
+          "chunk_id": "2410.20088#0",
+          "doc_id": "2410.20088"
+        },
+        {
+          "chunk_id": "2407.19813#0",
+          "doc_id": "2407.19813"
+        },
+        {
+          "chunk_id": "2404.19543#0",
+          "doc_id": "2404.19543"
+        },
+        {
+          "chunk_id": "2409.04318#0",
+          "doc_id": "2409.04318"
+        },
+        {
+          "chunk_id": "2311.09358#0",
+          "doc_id": "2311.09358"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-010",
+      "type": "factual",
+      "query": "How much better is LongRAG than ordinary RAG and long-context LLMs on multi-hop question answering over long documents?",
+      "search_seconds": 0.016654,
+      "relevant_doc_ids": [
+        "2410.18050"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2410.18050#0",
+          "doc_id": "2410.18050"
+        },
+        {
+          "chunk_id": "2501.01880#0",
+          "doc_id": "2501.01880"
+        },
+        {
+          "chunk_id": "2408.04259#0",
+          "doc_id": "2408.04259"
+        },
+        {
+          "chunk_id": "2511.03261#0",
+          "doc_id": "2511.03261"
+        },
+        {
+          "chunk_id": "2406.17419#0",
+          "doc_id": "2406.17419"
+        },
+        {
+          "chunk_id": "2406.15319#0",
+          "doc_id": "2406.15319"
+        },
+        {
+          "chunk_id": "2409.01666#0",
+          "doc_id": "2409.01666"
+        },
+        {
+          "chunk_id": "2605.28093#0",
+          "doc_id": "2605.28093"
+        },
+        {
+          "chunk_id": "2407.13101#0",
+          "doc_id": "2407.13101"
+        },
+        {
+          "chunk_id": "2411.03538#0",
+          "doc_id": "2411.03538"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-011",
+      "type": "factual",
+      "query": "Does the way a prompt is laid out, for example as plain text, Markdown or JSON, change how well a GPT model does the task?",
+      "search_seconds": 0.017229,
+      "relevant_doc_ids": [
+        "2411.10541"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2401.09984#0",
+          "doc_id": "2401.09984"
+        },
+        {
+          "chunk_id": "2411.10541#0",
+          "doc_id": "2411.10541"
+        },
+        {
+          "chunk_id": "2411.18924#0",
+          "doc_id": "2411.18924"
+        },
+        {
+          "chunk_id": "2305.11064#0",
+          "doc_id": "2305.11064"
+        },
+        {
+          "chunk_id": "2510.06782#0",
+          "doc_id": "2510.06782"
+        },
+        {
+          "chunk_id": "2201.06009#0",
+          "doc_id": "2201.06009"
+        },
+        {
+          "chunk_id": "2304.13250#0",
+          "doc_id": "2304.13250"
+        },
+        {
+          "chunk_id": "2303.14342#0",
+          "doc_id": "2303.14342"
+        },
+        {
+          "chunk_id": "2109.07830#0",
+          "doc_id": "2109.07830"
+        },
+        {
+          "chunk_id": "2310.02107#0",
+          "doc_id": "2310.02107"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 0.5
+    },
+    {
+      "id": "gs-012",
+      "type": "factual",
+      "query": "How much does ShotKV improve accuracy on long-context generation tasks, and how much latency does it save compared with running with the full cache?",
+      "search_seconds": 0.018574,
+      "relevant_doc_ids": [
+        "2502.01941"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2604.08426#0",
+          "doc_id": "2604.08426"
+        },
+        {
+          "chunk_id": "2504.04704#0",
+          "doc_id": "2504.04704"
+        },
+        {
+          "chunk_id": "2412.14838#0",
+          "doc_id": "2412.14838"
+        },
+        {
+          "chunk_id": "2412.13649#0",
+          "doc_id": "2412.13649"
+        },
+        {
+          "chunk_id": "2607.05399#0",
+          "doc_id": "2607.05399"
+        },
+        {
+          "chunk_id": "2411.05787#0",
+          "doc_id": "2411.05787"
+        },
+        {
+          "chunk_id": "2505.20276#0",
+          "doc_id": "2505.20276"
+        },
+        {
+          "chunk_id": "2410.21465#0",
+          "doc_id": "2410.21465"
+        },
+        {
+          "chunk_id": "2407.01527#0",
+          "doc_id": "2407.01527"
+        },
+        {
+          "chunk_id": "2405.08944#0",
+          "doc_id": "2405.08944"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-013",
+      "type": "explanatory",
+      "query": "Can preference tuning on English data alone make a multilingual language model less toxic in other languages?",
+      "search_seconds": 0.018473,
+      "relevant_doc_ids": [
+        "2406.16235"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2406.16235#0",
+          "doc_id": "2406.16235"
+        },
+        {
+          "chunk_id": "2412.14050#0",
+          "doc_id": "2412.14050"
+        },
+        {
+          "chunk_id": "2605.26293#0",
+          "doc_id": "2605.26293"
+        },
+        {
+          "chunk_id": "2606.25380#0",
+          "doc_id": "2606.25380"
+        },
+        {
+          "chunk_id": "2407.02552#0",
+          "doc_id": "2407.02552"
+        },
+        {
+          "chunk_id": "2405.18572#0",
+          "doc_id": "2405.18572"
+        },
+        {
+          "chunk_id": "2606.28843#0",
+          "doc_id": "2606.28843"
+        },
+        {
+          "chunk_id": "2403.03893#0",
+          "doc_id": "2403.03893"
+        },
+        {
+          "chunk_id": "2503.04647#0",
+          "doc_id": "2503.04647"
+        },
+        {
+          "chunk_id": "2405.09373#0",
+          "doc_id": "2405.09373"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-014",
+      "type": "explanatory",
+      "query": "Does the order of the answer choices change how well an AI model does on a multiple-choice test?",
+      "search_seconds": 0.017749,
+      "relevant_doc_ids": [
+        "2309.12481"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2401.07955#0",
+          "doc_id": "2401.07955"
+        },
+        {
+          "chunk_id": "2406.19470#0",
+          "doc_id": "2406.19470"
+        },
+        {
+          "chunk_id": "2501.09775#0",
+          "doc_id": "2501.09775"
+        },
+        {
+          "chunk_id": "2308.11483#0",
+          "doc_id": "2308.11483"
+        },
+        {
+          "chunk_id": "2502.18798#0",
+          "doc_id": "2502.18798"
+        },
+        {
+          "chunk_id": "2609.29390#0",
+          "doc_id": "2609.29390"
+        },
+        {
+          "chunk_id": "2409.00113#0",
+          "doc_id": "2409.00113"
+        },
+        {
+          "chunk_id": "2407.01992#0",
+          "doc_id": "2407.01992"
+        },
+        {
+          "chunk_id": "2608.11947#0",
+          "doc_id": "2608.11947"
+        },
+        {
+          "chunk_id": "2407.15018#0",
+          "doc_id": "2407.15018"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-015",
+      "type": "multi_hop",
+      "query": "Why can an AI judge give misleading quality scores, and how can a small number of human labels be used to correct them?",
+      "search_seconds": 0.016614,
+      "relevant_doc_ids": [
+        "2510.15313",
+        "2609.00494"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2111.08723#0",
+          "doc_id": "2111.08723"
+        },
+        {
+          "chunk_id": "2506.02175#0",
+          "doc_id": "2506.02175"
+        },
+        {
+          "chunk_id": "2311.08702#0",
+          "doc_id": "2311.08702"
+        },
+        {
+          "chunk_id": "2609.35815#0",
+          "doc_id": "2609.35815"
+        },
+        {
+          "chunk_id": "2609.06444#0",
+          "doc_id": "2609.06444"
+        },
+        {
+          "chunk_id": "2606.03043#0",
+          "doc_id": "2606.03043"
+        },
+        {
+          "chunk_id": "2606.25487#0",
+          "doc_id": "2606.25487"
+        },
+        {
+          "chunk_id": "2512.05925#0",
+          "doc_id": "2512.05925"
+        },
+        {
+          "chunk_id": "2212.08041#0",
+          "doc_id": "2212.08041"
+        },
+        {
+          "chunk_id": "2206.08288#0",
+          "doc_id": "2206.08288"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-016",
+      "type": "comparison",
+      "query": "How does SetFit differ from LoRA fine-tuning of a large language model when you want to train a text classifier with limited data and hardware?",
+      "search_seconds": 0.017132,
+      "relevant_doc_ids": [
+        "2510.16985",
+        "2209.11055"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2209.11055#0",
+          "doc_id": "2209.11055"
+        },
+        {
+          "chunk_id": "2304.08109#0",
+          "doc_id": "2304.08109"
+        },
+        {
+          "chunk_id": "2405.13181#0",
+          "doc_id": "2405.13181"
+        },
+        {
+          "chunk_id": "1909.04761#0",
+          "doc_id": "1909.04761"
+        },
+        {
+          "chunk_id": "2405.00201#0",
+          "doc_id": "2405.00201"
+        },
+        {
+          "chunk_id": "2507.08833#0",
+          "doc_id": "2507.08833"
+        },
+        {
+          "chunk_id": "2605.07111#0",
+          "doc_id": "2605.07111"
+        },
+        {
+          "chunk_id": "2412.18729#0",
+          "doc_id": "2412.18729"
+        },
+        {
+          "chunk_id": "2602.04998#0",
+          "doc_id": "2602.04998"
+        },
+        {
+          "chunk_id": "2312.00949#0",
+          "doc_id": "2312.00949"
+        }
+      ],
+      "recall": {
+        "1": 0.5,
+        "5": 0.5,
+        "10": 0.5
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-017",
+      "type": "explanatory",
+      "query": "How does high-precision scoring fix the problem of tied relevance scores when a retrieval system runs in low precision?",
+      "search_seconds": 0.016134,
+      "relevant_doc_ids": [
+        "2508.03306"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2508.03306#0",
+          "doc_id": "2508.03306"
+        },
+        {
+          "chunk_id": "1403.4362#0",
+          "doc_id": "1403.4362"
+        },
+        {
+          "chunk_id": "1909.08041#0",
+          "doc_id": "1909.08041"
+        },
+        {
+          "chunk_id": "2108.05652#0",
+          "doc_id": "2108.05652"
+        },
+        {
+          "chunk_id": "2609.14016#0",
+          "doc_id": "2609.14016"
+        },
+        {
+          "chunk_id": "2606.29959#0",
+          "doc_id": "2606.29959"
+        },
+        {
+          "chunk_id": "2604.00242#0",
+          "doc_id": "2604.00242"
+        },
+        {
+          "chunk_id": "2606.14269#0",
+          "doc_id": "2606.14269"
+        },
+        {
+          "chunk_id": "2601.18777#0",
+          "doc_id": "2601.18777"
+        },
+        {
+          "chunk_id": "2406.18740#0",
+          "doc_id": "2406.18740"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-018",
+      "type": "follow_up",
+      "query": "Can you tell it not to?",
+      "search_seconds": 0.01524,
+      "relevant_doc_ids": [
+        "2305.15008"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2403.10185#0",
+          "doc_id": "2403.10185"
+        },
+        {
+          "chunk_id": "2608.30856#0",
+          "doc_id": "2608.30856"
+        },
+        {
+          "chunk_id": "2404.01651#0",
+          "doc_id": "2404.01651"
+        },
+        {
+          "chunk_id": "2505.13147#0",
+          "doc_id": "2505.13147"
+        },
+        {
+          "chunk_id": "2303.09067#0",
+          "doc_id": "2303.09067"
+        },
+        {
+          "chunk_id": "2510.08158#0",
+          "doc_id": "2510.08158"
+        },
+        {
+          "chunk_id": "2503.17882#0",
+          "doc_id": "2503.17882"
+        },
+        {
+          "chunk_id": "2409.00598#0",
+          "doc_id": "2409.00598"
+        },
+        {
+          "chunk_id": "2609.04482#0",
+          "doc_id": "2609.04482"
+        },
+        {
+          "chunk_id": "2609.04714#0",
+          "doc_id": "2609.04714"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-019",
+      "type": "follow_up",
+      "query": "What goes wrong with those methods?",
+      "search_seconds": 0.014828,
+      "relevant_doc_ids": [
+        "2505.17829"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2606.24267#0",
+          "doc_id": "2606.24267"
+        },
+        {
+          "chunk_id": "2104.05361#0",
+          "doc_id": "2104.05361"
+        },
+        {
+          "chunk_id": "2608.02442#0",
+          "doc_id": "2608.02442"
+        },
+        {
+          "chunk_id": "2610.06668#0",
+          "doc_id": "2610.06668"
+        },
+        {
+          "chunk_id": "2512.21422#0",
+          "doc_id": "2512.21422"
+        },
+        {
+          "chunk_id": "1301.2466#0",
+          "doc_id": "1301.2466"
+        },
+        {
+          "chunk_id": "2608.27768#0",
+          "doc_id": "2608.27768"
+        },
+        {
+          "chunk_id": "2402.15302#0",
+          "doc_id": "2402.15302"
+        },
+        {
+          "chunk_id": "2504.00799#0",
+          "doc_id": "2504.00799"
+        },
+        {
+          "chunk_id": "2305.15676#0",
+          "doc_id": "2305.15676"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-020",
+      "type": "explanatory",
+      "query": "How can a system route questions to different language models while respecting each user's own balance between cost and quality?",
+      "search_seconds": 0.016507,
+      "relevant_doc_ids": [
+        "2606.06178"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2403.09704#0",
+          "doc_id": "2403.09704"
+        },
+        {
+          "chunk_id": "2509.25369#0",
+          "doc_id": "2509.25369"
+        },
+        {
+          "chunk_id": "2305.13707#0",
+          "doc_id": "2305.13707"
+        },
+        {
+          "chunk_id": "2212.08011#0",
+          "doc_id": "2212.08011"
+        },
+        {
+          "chunk_id": "2604.22193#0",
+          "doc_id": "2604.22193"
+        },
+        {
+          "chunk_id": "2606.27457#0",
+          "doc_id": "2606.27457"
+        },
+        {
+          "chunk_id": "2504.12911#0",
+          "doc_id": "2504.12911"
+        },
+        {
+          "chunk_id": "2310.04945#0",
+          "doc_id": "2310.04945"
+        },
+        {
+          "chunk_id": "2410.12971#0",
+          "doc_id": "2410.12971"
+        },
+        {
+          "chunk_id": "2607.19834#0",
+          "doc_id": "2607.19834"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-021",
+      "type": "multi_hop",
+      "query": "How many parameters does GPT-4 have, according to papers that report a figure?",
+      "search_seconds": 0.016804,
+      "relevant_doc_ids": [
+        "2305.03195",
+        "2404.14883"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2407.12176#0",
+          "doc_id": "2407.12176"
+        },
+        {
+          "chunk_id": "2502.09715#0",
+          "doc_id": "2502.09715"
+        },
+        {
+          "chunk_id": "2409.09090#0",
+          "doc_id": "2409.09090"
+        },
+        {
+          "chunk_id": "2303.08774#0",
+          "doc_id": "2303.08774"
+        },
+        {
+          "chunk_id": "2402.12298#0",
+          "doc_id": "2402.12298"
+        },
+        {
+          "chunk_id": "2510.06782#0",
+          "doc_id": "2510.06782"
+        },
+        {
+          "chunk_id": "2407.15612#0",
+          "doc_id": "2407.15612"
+        },
+        {
+          "chunk_id": "2501.00199#0",
+          "doc_id": "2501.00199"
+        },
+        {
+          "chunk_id": "2310.15405#0",
+          "doc_id": "2310.15405"
+        },
+        {
+          "chunk_id": "2310.14573#0",
+          "doc_id": "2310.14573"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-022",
+      "type": "follow_up",
+      "query": "Does that work equally well for every kind of task?",
+      "search_seconds": 0.015894,
+      "relevant_doc_ids": [
+        "2604.14682"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2405.02178#0",
+          "doc_id": "2405.02178"
+        },
+        {
+          "chunk_id": "2409.07638#0",
+          "doc_id": "2409.07638"
+        },
+        {
+          "chunk_id": "2203.15754#0",
+          "doc_id": "2203.15754"
+        },
+        {
+          "chunk_id": "2005.07362#0",
+          "doc_id": "2005.07362"
+        },
+        {
+          "chunk_id": "2006.05561#0",
+          "doc_id": "2006.05561"
+        },
+        {
+          "chunk_id": "2609.00549#0",
+          "doc_id": "2609.00549"
+        },
+        {
+          "chunk_id": "2510.01670#0",
+          "doc_id": "2510.01670"
+        },
+        {
+          "chunk_id": "2608.14992#0",
+          "doc_id": "2608.14992"
+        },
+        {
+          "chunk_id": "2609.08589#0",
+          "doc_id": "2609.08589"
+        },
+        {
+          "chunk_id": "2505.14880#0",
+          "doc_id": "2505.14880"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-023",
+      "type": "follow_up",
+      "query": "Can the model be protected against that without retraining it?",
+      "search_seconds": 0.015883,
+      "relevant_doc_ids": [
+        "2609.26185"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2409.19476#0",
+          "doc_id": "2409.19476"
+        },
+        {
+          "chunk_id": "2202.05520#0",
+          "doc_id": "2202.05520"
+        },
+        {
+          "chunk_id": "2501.17433#0",
+          "doc_id": "2501.17433"
+        },
+        {
+          "chunk_id": "2307.10476#0",
+          "doc_id": "2307.10476"
+        },
+        {
+          "chunk_id": "2501.02018#0",
+          "doc_id": "2501.02018"
+        },
+        {
+          "chunk_id": "2407.00106#0",
+          "doc_id": "2407.00106"
+        },
+        {
+          "chunk_id": "2409.14586#0",
+          "doc_id": "2409.14586"
+        },
+        {
+          "chunk_id": "2505.23270#0",
+          "doc_id": "2505.23270"
+        },
+        {
+          "chunk_id": "2310.15851#0",
+          "doc_id": "2310.15851"
+        },
+        {
+          "chunk_id": "2505.24379#0",
+          "doc_id": "2505.24379"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-024",
+      "type": "follow_up",
+      "query": "Is there one best setting for every task?",
+      "search_seconds": 0.015617,
+      "relevant_doc_ids": [
+        "2506.07295"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2402.06733#0",
+          "doc_id": "2402.06733"
+        },
+        {
+          "chunk_id": "2305.11430#0",
+          "doc_id": "2305.11430"
+        },
+        {
+          "chunk_id": "2310.02107#0",
+          "doc_id": "2310.02107"
+        },
+        {
+          "chunk_id": "2404.16418#0",
+          "doc_id": "2404.16418"
+        },
+        {
+          "chunk_id": "cs/9901005#0",
+          "doc_id": "cs/9901005"
+        },
+        {
+          "chunk_id": "2601.03493#0",
+          "doc_id": "2601.03493"
+        },
+        {
+          "chunk_id": "cmp-lg/9706020#0",
+          "doc_id": "cmp-lg/9706020"
+        },
+        {
+          "chunk_id": "2606.23196#0",
+          "doc_id": "2606.23196"
+        },
+        {
+          "chunk_id": "2403.11322#0",
+          "doc_id": "2403.11322"
+        },
+        {
+          "chunk_id": "2307.00342#0",
+          "doc_id": "2307.00342"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-025",
+      "type": "multi_hop",
+      "query": "What have researchers done about gender bias in Chinese text and in machine translation?",
+      "search_seconds": 0.018814,
+      "relevant_doc_ids": [
+        "2509.07889",
+        "2506.00748"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2104.06001#0",
+          "doc_id": "2104.06001"
+        },
+        {
+          "chunk_id": "2506.12574#0",
+          "doc_id": "2506.12574"
+        },
+        {
+          "chunk_id": "2301.00395#0",
+          "doc_id": "2301.00395"
+        },
+        {
+          "chunk_id": "2401.10016#0",
+          "doc_id": "2401.10016"
+        },
+        {
+          "chunk_id": "1905.11684#0",
+          "doc_id": "1905.11684"
+        },
+        {
+          "chunk_id": "1809.02208#0",
+          "doc_id": "1809.02208"
+        },
+        {
+          "chunk_id": "2509.07889#0",
+          "doc_id": "2509.07889"
+        },
+        {
+          "chunk_id": "2107.11584#0",
+          "doc_id": "2107.11584"
+        },
+        {
+          "chunk_id": "2410.00545#0",
+          "doc_id": "2410.00545"
+        },
+        {
+          "chunk_id": "2409.10989#0",
+          "doc_id": "2409.10989"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.5
+      },
+      "rr": 0.14285714285714285
+    },
+    {
+      "id": "gs-026",
+      "type": "comparison",
+      "query": "How can you tell whether a text was part of a language model's training data: by testing the model, or by searching the training corpus?",
+      "search_seconds": 0.017575,
+      "relevant_doc_ids": [
+        "2506.19399",
+        "2303.14770"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2109.07102#0",
+          "doc_id": "2109.07102"
+        },
+        {
+          "chunk_id": "2402.09910#0",
+          "doc_id": "2402.09910"
+        },
+        {
+          "chunk_id": "2503.12072#0",
+          "doc_id": "2503.12072"
+        },
+        {
+          "chunk_id": "2310.13856#0",
+          "doc_id": "2310.13856"
+        },
+        {
+          "chunk_id": "2406.01333#0",
+          "doc_id": "2406.01333"
+        },
+        {
+          "chunk_id": "2210.01734#0",
+          "doc_id": "2210.01734"
+        },
+        {
+          "chunk_id": "2207.00560#0",
+          "doc_id": "2207.00560"
+        },
+        {
+          "chunk_id": "2403.08693#0",
+          "doc_id": "2403.08693"
+        },
+        {
+          "chunk_id": "1911.12543#0",
+          "doc_id": "1911.12543"
+        },
+        {
+          "chunk_id": "2308.06144#0",
+          "doc_id": "2308.06144"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-027",
+      "type": "factual",
+      "query": "How many parameters does the OLMoE language model use for each token, and how much data was it trained on?",
+      "search_seconds": 0.016876,
+      "relevant_doc_ids": [
+        "2409.02060"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2409.02060#0",
+          "doc_id": "2409.02060"
+        },
+        {
+          "chunk_id": "2402.00838#0",
+          "doc_id": "2402.00838"
+        },
+        {
+          "chunk_id": "2406.02856#0",
+          "doc_id": "2406.02856"
+        },
+        {
+          "chunk_id": "2504.07096#0",
+          "doc_id": "2504.07096"
+        },
+        {
+          "chunk_id": "2501.00656#0",
+          "doc_id": "2501.00656"
+        },
+        {
+          "chunk_id": "2512.13961#0",
+          "doc_id": "2512.13961"
+        },
+        {
+          "chunk_id": "2402.01739#0",
+          "doc_id": "2402.01739"
+        },
+        {
+          "chunk_id": "2410.03083#0",
+          "doc_id": "2410.03083"
+        },
+        {
+          "chunk_id": "2609.25081#0",
+          "doc_id": "2609.25081"
+        },
+        {
+          "chunk_id": "2305.16264#0",
+          "doc_id": "2305.16264"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-028",
+      "type": "explanatory",
+      "query": "How can a language model be made cheaper to run in one specialised domain by changing its vocabulary?",
+      "search_seconds": 0.015235,
+      "relevant_doc_ids": [
+        "2503.19693"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2506.08433#0",
+          "doc_id": "2506.08433"
+        },
+        {
+          "chunk_id": "2305.13707#0",
+          "doc_id": "2305.13707"
+        },
+        {
+          "chunk_id": "2407.06800#0",
+          "doc_id": "2407.06800"
+        },
+        {
+          "chunk_id": "2109.04711#0",
+          "doc_id": "2109.04711"
+        },
+        {
+          "chunk_id": "2109.10274#0",
+          "doc_id": "2109.10274"
+        },
+        {
+          "chunk_id": "2205.06350#0",
+          "doc_id": "2205.06350"
+        },
+        {
+          "chunk_id": "2109.07348#0",
+          "doc_id": "2109.07348"
+        },
+        {
+          "chunk_id": "2507.04895#0",
+          "doc_id": "2507.04895"
+        },
+        {
+          "chunk_id": "2211.03154#0",
+          "doc_id": "2211.03154"
+        },
+        {
+          "chunk_id": "cmp-lg/9505045#0",
+          "doc_id": "cmp-lg/9505045"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-029",
+      "type": "explanatory",
+      "query": "Do language models get better at knowing when they are wrong as they are trained or as they get larger?",
+      "search_seconds": 0.016845,
+      "relevant_doc_ids": [
+        "2211.00151"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2212.09803#0",
+          "doc_id": "2212.09803"
+        },
+        {
+          "chunk_id": "2305.14681#0",
+          "doc_id": "2305.14681"
+        },
+        {
+          "chunk_id": "2512.24661#0",
+          "doc_id": "2512.24661"
+        },
+        {
+          "chunk_id": "2603.00359#0",
+          "doc_id": "2603.00359"
+        },
+        {
+          "chunk_id": "2212.01907#0",
+          "doc_id": "2212.01907"
+        },
+        {
+          "chunk_id": "2308.01776#0",
+          "doc_id": "2308.01776"
+        },
+        {
+          "chunk_id": "2409.12822#0",
+          "doc_id": "2409.12822"
+        },
+        {
+          "chunk_id": "2601.21343#0",
+          "doc_id": "2601.21343"
+        },
+        {
+          "chunk_id": "2509.04664#0",
+          "doc_id": "2509.04664"
+        },
+        {
+          "chunk_id": "2105.05641#0",
+          "doc_id": "2105.05641"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-030",
+      "type": "explanatory",
+      "query": "How can a question that depends on earlier turns of a conversation be rewritten to stand on its own, and can this be learned without human-labelled data?",
+      "search_seconds": 0.017595,
+      "relevant_doc_ids": [
+        "2102.04708"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2207.03240#0",
+          "doc_id": "2207.03240"
+        },
+        {
+          "chunk_id": "2210.15777#0",
+          "doc_id": "2210.15777"
+        },
+        {
+          "chunk_id": "2102.04708#0",
+          "doc_id": "2102.04708"
+        },
+        {
+          "chunk_id": "2204.06239#0",
+          "doc_id": "2204.06239"
+        },
+        {
+          "chunk_id": "1911.09247#0",
+          "doc_id": "1911.09247"
+        },
+        {
+          "chunk_id": "2311.06807#0",
+          "doc_id": "2311.06807"
+        },
+        {
+          "chunk_id": "2304.07125#0",
+          "doc_id": "2304.07125"
+        },
+        {
+          "chunk_id": "2502.18860#0",
+          "doc_id": "2502.18860"
+        },
+        {
+          "chunk_id": "2402.15062#0",
+          "doc_id": "2402.15062"
+        },
+        {
+          "chunk_id": "2010.06835#0",
+          "doc_id": "2010.06835"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "gs-031",
+      "type": "factual",
+      "query": "A method that keeps attention entropy stable by changing the rotary position embedding base and scaling the attention logits can stretch LLaMA-2-7B-Chat to a 16K-token context; how much fine-tuning does it need?",
+      "search_seconds": 0.020872,
+      "relevant_doc_ids": [
+        "2401.07004"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2401.07004#0",
+          "doc_id": "2401.07004"
+        },
+        {
+          "chunk_id": "2607.19363#0",
+          "doc_id": "2607.19363"
+        },
+        {
+          "chunk_id": "2406.05678#0",
+          "doc_id": "2406.05678"
+        },
+        {
+          "chunk_id": "2502.20405#0",
+          "doc_id": "2502.20405"
+        },
+        {
+          "chunk_id": "2505.11739#0",
+          "doc_id": "2505.11739"
+        },
+        {
+          "chunk_id": "2501.08570#0",
+          "doc_id": "2501.08570"
+        },
+        {
+          "chunk_id": "2502.11276#0",
+          "doc_id": "2502.11276"
+        },
+        {
+          "chunk_id": "2308.10882#0",
+          "doc_id": "2308.10882"
+        },
+        {
+          "chunk_id": "2307.09288#0",
+          "doc_id": "2307.09288"
+        },
+        {
+          "chunk_id": "2606.09508#0",
+          "doc_id": "2606.09508"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-032",
+      "type": "factual",
+      "query": "How accurate is BERT-Large when it is pretrained with differentially private SGD in very large batches, compared with ordinary BERT?",
+      "search_seconds": 0.015975,
+      "relevant_doc_ids": [
+        "2108.01624"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2108.01624#0",
+          "doc_id": "2108.01624"
+        },
+        {
+          "chunk_id": "2006.13484#0",
+          "doc_id": "2006.13484"
+        },
+        {
+          "chunk_id": "2105.06020#0",
+          "doc_id": "2105.06020"
+        },
+        {
+          "chunk_id": "1907.11692#0",
+          "doc_id": "1907.11692"
+        },
+        {
+          "chunk_id": "2211.17201#0",
+          "doc_id": "2211.17201"
+        },
+        {
+          "chunk_id": "2101.00063#0",
+          "doc_id": "2101.00063"
+        },
+        {
+          "chunk_id": "2212.10544#0",
+          "doc_id": "2212.10544"
+        },
+        {
+          "chunk_id": "2104.07705#0",
+          "doc_id": "2104.07705"
+        },
+        {
+          "chunk_id": "1904.00962#0",
+          "doc_id": "1904.00962"
+        },
+        {
+          "chunk_id": "2305.15032#0",
+          "doc_id": "2305.15032"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-033",
+      "type": "factual",
+      "query": "Where do the claims in the MultiFC fact-checking dataset come from, and how well does the best model predict whether a claim is true?",
+      "search_seconds": 0.016635,
+      "relevant_doc_ids": [
+        "1909.03242"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "1909.03242#0",
+          "doc_id": "1909.03242"
+        },
+        {
+          "chunk_id": "2305.12744#0",
+          "doc_id": "2305.12744"
+        },
+        {
+          "chunk_id": "2104.00640#0",
+          "doc_id": "2104.00640"
+        },
+        {
+          "chunk_id": "2601.16555#0",
+          "doc_id": "2601.16555"
+        },
+        {
+          "chunk_id": "2510.23508#0",
+          "doc_id": "2510.23508"
+        },
+        {
+          "chunk_id": "2503.07282#0",
+          "doc_id": "2503.07282"
+        },
+        {
+          "chunk_id": "2601.14698#0",
+          "doc_id": "2601.14698"
+        },
+        {
+          "chunk_id": "2105.14682#0",
+          "doc_id": "2105.14682"
+        },
+        {
+          "chunk_id": "2403.18671#0",
+          "doc_id": "2403.18671"
+        },
+        {
+          "chunk_id": "2503.22280#0",
+          "doc_id": "2503.22280"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-034",
+      "type": "factual",
+      "query": "How much of BERT's accuracy does contrastive pruning keep on QQP and MNLI when 97% of the parameters are removed?",
+      "search_seconds": 0.017219,
+      "relevant_doc_ids": [
+        "2112.07198"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2210.16621#0",
+          "doc_id": "2210.16621"
+        },
+        {
+          "chunk_id": "2112.14938#0",
+          "doc_id": "2112.14938"
+        },
+        {
+          "chunk_id": "2206.10461#0",
+          "doc_id": "2206.10461"
+        },
+        {
+          "chunk_id": "2210.06384#0",
+          "doc_id": "2210.06384"
+        },
+        {
+          "chunk_id": "2109.12683#0",
+          "doc_id": "2109.12683"
+        },
+        {
+          "chunk_id": "2507.16515#0",
+          "doc_id": "2507.16515"
+        },
+        {
+          "chunk_id": "2608.10806#0",
+          "doc_id": "2608.10806"
+        },
+        {
+          "chunk_id": "2503.03044#0",
+          "doc_id": "2503.03044"
+        },
+        {
+          "chunk_id": "2506.13329#0",
+          "doc_id": "2506.13329"
+        },
+        {
+          "chunk_id": "2204.00004#0",
+          "doc_id": "2204.00004"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-035",
+      "type": "explanatory",
+      "query": "For searching legal documents in French, does combining several retrieval models work better than using the best single one?",
+      "search_seconds": 0.017202,
+      "relevant_doc_ids": [
+        "2409.01357"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2409.01357#0",
+          "doc_id": "2409.01357"
+        },
+        {
+          "chunk_id": "2506.12895#0",
+          "doc_id": "2506.12895"
+        },
+        {
+          "chunk_id": "2412.19265#0",
+          "doc_id": "2412.19265"
+        },
+        {
+          "chunk_id": "2209.14494#0",
+          "doc_id": "2209.14494"
+        },
+        {
+          "chunk_id": "2412.07462#0",
+          "doc_id": "2412.07462"
+        },
+        {
+          "chunk_id": "2108.11792#0",
+          "doc_id": "2108.11792"
+        },
+        {
+          "chunk_id": "2108.10127#0",
+          "doc_id": "2108.10127"
+        },
+        {
+          "chunk_id": "2509.07253#0",
+          "doc_id": "2509.07253"
+        },
+        {
+          "chunk_id": "2403.18093#0",
+          "doc_id": "2403.18093"
+        },
+        {
+          "chunk_id": "2604.06098#0",
+          "doc_id": "2604.06098"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-036",
+      "type": "explanatory",
+      "query": "How can randomly switching off attention heads while training make a speech recognition Transformer better, even though every head is used at test time?",
+      "search_seconds": 0.018887,
+      "relevant_doc_ids": [
+        "2011.04004"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2011.04004#0",
+          "doc_id": "2011.04004"
+        },
+        {
+          "chunk_id": "2209.06096#0",
+          "doc_id": "2209.06096"
+        },
+        {
+          "chunk_id": "2106.09650#0",
+          "doc_id": "2106.09650"
+        },
+        {
+          "chunk_id": "2005.13895#0",
+          "doc_id": "2005.13895"
+        },
+        {
+          "chunk_id": "2110.03252#0",
+          "doc_id": "2110.03252"
+        },
+        {
+          "chunk_id": "1905.09418#0",
+          "doc_id": "1905.09418"
+        },
+        {
+          "chunk_id": "2409.03115#0",
+          "doc_id": "2409.03115"
+        },
+        {
+          "chunk_id": "2110.08678#0",
+          "doc_id": "2110.08678"
+        },
+        {
+          "chunk_id": "2211.01438#0",
+          "doc_id": "2211.01438"
+        },
+        {
+          "chunk_id": "1905.10650#0",
+          "doc_id": "1905.10650"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-037",
+      "type": "explanatory",
+      "query": "When a language model is asked again and again to improve its own answer without being told what is wrong, what happens over the rounds?",
+      "search_seconds": 0.017147,
+      "relevant_doc_ids": [
+        "2406.02378"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2310.13439#0",
+          "doc_id": "2310.13439"
+        },
+        {
+          "chunk_id": "2406.01297#0",
+          "doc_id": "2406.01297"
+        },
+        {
+          "chunk_id": "2609.35832#0",
+          "doc_id": "2609.35832"
+        },
+        {
+          "chunk_id": "2604.05306#0",
+          "doc_id": "2604.05306"
+        },
+        {
+          "chunk_id": "2406.02378#0",
+          "doc_id": "2406.02378"
+        },
+        {
+          "chunk_id": "2412.19513#0",
+          "doc_id": "2412.19513"
+        },
+        {
+          "chunk_id": "2207.05221#0",
+          "doc_id": "2207.05221"
+        },
+        {
+          "chunk_id": "2606.16011#0",
+          "doc_id": "2606.16011"
+        },
+        {
+          "chunk_id": "2607.22554#0",
+          "doc_id": "2607.22554"
+        },
+        {
+          "chunk_id": "2310.02174#0",
+          "doc_id": "2310.02174"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 0.2
+    },
+    {
+      "id": "gs-038",
+      "type": "explanatory",
+      "query": "How can a game-theoretic rationalization framework stop a toxic-language detector from linking dialect or identity words to toxicity?",
+      "search_seconds": 0.016869,
+      "relevant_doc_ids": [
+        "2106.07240"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2106.07240#0",
+          "doc_id": "2106.07240"
+        },
+        {
+          "chunk_id": "2506.06347#0",
+          "doc_id": "2506.06347"
+        },
+        {
+          "chunk_id": "2211.05995#0",
+          "doc_id": "2211.05995"
+        },
+        {
+          "chunk_id": "2607.20447#0",
+          "doc_id": "2607.20447"
+        },
+        {
+          "chunk_id": "2609.34584#0",
+          "doc_id": "2609.34584"
+        },
+        {
+          "chunk_id": "2504.01534#0",
+          "doc_id": "2504.01534"
+        },
+        {
+          "chunk_id": "2403.15458#0",
+          "doc_id": "2403.15458"
+        },
+        {
+          "chunk_id": "2309.06415#0",
+          "doc_id": "2309.06415"
+        },
+        {
+          "chunk_id": "2102.00086#0",
+          "doc_id": "2102.00086"
+        },
+        {
+          "chunk_id": "2111.07997#0",
+          "doc_id": "2111.07997"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-039",
+      "type": "comparison",
+      "query": "How do SeqXGPT and STADEE differ in the way they detect machine-generated text?",
+      "search_seconds": 0.017339,
+      "relevant_doc_ids": [
+        "2310.08903",
+        "2312.01672"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2312.01672#0",
+          "doc_id": "2312.01672"
+        },
+        {
+          "chunk_id": "2310.01423#0",
+          "doc_id": "2310.01423"
+        },
+        {
+          "chunk_id": "2310.08903#0",
+          "doc_id": "2310.08903"
+        },
+        {
+          "chunk_id": "2307.02599#0",
+          "doc_id": "2307.02599"
+        },
+        {
+          "chunk_id": "2307.11380#0",
+          "doc_id": "2307.11380"
+        },
+        {
+          "chunk_id": "2503.13101#0",
+          "doc_id": "2503.13101"
+        },
+        {
+          "chunk_id": "2403.13812#0",
+          "doc_id": "2403.13812"
+        },
+        {
+          "chunk_id": "2503.13687#0",
+          "doc_id": "2503.13687"
+        },
+        {
+          "chunk_id": "2308.01284#0",
+          "doc_id": "2308.01284"
+        },
+        {
+          "chunk_id": "2305.07969#0",
+          "doc_id": "2305.07969"
+        }
+      ],
+      "recall": {
+        "1": 0.5,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-040",
+      "type": "comparison",
+      "query": "How does grouped-query attention speed up a language model differently from letting only the top-k tokens through each layer, as in mixture-of-depths?",
+      "search_seconds": 0.017802,
+      "relevant_doc_ids": [
+        "2305.13245",
+        "2404.02258"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2412.20677#0",
+          "doc_id": "2412.20677"
+        },
+        {
+          "chunk_id": "2503.09579#0",
+          "doc_id": "2503.09579"
+        },
+        {
+          "chunk_id": "2505.22107#0",
+          "doc_id": "2505.22107"
+        },
+        {
+          "chunk_id": "2512.03494#0",
+          "doc_id": "2512.03494"
+        },
+        {
+          "chunk_id": "2410.14268#0",
+          "doc_id": "2410.14268"
+        },
+        {
+          "chunk_id": "2504.00927#0",
+          "doc_id": "2504.00927"
+        },
+        {
+          "chunk_id": "2603.15619#0",
+          "doc_id": "2603.15619"
+        },
+        {
+          "chunk_id": "2610.04753#0",
+          "doc_id": "2610.04753"
+        },
+        {
+          "chunk_id": "2502.13189#0",
+          "doc_id": "2502.13189"
+        },
+        {
+          "chunk_id": "2305.13245#0",
+          "doc_id": "2305.13245"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.5
+      },
+      "rr": 0.1
+    },
+    {
+      "id": "gs-041",
+      "type": "multi_hop",
+      "query": "Name one way to find out what a language model knows from its internal activations without labels, and one way to judge how reliable its answers are when you only see its outputs.",
+      "search_seconds": 0.019932,
+      "relevant_doc_ids": [
+        "2212.03827",
+        "2305.19187"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2212.03827#0",
+          "doc_id": "2212.03827"
+        },
+        {
+          "chunk_id": "2510.04013#0",
+          "doc_id": "2510.04013"
+        },
+        {
+          "chunk_id": "2608.26121#0",
+          "doc_id": "2608.26121"
+        },
+        {
+          "chunk_id": "2511.08579#0",
+          "doc_id": "2511.08579"
+        },
+        {
+          "chunk_id": "2609.04582#0",
+          "doc_id": "2609.04582"
+        },
+        {
+          "chunk_id": "2305.18153#0",
+          "doc_id": "2305.18153"
+        },
+        {
+          "chunk_id": "2608.20569#0",
+          "doc_id": "2608.20569"
+        },
+        {
+          "chunk_id": "2605.26045#0",
+          "doc_id": "2605.26045"
+        },
+        {
+          "chunk_id": "2505.11770#0",
+          "doc_id": "2505.11770"
+        },
+        {
+          "chunk_id": "2608.21664#0",
+          "doc_id": "2608.21664"
+        }
+      ],
+      "recall": {
+        "1": 0.5,
+        "5": 0.5,
+        "10": 0.5
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-042",
+      "type": "multi_hop",
+      "query": "In a retrieval-augmented system, is exact nearest-neighbour search worth its cost compared with approximate search, and how can an approximate tree index lose less retrieval quality?",
+      "search_seconds": 0.017064,
+      "relevant_doc_ids": [
+        "2412.15246",
+        "2304.11943"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2405.04435#0",
+          "doc_id": "2405.04435"
+        },
+        {
+          "chunk_id": "2206.12993#0",
+          "doc_id": "2206.12993"
+        },
+        {
+          "chunk_id": "2304.11943#0",
+          "doc_id": "2304.11943"
+        },
+        {
+          "chunk_id": "2610.09724#0",
+          "doc_id": "2610.09724"
+        },
+        {
+          "chunk_id": "1811.08008#0",
+          "doc_id": "1811.08008"
+        },
+        {
+          "chunk_id": "1403.4362#0",
+          "doc_id": "1403.4362"
+        },
+        {
+          "chunk_id": "2510.15719#0",
+          "doc_id": "2510.15719"
+        },
+        {
+          "chunk_id": "2404.13781#0",
+          "doc_id": "2404.13781"
+        },
+        {
+          "chunk_id": "2604.08920#0",
+          "doc_id": "2604.08920"
+        },
+        {
+          "chunk_id": "2307.03027#0",
+          "doc_id": "2307.03027"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.5,
+        "10": 0.5
+      },
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "gs-043",
+      "type": "follow_up",
+      "query": "What happens if the questions use brand names instead?",
+      "search_seconds": 0.014752,
+      "relevant_doc_ids": [
+        "2406.12066"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "1706.09335#0",
+          "doc_id": "1706.09335"
+        },
+        {
+          "chunk_id": "2607.13304#0",
+          "doc_id": "2607.13304"
+        },
+        {
+          "chunk_id": "2608.30052#0",
+          "doc_id": "2608.30052"
+        },
+        {
+          "chunk_id": "2410.11655#0",
+          "doc_id": "2410.11655"
+        },
+        {
+          "chunk_id": "2606.25787#0",
+          "doc_id": "2606.25787"
+        },
+        {
+          "chunk_id": "2606.23057#0",
+          "doc_id": "2606.23057"
+        },
+        {
+          "chunk_id": "2609.05059#0",
+          "doc_id": "2609.05059"
+        },
+        {
+          "chunk_id": "2608.18158#0",
+          "doc_id": "2608.18158"
+        },
+        {
+          "chunk_id": "2607.23893#0",
+          "doc_id": "2607.23893"
+        },
+        {
+          "chunk_id": "2608.30052#1",
+          "doc_id": "2608.30052"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-044",
+      "type": "follow_up",
+      "query": "Can they be fooled easily?",
+      "search_seconds": 0.016161,
+      "relevant_doc_ids": [
+        "2307.02599"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2403.10185#0",
+          "doc_id": "2403.10185"
+        },
+        {
+          "chunk_id": "2405.04325#0",
+          "doc_id": "2405.04325"
+        },
+        {
+          "chunk_id": "2405.12999#0",
+          "doc_id": "2405.12999"
+        },
+        {
+          "chunk_id": "1902.08939#0",
+          "doc_id": "1902.08939"
+        },
+        {
+          "chunk_id": "2409.20165#0",
+          "doc_id": "2409.20165"
+        },
+        {
+          "chunk_id": "2402.01019#0",
+          "doc_id": "2402.01019"
+        },
+        {
+          "chunk_id": "1906.01040#0",
+          "doc_id": "1906.01040"
+        },
+        {
+          "chunk_id": "2510.05025#0",
+          "doc_id": "2510.05025"
+        },
+        {
+          "chunk_id": "2508.15139#0",
+          "doc_id": "2508.15139"
+        },
+        {
+          "chunk_id": "2606.13610#0",
+          "doc_id": "2606.13610"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-045",
+      "type": "follow_up",
+      "query": "How good can it get in a day on one graphics card?",
+      "search_seconds": 0.016867,
+      "relevant_doc_ids": [
+        "2212.14034"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2511.06565#0",
+          "doc_id": "2511.06565"
+        },
+        {
+          "chunk_id": "2010.15884#0",
+          "doc_id": "2010.15884"
+        },
+        {
+          "chunk_id": "2602.24044#0",
+          "doc_id": "2602.24044"
+        },
+        {
+          "chunk_id": "2505.16968#0",
+          "doc_id": "2505.16968"
+        },
+        {
+          "chunk_id": "2212.14034#0",
+          "doc_id": "2212.14034"
+        },
+        {
+          "chunk_id": "2410.23261#0",
+          "doc_id": "2410.23261"
+        },
+        {
+          "chunk_id": "2605.04357#0",
+          "doc_id": "2605.04357"
+        },
+        {
+          "chunk_id": "2406.11016#0",
+          "doc_id": "2406.11016"
+        },
+        {
+          "chunk_id": "2510.12357#0",
+          "doc_id": "2510.12357"
+        },
+        {
+          "chunk_id": "2608.30076#0",
+          "doc_id": "2608.30076"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 0.2
+    },
+    {
+      "id": "gs-046",
+      "type": "factual",
+      "query": "In one study that gave GPT-4 news headlines published after its knowledge cutoff, how well did the model predict the stock market's first reaction?",
+      "search_seconds": 0.017157,
+      "relevant_doc_ids": [
+        "2304.07619"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2304.07619#0",
+          "doc_id": "2304.07619"
+        },
+        {
+          "chunk_id": "2009.04202#0",
+          "doc_id": "2009.04202"
+        },
+        {
+          "chunk_id": "2404.00012#0",
+          "doc_id": "2404.00012"
+        },
+        {
+          "chunk_id": "1812.04199#0",
+          "doc_id": "1812.04199"
+        },
+        {
+          "chunk_id": "2105.09154#0",
+          "doc_id": "2105.09154"
+        },
+        {
+          "chunk_id": "2607.20589#0",
+          "doc_id": "2607.20589"
+        },
+        {
+          "chunk_id": "1805.03308#0",
+          "doc_id": "1805.03308"
+        },
+        {
+          "chunk_id": "2512.11857#0",
+          "doc_id": "2512.11857"
+        },
+        {
+          "chunk_id": "2409.11408#0",
+          "doc_id": "2409.11408"
+        },
+        {
+          "chunk_id": "2609.36914#0",
+          "doc_id": "2609.36914"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-047",
+      "type": "factual",
+      "query": "The first broad evaluation of ChatGPT as a zero-shot Text-to-SQL system used how many benchmark datasets, and in which setting did it beat a fine-tuned state-of-the-art model?",
+      "search_seconds": 0.018754,
+      "relevant_doc_ids": [
+        "2303.13547"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2303.13547#0",
+          "doc_id": "2303.13547"
+        },
+        {
+          "chunk_id": "2305.18486#0",
+          "doc_id": "2305.18486"
+        },
+        {
+          "chunk_id": "2304.12202#0",
+          "doc_id": "2304.12202"
+        },
+        {
+          "chunk_id": "2302.06476#0",
+          "doc_id": "2302.06476"
+        },
+        {
+          "chunk_id": "2307.07306#0",
+          "doc_id": "2307.07306"
+        },
+        {
+          "chunk_id": "2405.00704#0",
+          "doc_id": "2405.00704"
+        },
+        {
+          "chunk_id": "2306.16108#0",
+          "doc_id": "2306.16108"
+        },
+        {
+          "chunk_id": "2310.10190#0",
+          "doc_id": "2310.10190"
+        },
+        {
+          "chunk_id": "2408.09540#0",
+          "doc_id": "2408.09540"
+        },
+        {
+          "chunk_id": "2303.13648#0",
+          "doc_id": "2303.13648"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-048",
+      "type": "factual",
+      "query": "In one study of multilingual instruction tuning, how many multilingual examples added to an English-only tuning set were enough to clearly improve instruction following in other languages?",
+      "search_seconds": 0.016787,
+      "relevant_doc_ids": [
+        "2401.01854"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2404.04850#0",
+          "doc_id": "2404.04850"
+        },
+        {
+          "chunk_id": "2401.01854#0",
+          "doc_id": "2401.01854"
+        },
+        {
+          "chunk_id": "2402.14778#0",
+          "doc_id": "2402.14778"
+        },
+        {
+          "chunk_id": "2410.07809#0",
+          "doc_id": "2410.07809"
+        },
+        {
+          "chunk_id": "2407.01853#0",
+          "doc_id": "2407.01853"
+        },
+        {
+          "chunk_id": "2309.03412#0",
+          "doc_id": "2309.03412"
+        },
+        {
+          "chunk_id": "2312.12683#0",
+          "doc_id": "2312.12683"
+        },
+        {
+          "chunk_id": "2407.09879#0",
+          "doc_id": "2407.09879"
+        },
+        {
+          "chunk_id": "2304.07987#0",
+          "doc_id": "2304.07987"
+        },
+        {
+          "chunk_id": "2402.13703#0",
+          "doc_id": "2402.13703"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 0.5
+    },
+    {
+      "id": "gs-049",
+      "type": "explanatory",
+      "query": "According to the gradient entanglement analysis of margin-based alignment losses, why can training make a language model more likely to produce the response it was told to avoid?",
+      "search_seconds": 0.018221,
+      "relevant_doc_ids": [
+        "2410.13828"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2410.13828#0",
+          "doc_id": "2410.13828"
+        },
+        {
+          "chunk_id": "2609.02285#0",
+          "doc_id": "2609.02285"
+        },
+        {
+          "chunk_id": "2609.11716#0",
+          "doc_id": "2609.11716"
+        },
+        {
+          "chunk_id": "2609.32617#0",
+          "doc_id": "2609.32617"
+        },
+        {
+          "chunk_id": "2406.06144#0",
+          "doc_id": "2406.06144"
+        },
+        {
+          "chunk_id": "2603.26663#0",
+          "doc_id": "2603.26663"
+        },
+        {
+          "chunk_id": "2412.14093#0",
+          "doc_id": "2412.14093"
+        },
+        {
+          "chunk_id": "2305.17266#0",
+          "doc_id": "2305.17266"
+        },
+        {
+          "chunk_id": "2502.00048#0",
+          "doc_id": "2502.00048"
+        },
+        {
+          "chunk_id": "2510.13154#0",
+          "doc_id": "2510.13154"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-050",
+      "type": "explanatory",
+      "query": "In one comparison across nine language models, how did putting distractor options into the prompt change how well the models' stated confidence matched their correctness?",
+      "search_seconds": 0.017149,
+      "relevant_doc_ids": [
+        "2502.11028"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2509.25532#0",
+          "doc_id": "2509.25532"
+        },
+        {
+          "chunk_id": "2502.11028#0",
+          "doc_id": "2502.11028"
+        },
+        {
+          "chunk_id": "2405.16282#0",
+          "doc_id": "2405.16282"
+        },
+        {
+          "chunk_id": "2408.09773#0",
+          "doc_id": "2408.09773"
+        },
+        {
+          "chunk_id": "2412.15683#0",
+          "doc_id": "2412.15683"
+        },
+        {
+          "chunk_id": "2402.13606#0",
+          "doc_id": "2402.13606"
+        },
+        {
+          "chunk_id": "2410.12478#0",
+          "doc_id": "2410.12478"
+        },
+        {
+          "chunk_id": "2407.14845#0",
+          "doc_id": "2407.14845"
+        },
+        {
+          "chunk_id": "2602.04853#0",
+          "doc_id": "2602.04853"
+        },
+        {
+          "chunk_id": "2509.24202#0",
+          "doc_id": "2509.24202"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 0.5
+    },
+    {
+      "id": "gs-051",
+      "type": "explanatory",
+      "query": "How can soft prompts help a LLaMA-7B model that has been compressed with 4-bit quantization and 50% weight pruning to recover its accuracy?",
+      "search_seconds": 0.018589,
+      "relevant_doc_ids": [
+        "2305.11186"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2305.11186#0",
+          "doc_id": "2305.11186"
+        },
+        {
+          "chunk_id": "2503.19114#0",
+          "doc_id": "2503.19114"
+        },
+        {
+          "chunk_id": "2310.05736#0",
+          "doc_id": "2310.05736"
+        },
+        {
+          "chunk_id": "2505.00019#0",
+          "doc_id": "2505.00019"
+        },
+        {
+          "chunk_id": "2402.18700#0",
+          "doc_id": "2402.18700"
+        },
+        {
+          "chunk_id": "2605.20193#0",
+          "doc_id": "2605.20193"
+        },
+        {
+          "chunk_id": "2502.15779#0",
+          "doc_id": "2502.15779"
+        },
+        {
+          "chunk_id": "2506.13771#0",
+          "doc_id": "2506.13771"
+        },
+        {
+          "chunk_id": "2405.03594#0",
+          "doc_id": "2405.03594"
+        },
+        {
+          "chunk_id": "2409.20094#0",
+          "doc_id": "2409.20094"
+        }
+      ],
+      "recall": {
+        "1": 1.0,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-052",
+      "type": "comparison",
+      "query": "How does fine-tuning a translation model with nearest-neighbour statistics differ from kNN-MT with dynamic retrieval in where the nearest-neighbour information is used and what it is meant to achieve?",
+      "search_seconds": 0.018125,
+      "relevant_doc_ids": [
+        "2305.13648",
+        "2406.06073"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2406.06073#0",
+          "doc_id": "2406.06073"
+        },
+        {
+          "chunk_id": "2305.13648#0",
+          "doc_id": "2305.13648"
+        },
+        {
+          "chunk_id": "2105.13022#0",
+          "doc_id": "2105.13022"
+        },
+        {
+          "chunk_id": "2310.12352#0",
+          "doc_id": "2310.12352"
+        },
+        {
+          "chunk_id": "2305.13034#0",
+          "doc_id": "2305.13034"
+        },
+        {
+          "chunk_id": "2209.08738#0",
+          "doc_id": "2209.08738"
+        },
+        {
+          "chunk_id": "2312.07419#0",
+          "doc_id": "2312.07419"
+        },
+        {
+          "chunk_id": "2301.02828#0",
+          "doc_id": "2301.02828"
+        },
+        {
+          "chunk_id": "2204.06175#0",
+          "doc_id": "2204.06175"
+        },
+        {
+          "chunk_id": "2212.08822#0",
+          "doc_id": "2212.08822"
+        }
+      ],
+      "recall": {
+        "1": 0.5,
+        "5": 1.0,
+        "10": 1.0
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-053",
+      "type": "comparison",
+      "query": "What problem does the ROPO preference-optimization method address, and how is that different from the problem addressed by self-augmented preference optimization (SAPO)?",
+      "search_seconds": 0.017855,
+      "relevant_doc_ids": [
+        "2404.04102",
+        "2405.20830"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2506.12725#0",
+          "doc_id": "2506.12725"
+        },
+        {
+          "chunk_id": "2409.08845#0",
+          "doc_id": "2409.08845"
+        },
+        {
+          "chunk_id": "2404.04626#0",
+          "doc_id": "2404.04626"
+        },
+        {
+          "chunk_id": "2409.14836#0",
+          "doc_id": "2409.14836"
+        },
+        {
+          "chunk_id": "2502.14354#0",
+          "doc_id": "2502.14354"
+        },
+        {
+          "chunk_id": "2409.17545#0",
+          "doc_id": "2409.17545"
+        },
+        {
+          "chunk_id": "2605.28440#0",
+          "doc_id": "2605.28440"
+        },
+        {
+          "chunk_id": "2509.10515#0",
+          "doc_id": "2509.10515"
+        },
+        {
+          "chunk_id": "2405.20830#0",
+          "doc_id": "2405.20830"
+        },
+        {
+          "chunk_id": "2510.00977#0",
+          "doc_id": "2510.00977"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.5
+      },
+      "rr": 0.1111111111111111
+    },
+    {
+      "id": "gs-054",
+      "type": "multi_hop",
+      "query": "Name one way to improve a dense retriever using a cross-encoder teacher, and one way to adapt a dense retriever to a new domain when only a short text description of that domain is available.",
+      "search_seconds": 0.022671,
+      "relevant_doc_ids": [
+        "2212.10192",
+        "2307.02740"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2307.02740#0",
+          "doc_id": "2307.02740"
+        },
+        {
+          "chunk_id": "2112.07577#0",
+          "doc_id": "2112.07577"
+        },
+        {
+          "chunk_id": "2311.15564#0",
+          "doc_id": "2311.15564"
+        },
+        {
+          "chunk_id": "2109.08535#0",
+          "doc_id": "2109.08535"
+        },
+        {
+          "chunk_id": "2110.01599#0",
+          "doc_id": "2110.01599"
+        },
+        {
+          "chunk_id": "2201.08471#0",
+          "doc_id": "2201.08471"
+        },
+        {
+          "chunk_id": "2302.07452#0",
+          "doc_id": "2302.07452"
+        },
+        {
+          "chunk_id": "2212.09114#0",
+          "doc_id": "2212.09114"
+        },
+        {
+          "chunk_id": "2208.05753#0",
+          "doc_id": "2208.05753"
+        },
+        {
+          "chunk_id": "2104.05740#0",
+          "doc_id": "2104.05740"
+        }
+      ],
+      "recall": {
+        "1": 0.5,
+        "5": 0.5,
+        "10": 0.5
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-055",
+      "type": "multi_hop",
+      "query": "Name two different ways to reduce overconfidence in language models: one that combines several viewpoints to estimate confidence, and one that passes reasoning from a larger model to a smaller one.",
+      "search_seconds": 0.017243,
+      "relevant_doc_ids": [
+        "2402.11279",
+        "2405.16856"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2402.11279#0",
+          "doc_id": "2402.11279"
+        },
+        {
+          "chunk_id": "2608.18106#0",
+          "doc_id": "2608.18106"
+        },
+        {
+          "chunk_id": "2505.19184#0",
+          "doc_id": "2505.19184"
+        },
+        {
+          "chunk_id": "2508.18847#0",
+          "doc_id": "2508.18847"
+        },
+        {
+          "chunk_id": "2504.12098#0",
+          "doc_id": "2504.12098"
+        },
+        {
+          "chunk_id": "2604.05757#0",
+          "doc_id": "2604.05757"
+        },
+        {
+          "chunk_id": "2512.01725#0",
+          "doc_id": "2512.01725"
+        },
+        {
+          "chunk_id": "2609.34454#0",
+          "doc_id": "2609.34454"
+        },
+        {
+          "chunk_id": "2604.01457#0",
+          "doc_id": "2604.01457"
+        },
+        {
+          "chunk_id": "2510.10913#0",
+          "doc_id": "2510.10913"
+        }
+      ],
+      "recall": {
+        "1": 0.5,
+        "5": 0.5,
+        "10": 0.5
+      },
+      "rr": 1.0
+    },
+    {
+      "id": "gs-056",
+      "type": "multi_hop",
+      "query": "Which two LLM-based Text-to-SQL approaches improve results by retrieving demonstrations with the needed logical operators and by handling the wide tables of financial databases, and what does each report?",
+      "search_seconds": 0.019759,
+      "relevant_doc_ids": [
+        "2403.20014",
+        "2401.10506"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2602.21480#0",
+          "doc_id": "2602.21480"
+        },
+        {
+          "chunk_id": "2505.23838#0",
+          "doc_id": "2505.23838"
+        },
+        {
+          "chunk_id": "2312.10321#0",
+          "doc_id": "2312.10321"
+        },
+        {
+          "chunk_id": "2406.08426#0",
+          "doc_id": "2406.08426"
+        },
+        {
+          "chunk_id": "2401.10506#0",
+          "doc_id": "2401.10506"
+        },
+        {
+          "chunk_id": "2403.02951#0",
+          "doc_id": "2403.02951"
+        },
+        {
+          "chunk_id": "2401.02997#0",
+          "doc_id": "2401.02997"
+        },
+        {
+          "chunk_id": "2402.11517#0",
+          "doc_id": "2402.11517"
+        },
+        {
+          "chunk_id": "2412.17867#0",
+          "doc_id": "2412.17867"
+        },
+        {
+          "chunk_id": "2410.01066#0",
+          "doc_id": "2410.01066"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.5,
+        "10": 0.5
+      },
+      "rr": 0.2
+    },
+    {
+      "id": "gs-057",
+      "type": "multi_hop",
+      "query": "Name one cause of a knowledge-edited language model collapsing after a single ROME edit, and one way edited models still fail on reasoning questions. How was each addressed?",
+      "search_seconds": 0.019561,
+      "relevant_doc_ids": [
+        "2406.11263",
+        "2406.02882"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2403.07175#0",
+          "doc_id": "2403.07175"
+        },
+        {
+          "chunk_id": "2406.11263#0",
+          "doc_id": "2406.11263"
+        },
+        {
+          "chunk_id": "2406.19354#0",
+          "doc_id": "2406.19354"
+        },
+        {
+          "chunk_id": "2312.05497#0",
+          "doc_id": "2312.05497"
+        },
+        {
+          "chunk_id": "2410.23843#0",
+          "doc_id": "2410.23843"
+        },
+        {
+          "chunk_id": "2409.18679#0",
+          "doc_id": "2409.18679"
+        },
+        {
+          "chunk_id": "2401.07453#0",
+          "doc_id": "2401.07453"
+        },
+        {
+          "chunk_id": "2502.05628#0",
+          "doc_id": "2502.05628"
+        },
+        {
+          "chunk_id": "2406.17253#0",
+          "doc_id": "2406.17253"
+        },
+        {
+          "chunk_id": "2509.17482#0",
+          "doc_id": "2509.17482"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.5,
+        "10": 0.5
+      },
+      "rr": 0.5
+    },
+    {
+      "id": "gs-058",
+      "type": "follow_up",
+      "query": "Does picking the languages carefully always work better than picking them at random?",
+      "search_seconds": 0.016282,
+      "relevant_doc_ids": [
+        "2410.07809"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "2610.00052#0",
+          "doc_id": "2610.00052"
+        },
+        {
+          "chunk_id": "2506.22366#0",
+          "doc_id": "2506.22366"
+        },
+        {
+          "chunk_id": "2407.05022#0",
+          "doc_id": "2407.05022"
+        },
+        {
+          "chunk_id": "2404.04850#0",
+          "doc_id": "2404.04850"
+        },
+        {
+          "chunk_id": "2410.15225#0",
+          "doc_id": "2410.15225"
+        },
+        {
+          "chunk_id": "2503.06926#0",
+          "doc_id": "2503.06926"
+        },
+        {
+          "chunk_id": "2412.12509#0",
+          "doc_id": "2412.12509"
+        },
+        {
+          "chunk_id": "2505.12201#0",
+          "doc_id": "2505.12201"
+        },
+        {
+          "chunk_id": "2502.04134#0",
+          "doc_id": "2502.04134"
+        },
+        {
+          "chunk_id": "2601.13649#0",
+          "doc_id": "2601.13649"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-059",
+      "type": "follow_up",
+      "query": "What if a person edits the text afterwards?",
+      "search_seconds": 0.015072,
+      "relevant_doc_ids": [
+        "2411.13868"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "1711.04805#0",
+          "doc_id": "1711.04805"
+        },
+        {
+          "chunk_id": "2212.01350#0",
+          "doc_id": "2212.01350"
+        },
+        {
+          "chunk_id": "2604.24444#0",
+          "doc_id": "2604.24444"
+        },
+        {
+          "chunk_id": "2510.03154#0",
+          "doc_id": "2510.03154"
+        },
+        {
+          "chunk_id": "2209.13331#0",
+          "doc_id": "2209.13331"
+        },
+        {
+          "chunk_id": "2003.09136#0",
+          "doc_id": "2003.09136"
+        },
+        {
+          "chunk_id": "2203.03802#0",
+          "doc_id": "2203.03802"
+        },
+        {
+          "chunk_id": "2405.02765#0",
+          "doc_id": "2405.02765"
+        },
+        {
+          "chunk_id": "2010.12826#0",
+          "doc_id": "2010.12826"
+        },
+        {
+          "chunk_id": "2311.08374#0",
+          "doc_id": "2311.08374"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    },
+    {
+      "id": "gs-060",
+      "type": "follow_up",
+      "query": "Is there a way for it to check its own answer and look things up again?",
+      "search_seconds": 0.016753,
+      "relevant_doc_ids": [
+        "2406.05606"
+      ],
+      "retrieved": [
+        {
+          "chunk_id": "1912.13455#0",
+          "doc_id": "1912.13455"
+        },
+        {
+          "chunk_id": "1711.05116#0",
+          "doc_id": "1711.05116"
+        },
+        {
+          "chunk_id": "2608.29307#0",
+          "doc_id": "2608.29307"
+        },
+        {
+          "chunk_id": "2201.05984#0",
+          "doc_id": "2201.05984"
+        },
+        {
+          "chunk_id": "2506.00425#0",
+          "doc_id": "2506.00425"
+        },
+        {
+          "chunk_id": "2401.09175#0",
+          "doc_id": "2401.09175"
+        },
+        {
+          "chunk_id": "cs/0001010#0",
+          "doc_id": "cs/0001010"
+        },
+        {
+          "chunk_id": "2505.06914#0",
+          "doc_id": "2505.06914"
+        },
+        {
+          "chunk_id": "1805.02220#0",
+          "doc_id": "1805.02220"
+        },
+        {
+          "chunk_id": "2205.06961#0",
+          "doc_id": "2205.06961"
+        }
+      ],
+      "recall": {
+        "1": 0.0,
+        "5": 0.0,
+        "10": 0.0
+      },
+      "rr": 0.0
+    }
+  ],
+  "note": "Relevance labels are incomplete (pooling, PLAN.md section 7); recall and MRR are conservative. Unanswerable items are excluded. One run per condition. Timings are the wall-clock time of retriever.search on the machine that ran it, not a latency benchmark (PLAN.md section 4.4)."
+}
