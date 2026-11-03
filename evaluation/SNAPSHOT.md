@@ -19,7 +19,7 @@ stack against this file before the first run.
 | Query prefix | `Represent this sentence for searching relevant passages:` (no passage prefix) | ADR 0007 |
 | Vector store | Qdrant 1.19.2 (`docker-compose.yml`), collection `scitech_chunks`, exact search (`QDRANT_SEARCH_EXACT=true`) | #101, `pipelines/reports/index_profile.md` |
 | BM25 index | `data/index/bm25`, 121,926 chunks, built from the same `chunks.parquet` (its `chunked_at` is the `chunked-` part of the id) | `_bm25_manifest.json`, `index_profile.md` |
-| Where it lives | DAT's laptop (native Qdrant and `data/`), the W7 host (#156); FAO's laptop (Docker Qdrant and `data/`), the user-study host; the documents, chunks and vectors also sit in FAO's private Kaggle dataset and notebook output (`pipelines/README.md`) | |
+| Where it lives | DAT's laptop (native Qdrant and `data/`), the W7 host (#156); FAO's laptop (Docker Qdrant and `data/`), planned as the user-study host (the study was cancelled, ADR 0013); the documents, chunks and vectors also sit in FAO's private Kaggle dataset and notebook output (`pipelines/README.md`) | |
 
 Rules for the frozen index:
 - **Incremental loads never touch it.** `incremental-run` (ADR 0008) adds to the collection it is
@@ -49,7 +49,7 @@ Checked on FAO's laptop on 2026-10-27: the id matched the table, the load manife
 points in 15 parts (0 resumed), the BM25 `chunked_at` was `2026-10-17T05:19:12+00:00`, and Qdrant
 counted 121,926 points.
 Checked again on 2026-10-30 through the `make up` stack (#146): Qdrant counted 121,926 points, so
-the user-study host serves this exact index.
+FAO's laptop (the planned user-study host; the study was cancelled, ADR 0013) serves this exact index.
 Checked on DAT's laptop on 2026-10-30 (native Qdrant at `127.0.0.1:6333`): the id matched the
 table, the load manifest gave 121,926 points in 15 parts (0 resumed), the BM25 `chunked_at` was
 `2026-10-17T05:19:12+00:00`, and Qdrant counted 121,926 points, so the W7 host serves this exact
