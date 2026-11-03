@@ -1,0 +1,51 @@
+name: Deploy HF Space
+
+# Uploads the app code to the Hugging Face Docker Space after CI passes on main
+# (docs/runbooks/hosting.md section 4). The index is not touched.
+# Needs the repository secret HF_TOKEN (write access to the Space only) and
+# optionally the variable HF_SPACE (default Teichi/scitech-rag-agent).
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-hf-space
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_SPACE: ${{ vars.HF_SPACE || 'Teichi/scitech-rag-agent' }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Check the token
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::The HF_TOKEN secret is not set; see docs/runbooks/hosting.md section 4."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install huggingface_hub
+        run: pip install "huggingface_hub>=0.24"
+      - name: Upload the code to the Space
+        run: |
+          python deploy/hf-space/push_space.py code --space "$HF_SPACE" \
+            --message "Deploy ${SHA::7} from GitHub Actions"

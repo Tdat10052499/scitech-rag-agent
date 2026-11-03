@@ -10,6 +10,10 @@ refuses with a fixed message and suggestions, without an answer call (agent/AGEN
 and `AGENT_TIMEOUT_S` seconds. The answer prompt and its citation checks live in
 `scitech_agent.answer` (W4-D1-DAT-1). Every request leaves one trace (`scitech_agent.trace`,
 W5-D4-DAT-1), and `Agent.run_batch` answers a list of questions without the API (evaluation).
+With `AGENT_SEARCH_MODES=on` (empty: on), a paper-finding question (a list of papers, a year,
+"latest", an arXiv id) gets a `scitech_agent.intent.SearchPlan`: filtered retrieval, more hits
+for a list, the sources' dates and ids in the answer prompt and `prompts/answer_papers.md` added
+to its rules. Any other question is answered exactly as before.
 """
 
 from __future__ import annotations
@@ -21,11 +25,13 @@ import time
 import uuid
 from collections import OrderedDict
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from scitech_agent.answer import (
     CitationFilter,
+    NumberMismatch,
     answer_messages,
     answer_user_message,
     answer_words,
@@ -51,6 +57,8 @@ from scitech_agent.evidence import (
     self_check_messages,
 )
 from scitech_agent.followups import followups_user_message, parse_followups
+from scitech_agent.fulltext import FullTextReader, FullTextUnavailable
+from scitech_agent.intent import SearchPlan, plan_search
 from scitech_agent.llm import LLMClient, LLMError, Message, split_fragments
 from scitech_agent.retrieval import Retriever, ScoredChunk
 from scitech_agent.rewrite import rewrite_query
@@ -86,6 +94,32 @@ def load_prompt(name: str) -> str:
     return (PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8").strip()
 
 
+def _vietnamese(text: str) -> bool:
+    """True when `text` has non-ASCII letters: the users write English or Vietnamese."""
+    return any(ord(c) > 127 and c.isalpha() for c in text)
+
+
+def fulltext_note(message: str, cited: Sequence[str], mismatches: Sequence[NumberMismatch]) -> str:
+    """Warning appended to an answer built from full-text passages (ADR 0012) when it cannot be
+    checked: it cites nothing, or it has numbers that none of its cited sources contain. Small
+    models fill in numbers that a paper shows only in figures; the user must know that."""
+    vi = _vietnamese(message)
+    if not cited:
+        if vi:
+            return ("Lưu ý: câu trả lời này không trích dẫn nguồn nào, nên chưa được đối chiếu "
+                    "với nội dung bài báo.")
+        return "Note: this answer cites no source, so it was not checked against the paper's text."
+    numbers = list(dict.fromkeys(m.number for m in mismatches))
+    if not numbers:
+        return ""
+    shown = ", ".join(numbers)
+    if vi:
+        return (f"Lưu ý: các con số sau không có trong nguồn được trích và có thể sai: {shown}. "
+                "Hãy kiểm tra lại trong bài báo.")
+    return (f"Note: these numbers are not in the cited sources and may be wrong: {shown}. "
+            "Please check them in the paper.")
+
+
 @dataclass(frozen=True)
 class AgentConfig:
     top_k: int = 5
@@ -103,24 +137,40 @@ class AgentConfig:
     self_check_max_tokens: int = 8
     max_llm_calls: int = 4  # AGENT_MAX_LLM_CALLS: rewrite, self-check, answer, follow-ups
     timeout_s: float = 120.0  # AGENT_TIMEOUT_S: whole request, checked between steps
+    # AGENT_SEARCH_MODES: search plans for paper-finding questions (scitech_agent.intent). The
+    # dataclass default is off so the demo agent and older tests are unchanged; empty env: on.
+    search_modes: bool = False
+    list_top_k: int = 10  # RETRIEVAL_LIST_TOP_K: hits for a "list papers" question
+    list_max_tokens: int = 900  # answer tokens for a list of up to list_top_k papers
+    # AGENT_FULLTEXT: read the full text of a paper named by arXiv id (ADR 0012); off in the
+    # dataclass (demo, tests), empty env: on. FULLTEXT_TOP_K passages per question.
+    fulltext: bool = False
+    fulltext_top_k: int = 6
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> AgentConfig:
         """Read `RETRIEVAL_TOP_K`, `RETRIEVAL_MIN_SCORE`, `AGENT_REWRITE`, `AGENT_SELF_CHECK`,
-        `AGENT_MAX_LLM_CALLS` and `AGENT_TIMEOUT_S` (empty: 5, 0.0, off, off, 4 and 120)."""
+        `AGENT_MAX_LLM_CALLS`, `AGENT_TIMEOUT_S`, `AGENT_SEARCH_MODES`, `RETRIEVAL_LIST_TOP_K`,
+        `AGENT_FULLTEXT` and `FULLTEXT_TOP_K` (empty: 5, 0.0, off, off, 4, 120, on, 10, on, 6)."""
         env = os.environ if env is None else env
         try:
             top_k = int(env.get("RETRIEVAL_TOP_K") or 5)
             min_score = float(env.get("RETRIEVAL_MIN_SCORE") or 0.0)
             max_llm_calls = int(env.get("AGENT_MAX_LLM_CALLS") or 4)
             timeout_s = float(env.get("AGENT_TIMEOUT_S") or 120.0)
+            list_top_k = int(env.get("RETRIEVAL_LIST_TOP_K") or 10)
+            fulltext_top_k = int(env.get("FULLTEXT_TOP_K") or 6)
         except ValueError as exc:
             raise ValueError(
-                "RETRIEVAL_TOP_K / RETRIEVAL_MIN_SCORE / AGENT_MAX_LLM_CALLS / AGENT_TIMEOUT_S "
-                f"must be numbers: {exc}"
+                "RETRIEVAL_TOP_K / RETRIEVAL_MIN_SCORE / AGENT_MAX_LLM_CALLS / AGENT_TIMEOUT_S / "
+                f"RETRIEVAL_LIST_TOP_K / FULLTEXT_TOP_K must be numbers: {exc}"
             ) from None
         if top_k <= 0:
             raise ValueError("RETRIEVAL_TOP_K must be > 0")
+        if list_top_k <= 0:
+            raise ValueError("RETRIEVAL_LIST_TOP_K must be > 0")
+        if fulltext_top_k <= 0:
+            raise ValueError("FULLTEXT_TOP_K must be > 0")
         if max_llm_calls < 1:
             raise ValueError("AGENT_MAX_LLM_CALLS must be >= 1 (the answer call)")
         if not timeout_s > 0:
@@ -132,14 +182,22 @@ class AgentConfig:
             self_check=_flag(env, "AGENT_SELF_CHECK"),
             max_llm_calls=max_llm_calls,
             timeout_s=timeout_s,
+            search_modes=_flag(env, "AGENT_SEARCH_MODES", default=True),
+            list_top_k=list_top_k,
+            fulltext=_flag(env, "AGENT_FULLTEXT", default=True),
+            fulltext_top_k=fulltext_top_k,
         )
 
 
-def _flag(env: Mapping[str, str], name: str) -> bool:
+def _flag(env: Mapping[str, str], name: str, default: bool = False) -> bool:
     value = (env.get(name) or "").strip().lower()
     if value not in _FLAGS:
         raise ValueError(f"{name} must be on or off, not {value!r}")
-    return _FLAGS[value]
+    return default if value == "" else _FLAGS[value]
+
+
+def _utc_today() -> date:
+    return datetime.now(timezone.utc).date()
 
 
 @dataclass(frozen=True)
@@ -158,13 +216,18 @@ class Agent:
         *,
         clock: Callable[[], float] = time.monotonic,
         tracer: TraceWriter | None = None,
+        today: Callable[[], date] = _utc_today,
+        fulltext: FullTextReader | None = None,
     ) -> None:
         self.retriever = retriever
         self.llm = llm
         self.config = config or AgentConfig()
         self.clock = clock
+        self.today = today  # "latest" means the last intent.RECENT_DAYS days before this date
+        self.fulltext = fulltext  # used only with AgentConfig.fulltext (ADR 0012)
         self.tracer = tracer  # None: traces are built (run_batch) but not written
         self.answer_prompt = load_prompt("answer")
+        self.papers_prompt = load_prompt("answer_papers")
         self.followups_prompt = load_prompt("followups")
         self.rewrite_prompt = load_prompt("rewrite")
         self.self_check_prompt = load_prompt("self_check")
@@ -252,8 +315,10 @@ class Agent:
         with trace.step("rewrite", record=self.config.rewrite):
             query = self.rewrite(message, history, budget)
         trace.query = query
+        plan = self.plan(message, query)
         with trace.step("retrieve"):
-            hits = self.retrieve(query)
+            hits, plan = self.retrieve_planned(query, plan)
+        trace.search = plan.to_dict() if plan.active or plan.fallback else None
         trace.set_retrieved(hits)
         evidence = self.check_evidence(hits)
         trace.evidence_count = len(evidence)
@@ -282,7 +347,7 @@ class Agent:
         yield SourcesEvent(evidence)
         parts: list[str] = []
         with trace.step("answer"):
-            for fragment in self.answer(message, evidence, history, budget, trace):
+            for fragment in self.answer(message, evidence, history, budget, trace, plan):
                 parts.append(fragment)
                 yield TokenEvent(fragment)
         answer = "".join(parts)
@@ -305,6 +370,11 @@ class Agent:
                 yield TokenEvent(fragment)
         elif not cited:
             logger.info("answer cites no source and is not a refusal")
+        if not refused and plan.fulltext in ("read", "cached"):
+            note = fulltext_note(message, cited, mismatches)
+            if note:
+                for fragment in split_fragments("\n\n" + note):
+                    yield TokenEvent(fragment)
         # Follow-ups grounded in sources that did not answer would point to more of the same.
         questions: list[str] = []
         if not refused:
@@ -355,9 +425,87 @@ class Agent:
         logger.info("rewrote %r as %r", message, query)
         return query
 
-    def retrieve(self, query: str) -> list[ScoredChunk]:
+    def plan(self, message: str, query: str) -> SearchPlan:
+        """The search plan of `message` (`scitech_agent.intent`); the empty plan when search
+        modes are off."""
+        if not self.config.search_modes:
+            return SearchPlan()
+        return plan_search(
+            message,
+            query,
+            self.today(),
+            top_k=self.config.top_k,
+            list_top_k=self.config.list_top_k,
+        )
+
+    def retrieve_planned(
+        self, query: str, plan: SearchPlan
+    ) -> tuple[list[ScoredChunk], SearchPlan]:
+        """Hits for `plan`, and the plan actually used. An arXiv id is one filtered search per
+        id; a year or "latest" filters the search. When the filters keep nothing, the search is
+        repeated without them: a list question stays a list, any other plan becomes the empty
+        plan, so the question is answered as it was before search plans."""
+        if not plan.active:
+            return self.retrieve(query), plan
+        k = plan.k or self.config.top_k
+        if plan.arxiv_ids:
+            per_id = max(1, k // len(plan.arxiv_ids))
+            hits = [
+                hit
+                for doc_id in plan.arxiv_ids
+                for hit in self.retrieve(query, k=per_id, filters={"doc_id": doc_id})
+            ]
+            if self.config.fulltext and self.fulltext is not None:
+                hits, plan = self.add_fulltext(query, plan, hits)
+        else:
+            hits = self.retrieve(query, k=k, filters=plan.filters)
+        if hits:
+            return hits, plan
+        logger.info("search plan %s found nothing; searching without filters", plan.reasons)
+        if plan.list_papers:
+            fallback = replace(plan, reasons=("list",), filters=None, arxiv_ids=(), fallback=True)
+            return self.retrieve(query, k=k), fallback
+        return self.retrieve(query), SearchPlan(fallback=True)
+
+    def add_fulltext(
+        self, query: str, plan: SearchPlan, abstracts: list[ScoredChunk]
+    ) -> tuple[list[ScoredChunk], SearchPlan]:
+        """The abstracts of the named papers followed by the passages of their full text that
+        best match `query` (`scitech_agent.fulltext`). A paper whose full text cannot be read
+        keeps its abstract only; `plan.fulltext` records what happened."""
+        assert self.fulltext is not None
+        per_id = max(2, self.config.fulltext_top_k // len(plan.arxiv_ids))
+        dates = {h.doc_id: h.published_at for h in abstracts}
+        passages: list[ScoredChunk] = []
+        outcomes = []
+        for doc_id in plan.arxiv_ids:
+            try:
+                found, cached = self.fulltext.passages(doc_id, query, per_id)
+            except FullTextUnavailable as exc:
+                logger.info("full text unavailable: %s", exc)
+                outcomes.append("unavailable")
+                continue
+            except Exception:  # noqa: BLE001 - reading the full text must never fail a question
+                logger.exception("full text of %s failed", doc_id)
+                outcomes.append("unavailable")
+                continue
+            outcomes.append("cached" if cached else "read")
+            passages += [replace(p, published_at=dates.get(doc_id)) for p in found]
+        if "read" in outcomes:
+            status = "read"
+        elif "cached" in outcomes:
+            status = "cached"
+        else:
+            status = "unavailable"
+        return abstracts + passages, replace(plan, fulltext=status)
+
+    def retrieve(
+        self, query: str, k: int | None = None, filters: Mapping[str, object] | None = None
+    ) -> list[ScoredChunk]:
         try:
-            return self.retriever.search(query, k=self.config.top_k)
+            if filters:
+                return self.retriever.search(query, k=k or self.config.top_k, filters=filters)
+            return self.retriever.search(query, k=k or self.config.top_k)
         except Exception as exc:
             logger.exception("retrieval failed")
             raise AgentError("retrieval_failed", ERROR_MESSAGES["retrieval_failed"]) from exc
@@ -414,19 +562,26 @@ class Agent:
         history: list[Turn] | None = None,
         budget: RequestBudget | None = None,
         trace: RequestTrace | None = None,
+        plan: SearchPlan | None = None,
     ) -> Iterator[str]:
         """Streamed answer; markers that cite no source are dropped from it (`CitationFilter`).
         Raises `AgentError("timeout")` when the request's time runs out while it streams. The
-        LLM's text before that filter goes to `trace.answer_raw` (invalid-citation rate)."""
+        LLM's text before that filter goes to `trace.answer_raw` (invalid-citation rate).
+        An active search plan adds the sources' ids and dates and `prompts/answer_papers.md`."""
         keep = self.config.answer_history_turns
         recent = (history or [])[-keep:] if keep > 0 else []
-        messages = answer_messages(self.answer_prompt, question, evidence, recent)
+        planned = plan is not None and plan.active
+        system = f"{self.answer_prompt}\n\n{self.papers_prompt}" if planned else self.answer_prompt
+        messages = answer_messages(system, question, evidence, recent, metadata=planned)
+        max_tokens = self.config.answer_max_tokens
+        if planned and plan.list_papers:
+            max_tokens = max(max_tokens, self.config.list_max_tokens)
         stream = None
         try:
             stream = self.llm.stream_chat(
                 messages,
                 temperature=self.config.temperature,
-                max_tokens=self.config.answer_max_tokens,
+                max_tokens=max_tokens,
             )
             raw = stream if trace is None else _tee(stream, trace)
             for fragment in CitationFilter(len(evidence)).filter(raw):
