@@ -21,6 +21,7 @@ from collections.abc import Mapping
 
 from scitech_agent.agent import ERROR_MESSAGES, Agent, AgentConfig
 from scitech_agent.events import AgentError
+from scitech_agent.fulltext import FullTextReader, reader_from_env
 from scitech_agent.llm import LLMConfigError, OpenAICompatibleLLM
 from scitech_agent.retrieval import Retriever
 from scitech_agent.retrieval.dense import DenseRetriever
@@ -55,6 +56,13 @@ def agent_from_env(env: Mapping[str, str] | None = None) -> Agent:
             f"{type(retriever).__name__} ({ceiling:.4f}): every question would be refused"
         )
         raise _startup_error("internal", "agent settings", exc) from exc
+    fulltext: FullTextReader | None = None
+    if config.fulltext:  # AGENT_FULLTEXT (ADR 0012); nothing is fetched until a question asks
+        try:
+            fulltext = reader_from_env(retriever, env)
+        except ValueError as exc:
+            llm.close()
+            raise _startup_error("internal", "full-text settings", exc) from exc
     tracer = trace_writer_from_env(env)
     logger.info(
         "agent ready: retriever %s, LLM %s, traces %s",
@@ -62,7 +70,7 @@ def agent_from_env(env: Mapping[str, str] | None = None) -> Agent:
         llm.describe(),
         tracer.path if tracer else "off",
     )
-    return Agent(retriever, llm, config, tracer=tracer)
+    return Agent(retriever, llm, config, tracer=tracer, fulltext=fulltext)
 
 
 def score_ceiling(retriever: Retriever) -> float | None:

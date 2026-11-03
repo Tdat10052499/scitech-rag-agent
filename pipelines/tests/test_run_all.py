@@ -239,7 +239,7 @@ def test_tee_step_stops_the_child_when_interrupted(monkeypatch, tmp_path: Path):
 
 
 def test_show_replaces_what_stdout_cannot_encode(monkeypatch):
-    out = io.TextIOWrapper(io.BytesIO(), encoding="cp1252")
+    out = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", newline="")  # no \r\n on Windows
     monkeypatch.setattr(sys, "stdout", out)
     show("caf\u00e9 \u2713\n")  # cp1252 has the accent but not the check mark
     out.flush()

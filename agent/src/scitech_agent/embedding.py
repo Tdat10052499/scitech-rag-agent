@@ -19,7 +19,7 @@ import hashlib
 import math
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -97,6 +97,17 @@ class SentenceTransformerEmbedder:
         )
         return [float(x) for x in vector]
 
+    def embed_passages(self, texts: Sequence[str]) -> list[list[float]]:
+        """Passages (no query prefix), L2-normalised; used for a paper's full text (ADR 0012)."""
+        vectors = self._load().encode(
+            list(texts),
+            batch_size=32,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+            show_progress_bar=False,
+        )
+        return [[float(x) for x in vector] for vector in vectors]
+
 
 _WORD = re.compile(r"[a-z0-9]+")
 
@@ -122,3 +133,6 @@ class FakeEmbedder:
         text = query_text(query, self.query_prefix)
         self.calls.append(text)
         return self.embed(text)
+
+    def embed_passages(self, texts: Sequence[str]) -> list[list[float]]:
+        return [self.embed(text) for text in texts]

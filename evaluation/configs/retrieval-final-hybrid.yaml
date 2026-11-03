@@ -1,0 +1,32 @@
+# W7-D1-LDN-1, run R1 (evaluation/RUNS.md): final retrieval run on the frozen system.
+# The three retrieval-final-*.yaml files differ only in name, retriever_type, embedding_model, notes
+# and retriever params; golden file, split, ks and snapshots must stay identical (as retrieval-v1-*).
+# split: all reports dev and test items together; the report also gives the test items alone
+# (evaluation/PLAN.md 3.4), taken from the per-question results by split.
+# Needs: PYTHONPATH with evaluation/src and agent/src; the agent's environment (.env.example):
+#   QDRANT_URL and QDRANT_COLLECTION (dense, hybrid), DATA_DIR or BM25_INDEX_DIR (bm25, hybrid).
+# Run: see evaluation/RUNS.md.
+name: retrieval-final-hybrid
+golden_path: evaluation/golden_set/golden.jsonl
+split: all
+language: en
+query: question
+ks: [1, 5, 10]
+dataset_snapshot: kaggle-arxiv-v307-cs.CL-2026-10-10
+retriever_type: hybrid
+embedding_model: BAAI/bge-small-en-v1.5
+index_snapshot: scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37
+notes: "hybrid on all answerable English items (dev and test); Qdrant collection scitech_chunks, exact search; BM25 index in data/index/bm25 (chunked_at 2026-10-17T05:19:12)."
+bootstrap:
+  resamples: 1000
+  seed: 0
+retriever:
+  factory: scitech_eval.retrievers:agent_retriever
+  params:
+    retriever: hybrid
+    EMBEDDING_MODEL: BAAI/bge-small-en-v1.5
+    EMBEDDING_QUERY_PREFIX: "Represent this sentence for searching relevant passages:"
+    QDRANT_SEARCH_EXACT: "true"
+    RRF_K: 60
+    HYBRID_DENSE_TOP_K: 50
+    HYBRID_KEYWORD_TOP_K: 50
