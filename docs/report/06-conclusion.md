@@ -91,12 +91,10 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
   fields fall outside the corpus.
 - **English only:** the embedding model `bge-small-en-v1.5` is English-only. The Vietnamese question
   group was dropped (ADR 0007), so the system was not tested on Vietnamese.
-- **Freshness:** the serving index takes new papers every 2 hours (ADR 0011), but arXiv announces
-  them once a day, so the delay is up to a day, not 2 hours. The schedule runs only while the
-  serving laptop is awake. The evaluated index is the frozen copy, which stops at 2026-10-10; the
-  live index is never evaluated.
-  <!-- TODO(W8-D6-FAO-1): soak result; if the soak failed, the schedule is off and this says
-  "by hand" again. -->
+- **Freshness:** new papers enter by hand in v1.0, with the incremental command of ADR 0008. The
+  2-hour schedule (ADR 0011) is built but not deployed: its soak test was postponed until after
+  the presentation (chapter 3.7). Even scheduled, the delay would be up to a day, because arXiv
+  announces once a day. The evaluated index is the frozen copy, which stops at 2026-10-10.
 
 **Small samples.**
 - **Golden set:** 65 items (60 answerable: 30 dev and 30 test; 5 unanswerable; #168). One
@@ -124,7 +122,7 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
 so the cut list was applied at the start instead of at the first delay (ADR 0010):
 - **Kafka streaming:** arXiv announces new papers in one daily batch, so a stream would add
   infrastructure without fresher data. New papers come in by a scheduled batch with a watermark
-  instead (ADR 0008, ADR 0011).
+  instead (ADR 0008; the 2-hour schedule of ADR 0011 is built but not deployed in v1.0).
 - **Reranker and query decomposition:** cut for time, to keep the evaluation and the report on the
   critical path. RQ1 and RQ2 therefore say nothing about reranking or decomposition, and the
   results describe a simpler agent than the original brief.
@@ -158,8 +156,10 @@ so the cut list was applied at the start instead of at the first delay (ADR 0010
   it leaves for later. Indexing full texts stays limited to papers whose licence allows it.
 - **A multilingual embedding model**, measured on a Vietnamese question group with the same
   golden-set rules (ADR 0007).
-- **HNSW search** with its recall checked against exact search (#87) once the corpus grows, and
-  an always-on server for the schedule instead of a laptop.
+- **The scheduled ingestion soak test** (ADR 0011): run #152 and #178 on an always-on host for at
+  least a day (12 or more runs, none failed or overlapping, no backend error during a BM25 switch),
+  then deploy the schedule.
+- **HNSW search** with its recall checked against exact search (#87) once the corpus grows.
 - **An evidence check that works with a small model,** for example a reply parsed as a score
   rather than YES/NO, measured again as the "+evidence" ablation.
 - **A larger golden set**, so differences of a few questions can be told apart from noise.
