@@ -1,12 +1,12 @@
 # 2. Data
 
-<!-- W7-D4-FAO-1, final numbers as of Gate W7 (2026-11-03). Every number cites the file or run
-it comes from. Open items are marked TODO with the task that fills them. Page budget: 5 pages
-(docs/report/00-outline.md); trim in W8-D1-FAO-1. -->
+<!-- W7-D4-FAO-1 and W8-D1-FAO-1: final numbers as of Gate W7 (2026-11-03), tightened to the
+5-page budget of docs/report/00-outline.md. Every number cites the file or run it comes from.
+Open items are marked TODO with the task that fills them. -->
 
-This chapter describes the corpus behind the agent: where it comes from and under which licence,
-how large it is, how the pipeline turns it into a searchable index, why the processing engine is
-PySpark, how new papers are added, and how the index behaves as the corpus grows.
+This chapter describes the corpus behind the agent: its sources and licences, its size, the
+pipeline that indexes it, the processing engine, how new papers are added, and how the index
+behaves as the corpus grows.
 
 ## 2.1 Sources and licences
 
@@ -22,10 +22,9 @@ The sub-domain is LLM/NLP research. The corpus is **every arXiv record whose cat
 
 Sources: `docs/03-data-sources.md`, ADR 0003.
 
-Full-text PDFs are out of scope: their licences are the authors' own, while the metadata is
-public domain. Every chunk carries a `license` field (`CC0-1.0`), and the interface links each
-source to its arXiv abstract page. The pipeline respects arXiv's limit of one request every
-3 seconds for OAI-PMH (`incremental-fetch` refuses a shorter pause).
+Full-text PDFs are not indexed: their licences are the authors' own, while the metadata is public
+domain. Every chunk carries a `license` field (`CC0-1.0`), the interface links each source to its
+arXiv page, and `incremental-fetch` keeps arXiv's limit of one OAI-PMH request every 3 seconds.
 
 ## 2.2 Volume
 
@@ -42,13 +41,12 @@ source to its arXiv abstract page. The pipeline respects arXiv's limit of one re
 | BM25 index | 177.2 MiB on disk | index profile (#68) |
 
 The corpus grows fast at the recent end: 13,603 records in 2023, 20,689 in 2024, 23,762 in 2025
-and 22,589 in 2026 up to 2026-10-10 (data profile §4). Papers from 2023 on are 66% of the corpus.
-A median abstract has 164 words (p95 246, max 491; data profile §6), so almost every abstract fits
-one chunk.
+and 22,589 in 2026 up to 2026-10-10, so papers from 2023 on are 66% of it (data profile §4). A
+median abstract has 164 words (p95 246, max 491; §6), so almost every abstract fits one chunk.
 
-**Two tiers.** The processing tier reads the whole snapshot on every rebuild (3.2 million records),
-and the index tier holds only `cs.CL`. This is the "big data" part of the pipeline: the job filters
-5.61 GB down to 233 MB before anything is embedded (ADR 0003, option B).
+**Two tiers.** Every rebuild processes the whole snapshot (3.2 million records, 5.61 GB) and
+indexes only `cs.CL` (233 MB). This filter is the "big data" part of the pipeline (ADR 0003,
+option B).
 
 ## 2.3 Pipeline
 
@@ -70,9 +68,8 @@ flowchart LR
 <!-- TODO(W8-D4-LDN-1): mermaid does not render in every PDF exporter; export this diagram as an
 image if the PDF shows the code. -->
 
-Each step is a command of `python -m scitech_pipelines` that reads and writes files under
-`data/`, writes a manifest of its counts, and can be re-run (`pipelines/AGENTS.md`). `run-all`
-chains them; each step runs as its own process and logs to `data/logs/`.
+Each step is a re-runnable command of `python -m scitech_pipelines` that reads and writes files
+under `data/` and records its counts in a manifest; `run-all` chains them (`pipelines/AGENTS.md`).
 
 | Step | What it does | Time (full corpus) | Where |
 |---|---|---:|---|
@@ -88,20 +85,16 @@ Times: `docs/runbooks/data-pipeline.md` (measured times), data profile §3, ADR 
 (#68).
 
 Design choices:
-- **Counts must chain.** The manifests carry the counts from step to step (121,860 documents →
-  121,926 chunks → 121,926 vectors → 121,926 points), and each step fails if its output does not
-  match. The load, for example, refuses to finish unless the collection holds exactly one point
-  per chunk.
-- **Re-runnable and resumable.** `embed` and `load` write in parts and resume after a crash at the
-  first missing part. A change of model, chunking or collection needs `--force`, so vectors from two
-  settings are never mixed.
-- **Chunking by words.** Chunk lengths are counted in words because the chunker ran before the
-  embedding model was chosen (ADR 0007). Only 82 of 121,926 chunks (0.067%) exceed the model's 512
-  tokens, below the 0.1% threshold set in advance, so nothing was re-chunked.
-- **Embedding model.** `bge-small-en-v1.5` against `bge-base-en-v1.5` was decided by a rule written
-  before the run: bge-base needed 2 more questions in recall@5 out of 30. It had 1.0 more (0.317 against
-  0.283), so the smaller model was chosen, with half the memory and faster query encoding. The
-  evidence is weak, as ADR 0007 states: the intervals overlap almost completely.
+- **Counts must chain:** 121,860 documents → 121,926 chunks → 121,926 vectors → 121,926 points.
+  A step fails if its output does not match; the load needs exactly one point per chunk.
+- **Resumable:** `embed` and `load` write in parts and resume at the first missing part. A change
+  of model, chunking or collection needs `--force`, so vectors of two settings are never mixed.
+- **Chunking by words** (the chunker ran before the model was chosen): only 82 of 121,926 chunks
+  (0.067%) exceed the model's 512 tokens, below the 0.1% threshold set in advance (ADR 0007).
+- **Embedding model:** a rule written before the run required `bge-base-en-v1.5` to find 2 more of
+  30 questions at recall@5 than `bge-small-en-v1.5`. It found 1.0 more (0.317 against 0.283), so
+  the smaller and faster model was chosen. ADR 0007 calls this evidence weak: the intervals
+  overlap almost completely.
 
 ## 2.4 Processing engine (ADR 0005)
 
@@ -118,33 +111,25 @@ three engines.
 Source: ADR 0005, table C. Polars' figure is an extrapolation from a 0.3 GB slice.
 
 Both engines kept the same 121,860 records with the same per-year counts. DuckDB is about five
-times faster, but PySpark is chosen for `clean`. Its 80 s is no problem for a job that runs a few
-times, and its DataFrame API runs unchanged on a cluster. DuckDB does the checks: the recount
-inside `clean`, `validate`, the profile and the chunker. The cost is that `clean` needs Java 17+, so it
-runs in a Kaggle CPU notebook or WSL2, not on Windows directly.
+times faster, but PySpark runs `clean`: 80 s does not matter for a job that runs a few times, and
+its DataFrame code runs unchanged on a cluster. DuckDB does the checks (the recount inside `clean`,
+`validate`, the profile and the chunker). The cost is Java 17+, so `clean` runs in a Kaggle CPU
+notebook or WSL2.
 
 ## 2.5 Incremental ingestion (ADR 0008)
 
 New papers arrive every weekday: about 460 per week in 2025 (ADR 0003) and about 730 per week in
-the October 2026 live test (1,782 new papers in 17 datestamp days, #124). The bulk index is a
-snapshot of 2026-10-10. Rebuilding from a
-newer snapshot would mean downloading 5.61 GB again for a few hundred new records a day, so new
-records are fetched incrementally instead:
+the October 2026 live test (1,782 new papers in 17 days, #124). Downloading the 5.61 GB snapshot
+again for a few hundred records a day makes no sense, so `incremental-run` (#76) adds them:
 
-1. **Fetch** the records changed since a date watermark from arXiv's OAI-PMH service (set
-   `cs:cs:CL`, which a live check on 2026-10-17 showed holds every `cs.CL` id, cross-lists included).
-2. **Process** them with the same `clean`, `chunk` and `embed` code as the bulk load, so
-   normalisation exists only once.
-3. **Replace** each fetched paper in the index. Delete all its points, then load its new chunks.
-   A third of a day's records are papers already indexed that got a new version (89 of 276 on the
-   live day of 2026-10-16), and a shorter new abstract must not leave old chunks behind.
-4. **Move the watermark** only after the load and its count check pass. A failure at any step
-   leaves the watermark, so the next run repeats the same range. Re-running a range replaces the
-   same points instead of adding new ones.
-
-One real day (2026-10-16) went through fetch, clean, validate and chunk: 276 records in one
-request, 0 dropped, all 13 checks passed (ADR 0008, live day). The whole run, with the watermark,
-is `incremental-run` (W5-D2-FAO-1, #76).
+1. **Fetch** the records changed since a date watermark from arXiv's OAI-PMH set `cs:cs:CL`, which
+   holds every `cs.CL` id, cross-lists included (live check, 2026-10-17).
+2. **Process** them with the same `clean`, `chunk` and `embed` code as the bulk load.
+3. **Replace** each fetched paper: delete its points, then load its new chunks. A third of a day's
+   records are new versions of indexed papers (89 of 276 on 2026-10-16), and a shorter abstract
+   must not leave old chunks behind.
+4. **Move the watermark** only after the load and its count check pass, so a failed run repeats
+   the same range, and a repeated range replaces the same points.
 
 **Live test** (W5-D4-FAO-1, 2026-10-27; `pipelines/reports/incremental_test.md`, #124). The whole
 command ran twice in a Kaggle CPU notebook against a copy of the full index:
@@ -159,46 +144,38 @@ command ran twice in a Kaggle CPU notebook against a copy of the full index:
 | Wall time (of which embedding on CPU) | 10 min 45 s (549 s) | 1 min 13 s (39 s) |
 
 The index grew by exactly the chunks of the 1,782 new papers, every reloaded paper kept only its
-new chunks, and repeating the last day changed nothing. Each run was checked by comparing the whole
-collection before and after with the run's chunks, independently of the load's own count check.
-Embedding is 85% of the time; a single day of a few hundred papers takes about a minute on a CPU.
+new chunks, and repeating the last day changed nothing; a check of the whole collection against
+each run's chunks confirmed this, independently of the load's own count. Embedding is 85% of the
+time, so a day of a few hundred papers takes about a minute on a CPU.
 
-**Scheduling** (ADR 0011, which replaces ADR 0008 point 6). The course asks for data collected in
-near real time, so `incremental-run` runs every 2 hours by itself, in an `ingest` container next to
-Qdrant (`INGEST_EVERY_HOURS=2`, a Python loop in `scitech_pipelines.schedule`). The container
-carries Java 17, so the serving laptop's Java 8 no longer matters. Each run:
+**Scheduling** (ADR 0011, replacing ADR 0008 point 6). The course asks for near-real-time data, so
+an `ingest` container next to Qdrant runs `incremental-run` every 2 hours (`INGEST_EVERY_HOURS=2`)
+with its own Java 17. Each run:
 
-- fetches up to today (UTC) instead of yesterday, so a record is picked up within 2 hours of its
-  OAI-PMH datestamp;
-- sends only the ids whose `(id, datestamp)` changed since the last run to `clean`, `embed` and
-  `load`, and stops with "nothing changed" when none is left, which is most runs;
+- fetches up to today (UTC), so a record is picked up within 2 hours of its OAI-PMH datestamp;
+- processes only the ids whose `(id, datestamp)` changed, and stops with "nothing changed" when
+  none did, which is most runs;
 - takes a lock, so two runs never overlap;
-- after a successful load, rebuilds BM25 into a new directory and switches to it atomically
-  (`--rebuild-bm25`); the backend reloads it (`BM25_RELOAD_SECONDS`), so both halves of hybrid
-  search see new papers (#119).
+- after a successful load, rebuilds BM25 into a new directory and switches to it atomically; the
+  backend reloads it (`BM25_RELOAD_SECONDS`), so both halves of hybrid search see new papers (#119).
 
-The schedule writes only to a separate serving index, `scitech_chunks_live` with
-`data/index/bm25-live`, created as a copy of the frozen one. It refuses the frozen collection
-(`--frozen-collection`), so the evaluation index of §2.7 never changes. Freshness is bounded by
-arXiv, which announces new papers once a day: the 2-hour interval picks them up within 2 hours of
-that, not as they are submitted. The code is built on a branch during Week 7 (#152, #155) and
-merged only after Gate W7, so no evaluation run sees it.
+The schedule writes only to a separate serving index (`scitech_chunks_live`, `data/index/bm25-live`)
+and refuses the frozen collection, so the evaluation index of §2.7 never changes. arXiv announces
+new papers once a day, so freshness is "within 2 hours of the announcement". The code is built on a
+branch during Week 7 (#152, #155) and merged only after Gate W7, so no evaluation run sees it.
 
 <!-- TODO(W8-D6-FAO-1): soak result from D20 to D22: runs logged in data/logs/incremental.log,
 failed or overlapping runs, papers added, time per run, BM25 switch. If the soak fails, ADR 0011
 falls back to the manual command; rewrite this paragraph then. -->
 
-Known limits: deleted records stay in the index until the next full rebuild; a replaced paper has
-no points for 0.3 to 2.4 s during its load; the schedule runs only while the serving laptop is
-awake; and a run without `--rebuild-bm25` leaves BM25 as it was (#119).
+Known limits: deleted records stay until the next full rebuild, a replaced paper has no points for
+0.3 to 2.4 s during its load, and the schedule runs only while the serving laptop is awake (#119).
 
 ## 2.6 Scaling
 
-To show how the index behaves as the corpus grows, the same index was built at 10%, 50% and 100%
-of the corpus. The subsets were taken by a hash of `doc_id`, so they are nested and spread over all
-years, and they reuse the vectors already computed (`pipelines/reports/scaling.md`, #96). Each size
-answered the same 100 queries at k = 10, on FAO's laptop with Qdrant 1.19.2 in Docker and exact
-search.
+The index was built at 10%, 50% and 100% of the corpus, with nested subsets taken by a hash of
+`doc_id` and the vectors already computed (`pipelines/reports/scaling.md`, #96). Each size answered
+the same 100 queries at k = 10 on FAO's laptop (Qdrant 1.19.2 in Docker, exact search).
 
 | Size | Chunks | Load (s) | BM25 build (s) | dense p50 / p95 (ms) | bm25 p50 / p95 (ms) | hybrid p50 / p95 (ms) |
 |---|---:|---:|---:|---:|---:|---:|
@@ -210,29 +187,19 @@ search.
 
 <!-- Charts: pipelines/scripts/scaling_charts.py (#121). -->
 
-- **BM25 grows with the corpus.** Latency, build time and size rise in step with the chunk count
-  (p50 1.2, 4.8, 8.1 ms).
-- **Dense latency is mostly fixed costs.** A dense search is query embedding on the CPU (p50 38
-  to 63 ms), a round trip to Qdrant in Docker (about 46 ms on this laptop) and the vector search
-  itself. Only the search depends on the corpus.
-- **Vector search alone** was timed separately, with the query vectors computed beforehand
-  (`scaling.md` §2.1, #121). Inside Qdrant (p50):
-  - exact search took 2.0, 8.0 and 14.4 ms at 10%, 50% and 100%, about 1.1 ms per 10,000
-    points;
-  - HNSW took 1.6 to 2.6 ms at every size and returned 97.9% to 100% of the exact top 10.
+- **BM25 grows with the corpus:** p50 1.2, 4.8 and 8.1 ms, in step with the chunk count.
+- **Dense latency is mostly fixed costs:** query embedding on the CPU (p50 38 to 63 ms) and the
+  round trip to Qdrant in Docker (about 46 ms). Only the vector search depends on the corpus.
+- **Vector search alone** (query vectors computed beforehand; `scaling.md` §2.1, #121), p50 inside
+  Qdrant: exact search 2.0, 8.0 and 14.4 ms, about 1.1 ms per 10,000 points; HNSW 1.6 to 2.6 ms
+  at every size, with 97.9% to 100% of the exact top 10. At a million chunks exact search would
+  take about 110 ms (extrapolated), so HNSW would then be the better choice (#87).
+- **Retrieval is not the bottleneck:** hybrid stays under 135 ms at p95 at every size, far below
+  the LLM's first token (p50 0.42 s on the Week 7 host; `docs/runbooks/performance.md`, #161).
 
-  At a million chunks exact search would take about 110 ms (an extrapolation), so HNSW would then
-  be the better choice, with its recall checked again (#87).
-- **Retrieval is not the bottleneck.** Hybrid retrieval stays under 135 ms at p95 at every size,
-  far below the LLM's time to first token (p50 0.42 s on the Week 7 host,
-  `docs/runbooks/performance.md`, #161).
-
-All sizes were cut from the index that is frozen for evaluation (§2.7), so these numbers belong
-to that snapshot.
-
-Limits of these measurements: one machine and one run of 100 sequential queries per size, so
-differences of a few milliseconds are noise. Memory was measured for the whole Qdrant container,
-not per collection. The 100% load and BM25 build times come from the full load of 2026-10-21.
+All sizes were cut from the frozen index of §2.7. Limits: one machine and one run of 100
+sequential queries per size, so differences of a few milliseconds are noise; memory was measured
+for the whole Qdrant container; the 100% load and BM25 times come from the full load of 2026-10-21.
 
 ## 2.7 Frozen snapshot for evaluation
 
@@ -246,16 +213,13 @@ Every evaluation run uses one index, recorded in `evaluation/SNAPSHOT.md` (W6-D4
 | Embedding model | `BAAI/bge-small-en-v1.5`, 384 dimensions, cosine, query prefix only |
 | Search | Qdrant 1.19.2, exact search; BM25 over the same chunks |
 
-The id names the collection, the model and the times of chunking and embedding, and every
-evaluation run records it, so runs on different indexes cannot be compared by mistake. Incremental
-loads never write to this collection: its live test ran on a copy, and the scheduled run refuses
-it (ADR 0011).
-On 2026-10-27 the machine that serves it was checked against the file: same id, 121,926 points in
-Qdrant, and all 57 relevant documents of the golden set present.
-On 2026-10-30, after the feature freeze, both machines that serve it were checked again: FAO's
-laptop through the Docker stack (#146), the user-study host, and DAT's laptop with a native Qdrant,
-the Week 7 host. Both counted 121,926 points, and DAT's laptop also matched the id and the BM25
-`chunked_at` (`evaluation/SNAPSHOT.md` §1, #164).
-On 2026-10-31 the final golden set (65 items: 60 answerable, 5 unanswerable; #168) was checked
-the same way: all 78 relevant documents were found in the chunks and in Qdrant (W7-D1-FAO-1,
-#156).
+Every evaluation run records this id, so runs on different indexes cannot be compared by mistake.
+Incremental loads never write to the collection: the live test ran on a copy, and the schedule
+refuses it (ADR 0011). Checks against the file:
+- 2026-10-27, FAO's laptop: same id, 121,926 points, all 57 relevant documents of the golden set
+  present;
+- 2026-10-30, after the feature freeze: 121,926 points on both serving machines, FAO's laptop (the
+  user-study host, #146) and DAT's laptop (the Week 7 host, which also matched the id and the BM25
+  `chunked_at`; `evaluation/SNAPSHOT.md` §1, #164);
+- 2026-10-31, final golden set (65 items: 60 answerable, 5 unanswerable; #168): all 78 relevant
+  documents in the chunks and in Qdrant (W7-D1-FAO-1, #156).
