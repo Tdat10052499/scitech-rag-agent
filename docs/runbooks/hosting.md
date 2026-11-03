@@ -73,6 +73,7 @@ Other settings:
 | `RETRIEVER` | variable | `hybrid` |
 | `QDRANT_SEARCH_EXACT` | variable | `true` |
 | `AGENT_REWRITE` / `AGENT_SELF_CHECK` | variable | `on` / `off` (the A2 product configuration) |
+| `AGENT_SEARCH_MODES` | variable (optional) | empty or `on`: search plans for paper-finding questions; `off` restores the W7 behaviour |
 | `CHAT_PER_MINUTE`, `CHAT_TOTAL_PER_MINUTE` | variable | §2 |
 
    Changing a variable restarts the Space.
