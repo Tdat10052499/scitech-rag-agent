@@ -37,7 +37,7 @@ arXiv page, and `incremental-fetch` keeps arXiv's limit of one OAI-PMH request e
 | Records after cleaning | 121,860 (0 dropped, 0 duplicates) | data profile §2 |
 | Cleaned Parquet | 95.0 MB in 33 files (59 : 1 against the raw snapshot) | data profile §1 |
 | Chunks | 121,926 (121,794 papers with 1 chunk, 66 with 2) | FAO journal W3, D07 |
-| Vectors | 121,926 × 384 float32 (`BAAI/bge-small-en-v1.5`), 198 MB | ADR 0007, FAO journal W3 |
+| Vectors | 121,926 × 384 float32 (`BAAI/bge-small-en-v1.5`), 198 MB on disk | ADR 0007, FAO journal W3 |
 | Qdrant collection | 609.9 MiB on disk | `pipelines/reports/index_profile.md` (#68) |
 | BM25 index | 177.2 MiB on disk | index profile (#68) |
 
@@ -196,7 +196,7 @@ the same 100 queries at k = 10 on FAO's laptop (Qdrant 1.19.2 in Docker, exact s
   Qdrant: exact search 2.0, 8.0 and 14.4 ms, about 1.1 ms per 10,000 points; HNSW 1.6 to 2.6 ms
   at every size, with 97.9% to 100% of the exact top 10. At a million chunks exact search would
   take about 110 ms (extrapolated), so HNSW would then be the better choice (#87).
-- **Retrieval is not the bottleneck:** hybrid stays under 135 ms at p95 at every size, far below
+- **Retrieval is not the bottleneck:** hybrid is at most 135.2 ms at p95 at every size, far below
   the LLM's first token (p50 0.42 s on the Week 7 host; `docs/runbooks/performance.md`, #161).
 
 All sizes were cut from the frozen index of §2.7. Limits: one machine and one run of 100
