@@ -294,7 +294,7 @@ The detailed analyses are in `evaluation/reports/retrieval-errors-w7.md` (FAO, r
 
 ## 9. RQ3 was dropped
 
-RQ3 asked whether users rate the suggested follow-up questions as useful and click them. The only planned evidence was a user study with 4 to 6 participants on 3 to 4 November. On 3 November, before the first session, the team was told that the study is not needed, and ADR 0013 cancelled it. No session was held and no study data exists. The suggestions stay in the product and are described in the report chapters on the system; their usefulness is not measured. The rating buttons and `POST /feedback` stay in the product and are not used for evaluation.
+RQ3 asked whether users rate the suggested follow-up questions as useful and click them. The only planned evidence was a user study with 4 to 6 participants on 3 to 4 November. On 3 November, before the first session, DAT told the team that the study is not needed, and ADR 0013 cancelled it. No session was held and no study data exists. The suggestions stay in the product and are described in the report chapters on the system; their usefulness is not measured. The rating buttons and `POST /feedback` stay in the product and are not used for evaluation.
 
 ## 10. Future work
 
