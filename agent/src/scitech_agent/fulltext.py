@@ -68,7 +68,8 @@ _VOID = {"br", "img", "hr", "meta", "link", "input", "col", "area", "base", "sou
 _WORD = re.compile(r"[a-z0-9]+")
 _STOP = frozenset(
     "a an and are as at be by can could do does explain for from give how i in is it its me of on "
-    "or paper please simple simply tell that the this to us was what when where which who why "
+    "or paper please simple simply tell that the this to us was were what when where which who "
+    "why has have had did done been being they their there these those than then also "
     "with words would you your arxiv about main idea summarize summary describe "
     "cho toi minh em ban la va cua bai nay ve gi trong".split()
 )
@@ -257,6 +258,30 @@ def _cosine(a: Sequence[float], b: Sequence[float]) -> float:
     return dot / norm if norm else 0.0
 
 
+def _overlap_scores(
+    words: set[str], passages: Sequence[ScoredChunk]
+) -> list[tuple[float, ScoredChunk]]:
+    """BM25-style term weights within the paper: a word found in few passages ("perplexity")
+    counts more than one found in most ("model"); repeats in a passage count with saturation.
+    Normalised to 0-1 by the best possible score."""
+    bags = [_WORD.findall(f"{p.title} {p.text}".lower()) for p in passages]
+    n = len(passages)
+    idf = {}
+    for w in words:
+        df = sum(1 for bag in bags if w in bag)
+        idf[w] = math.log(1 + (n - df + 0.5) / (df + 0.5))
+    best = sum(idf.values()) or 1.0
+    scored = []
+    for bag, p in zip(bags, passages, strict=True):
+        score = 0.0
+        for w in words:
+            tf = bag.count(w)
+            if tf:
+                score += idf[w] * (tf * 2.2) / (tf + 1.2)
+        scored.append((score / (2.2 * best), p))
+    return scored
+
+
 def rank_passages(
     query: str,
     arxiv_id: str,
@@ -280,10 +305,7 @@ def rank_passages(
         q = embedder.embed_query(query)
         scored = [(_cosine(q, v), p) for p, v in zip(passages, vectors, strict=True)]
     else:
-        scored = [
-            (len(words & set(_WORD.findall(f"{p.title} {p.text}".lower()))) / len(words), p)
-            for p in passages
-        ]
+        scored = _overlap_scores(words, passages)
     scored.sort(key=lambda sp: (-sp[0], sp[1].chunk_index))
     return [replace(p, score=round(s, 4)) for s, p in scored[:k]]
 
