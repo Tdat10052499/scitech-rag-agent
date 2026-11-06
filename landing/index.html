@@ -396,6 +396,16 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .flow .dot{fill:var(--accent)}
 .flow .dot-bad{fill:var(--line-strong)}
 .flow .qmark{font:400 22px var(--f-display);fill:var(--ink-2);text-anchor:middle}
+/* the travelling dot disappears into each step, which lights up while the dot is inside */
+.flow circle{transition:opacity .18s var(--ease-out)}
+.flow circle.is-hidden{opacity:0}
+.flow .node rect{transition:fill .35s var(--ease-out),stroke .35s var(--ease-out),filter .35s var(--ease-out)}
+.flow .node text{transition:fill .35s var(--ease-out)}
+/* every step lights up the same way: solid sage, light text, a soft sage glow */
+.flow .node.is-on rect{fill:var(--accent);stroke:var(--accent);filter:drop-shadow(0 4px 10px color-mix(in srgb,var(--accent) 45%,transparent))}
+.flow .node.is-on text{fill:var(--on-accent)}
+.flow--plain .node.is-on rect{fill:var(--ink-2);stroke:var(--ink-2);filter:drop-shadow(0 4px 10px color-mix(in srgb,var(--ink-2) 35%,transparent))} /* no evidence: the same light-up in neutral grey */
+.flow--plain .node.is-on text{fill:var(--panel)}
 
 /* ---------- evaluation ---------- */
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-top:clamp(28px,4vw,48px)}
@@ -722,23 +732,23 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
       <p class="muted" data-reveal style="font-size:17px;max-width:52ch">A plain chatbot goes straight from your question to its memory. ASAP adds a retrieval step in between, so every answer can be traced back to a paper.</p>
     </div>
     <div class="flows">
-      <div class="flow grid-bg" data-reveal>
+      <div class="flow flow--plain grid-bg" data-reveal>
         <h3>Plain chatbot<small>No sources</small></h3>
         <div class="flow__svg">
-          <svg viewBox="0 0 1000 200" role="img" aria-label="Question, then answer from memory, then an unverifiable answer, looping back">
+          <svg viewBox="0 0 1000 200" data-dur="7" role="img" aria-label="Question, then answer from memory, then an unverifiable answer, looping back">
             <path id="p1" class="path" d="M250 50 H750 A50 50 0 0 1 750 150 H250 A50 50 0 0 1 250 50 Z"/>
             <g class="node" transform="translate(250 50)"><rect x="-70" y="-15" width="140" height="30" rx="6"/><text>Question</text></g>
             <g class="node" transform="translate(750 50)"><rect x="-100" y="-15" width="200" height="30" rx="6"/><text>Answer from memory</text></g>
             <g class="node" transform="translate(500 150)"><rect x="-80" y="-15" width="160" height="30" rx="6"/><text>Trust it?</text></g>
             <text class="qmark" x="500" y="112">?</text>
-            <circle r="6" class="dot-bad"><animateMotion dur="7s" repeatCount="indefinite"><mpath href="#p1"/></animateMotion></circle>
+            <circle r="6" class="dot-bad" cx="250" cy="50"></circle>
           </svg>
         </div>
       </div>
       <div class="flow grid-bg" data-reveal>
         <h3>ASAP RAG Agent<small>Evidence first</small></h3>
         <div class="flow__svg">
-          <svg viewBox="0 0 1000 200" role="img" aria-label="Question, rewrite query, retrieve top 5, answer with citations, suggest follow-ups, looping back to the next question">
+          <svg viewBox="0 0 1000 200" data-dur="9" role="img" aria-label="Question, rewrite query, retrieve top 5, answer with citations, suggest follow-ups, looping back to the next question">
             <path id="p2" class="path" d="M150 50 H850 A50 50 0 0 1 850 150 H150 A50 50 0 0 1 150 50 Z"/>
             <g class="node" transform="translate(150 50)"><rect x="-65" y="-15" width="130" height="30" rx="6"/><text>Question</text></g>
             <g class="node" transform="translate(400 50)"><rect x="-80" y="-15" width="160" height="30" rx="6"/><text>Rewrite query</text></g>
@@ -746,7 +756,7 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
             <g class="node end" transform="translate(850 150)"><rect x="-95" y="-15" width="190" height="30" rx="6"/><text>Answer with [n]</text></g>
             <g class="node" transform="translate(500 150)"><rect x="-90" y="-15" width="180" height="30" rx="6"/><text>Check sources</text></g>
             <g class="node" transform="translate(180 150)"><rect x="-90" y="-15" width="180" height="30" rx="6"/><text>Follow-ups</text></g>
-            <circle r="6" class="dot"><animateMotion dur="9s" repeatCount="indefinite"><mpath href="#p2"/></animateMotion></circle>
+            <circle r="6" class="dot" cx="150" cy="50"></circle>
           </svg>
         </div>
       </div>
@@ -1172,6 +1182,38 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
     else if (!onScreen) cancelAnimationFrame(raf);
   }), { threshold: .15 }).observe(cv);
   if (reduce) { choose(performance.now()); draw(performance.now()); }
+
+  /* ---------- workflow loops: the dot travels the loop; at each step it disappears into the box, which lights up ---------- */
+  document.querySelectorAll('.flow svg').forEach(svg => {
+    const path = svg.querySelector('.path'), dot = svg.querySelector('circle');
+    if (!path || !dot) return;
+    const len = path.getTotalLength(), dur = parseFloat(svg.dataset.dur || '8') * 1000;
+    const boxes = [...svg.querySelectorAll('.node')].map(n => {
+      const r = n.querySelector('rect'), m = n.transform.baseVal.consolidate().matrix;
+      const x = m.e + +r.getAttribute('x'), y = m.f + +r.getAttribute('y');
+      return { n, l: x - 3, t: y - 3, r: x + +r.getAttribute('width') + 3, b: y + +r.getAttribute('height') + 3 };
+    });
+    if (reduce) { dot.classList.add('is-hidden'); return; }
+    let start = null, paused = 0, raf = 0, current = null;
+    function tick(t) {
+      if (start === null) start = t - paused;
+      const u = ((t - start) % dur) / dur, pt = path.getPointAtLength(u * len);
+      dot.setAttribute('cx', pt.x); dot.setAttribute('cy', pt.y);
+      const hit = boxes.find(b => pt.x > b.l && pt.x < b.r && pt.y > b.t && pt.y < b.b) || null;
+      if (hit !== current) {
+        if (current) current.n.classList.remove('is-on');
+        if (hit) hit.n.classList.add('is-on');
+        dot.classList.toggle('is-hidden', !!hit);
+        current = hit;
+      }
+      paused = t - start;
+      raf = requestAnimationFrame(tick);
+    }
+    new IntersectionObserver(es => es.forEach(e => {
+      cancelAnimationFrame(raf);
+      if (e.isIntersecting) { start = null; raf = requestAnimationFrame(tick); } // resume where it stopped
+    })).observe(svg);
+  });
 
   addEventListener('load', () => window.ScrollTrigger && ScrollTrigger.refresh());
 })();
