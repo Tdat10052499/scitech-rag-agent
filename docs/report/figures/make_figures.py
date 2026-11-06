@@ -29,13 +29,16 @@ plt.rcParams.update({
     "font.family": "DejaVu Sans", "font.size": 9, "axes.edgecolor": MUTED, "axes.labelcolor": INK,
     "xtick.color": INK, "ytick.color": INK, "text.color": INK, "axes.spines.top": False,
     "axes.spines.right": False, "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.6,
-    "axes.axisbelow": True, "svg.fonttype": "none", "figure.facecolor": "white", "axes.facecolor": "white",
+    "axes.axisbelow": True, "svg.fonttype": "none", "figure.facecolor": "white",
+    "axes.facecolor": "white",
     "legend.frameon": False,
 })
 
 
 def save(fig, name):
-    fig.savefig(OUT / name, format="svg", facecolor="white", bbox_inches="tight", metadata={"Date": None})
+    fig.savefig(
+        OUT / name, format="svg", facecolor="white", bbox_inches="tight", metadata={"Date": None}
+    )
     plt.close(fig)
     print("wrote", name)
 
@@ -46,13 +49,21 @@ def grouped(ax, groups, series, colors, width=0.26, label_fmt="{:.2f}", ci=None,
     for i, (name, vals) in enumerate(series.items()):
         xs = [g + (i - (n - 1) / 2) * width for g in range(len(groups))]
         ax.bar(xs, vals, width * 0.92, color=colors[i], label=name, zorder=3)
-        for j, (x, v) in enumerate(zip(xs, vals)):
+        for j, (x, v) in enumerate(zip(xs, vals, strict=False)):
             top = v
             if ci and name in ci:
                 lo, hi = ci[name][j]
                 ax.errorbar(x, v, yerr=[[v - lo], [hi - v]], color=INK, lw=0.8, capsize=2, zorder=4)
                 top = hi
-            ax.text(x, top + 0.012, label_fmt.format(v), ha="center", va="bottom", fontsize=fontsize, color=INK)
+            ax.text(
+                x,
+                top + 0.012,
+                label_fmt.format(v),
+                ha="center",
+                va="bottom",
+                fontsize=fontsize,
+                color=INK,
+            )
     ax.set_xticks(range(len(groups)))
     ax.set_xticklabels(groups)
 
@@ -66,7 +77,9 @@ def fig_retrieval():
         "BM25 only": [0.358, 0.508, 0.567, 0.486],
     }
     ci = {
-        "Hybrid (product default)": [(0.250, 0.475), (0.383, 0.625), (0.458, 0.700), (0.363, 0.590)],
+        "Hybrid (product default)": [
+            (0.250, 0.475), (0.383, 0.625), (0.458, 0.700), (0.363, 0.590)
+        ],
         "Dense only": [(0.183, 0.417), (0.350, 0.575), (0.383, 0.600), (0.309, 0.529)],
         "BM25 only": [(0.250, 0.467), (0.392, 0.633), (0.450, 0.692), (0.375, 0.601)],
     }
@@ -76,14 +89,21 @@ def fig_retrieval():
     ax.set_ylabel("Score (0 to 1)")
     ax.set_title("Retrieval on 60 answerable questions (R1 to R3)", loc="left", fontsize=10)
     ax.legend(loc="upper left", ncol=3, fontsize=8)
-    fig.text(0.01, -0.03, "Bars: mean. Whiskers: 95% bootstrap interval over questions (1,000 resamples). "
-             "Source: final.md section 3.", fontsize=7, color=MUTED)
+    fig.text(
+        0.01,
+        -0.03,
+        "Bars: mean. Whiskers: 95% bootstrap interval over questions (1,000 resamples). "
+        "Source: final.md section 3.",
+        fontsize=7,
+        color=MUTED,
+    )
     save(fig, "fig-4-1-retrieval.svg")
 
 
 # ---- Figure 2: recall@5 by question type (final.md section 3) ----
 def fig_by_type():
-    types = [("factual", 13), ("explanatory", 17), ("comparison", 8), ("multi-hop", 11), ("follow-up", 11)]
+    types = [("factual", 13), ("explanatory", 17), ("comparison", 8), ("multi-hop", 11),
+             ("follow-up", 11)]
     groups = [f"{t}\n(n = {n})" for t, n in types]
     s = {
         "Hybrid": [0.85, 0.65, 0.50, 0.32, 0.09],
@@ -96,8 +116,14 @@ def fig_by_type():
     ax.set_ylabel("recall@5")
     ax.set_title("Retrieval by question type", loc="left", fontsize=10)
     ax.legend(loc="upper right", ncol=3, fontsize=8)
-    fig.text(0.01, -0.11, "Follow-up questions were searched without their history; the product rewrites "
-             "them first (A2). Cells hold 8 to 17 questions. Source: final.md section 3.", fontsize=7, color=MUTED)
+    fig.text(
+        0.01,
+        -0.11,
+        "Follow-up questions were searched without their history; the product rewrites "
+        "them first (A2). Cells hold 8 to 17 questions. Source: final.md section 3.",
+        fontsize=7,
+        color=MUTED,
+    )
     save(fig, "fig-4-2-retrieval-by-type.svg")
 
 
@@ -115,7 +141,9 @@ def fig_dev_test():
     ax.set_ylabel("recall@5")
     ax.set_title("The two halves of the golden set differ", loc="left", fontsize=10)
     ax.legend(loc="upper left", fontsize=8)
-    fig.text(0.01, -0.12, "30 questions per half. Source: final.md section 3.", fontsize=7, color=MUTED)
+    fig.text(
+        0.01, -0.12, "30 questions per half. Source: final.md section 3.", fontsize=7, color=MUTED
+    )
     save(fig, "fig-4-3-dev-test.svg")
 
 
@@ -127,7 +155,15 @@ def fig_ablation():
     vals, lo, hi = [0.491, 0.527], [0.39, 0.43], [0.59, 0.62]
     for i, c in enumerate([BLUE, ORANGE]):
         a.bar(i, vals[i], 0.55, color=c, zorder=3)
-        a.errorbar(i, vals[i], yerr=[[vals[i] - lo[i]], [hi[i] - vals[i]]], color=INK, lw=0.8, capsize=2, zorder=4)
+        a.errorbar(
+            i,
+            vals[i],
+            yerr=[[vals[i] - lo[i]], [hi[i] - vals[i]]],
+            color=INK,
+            lw=0.8,
+            capsize=2,
+            zorder=4,
+        )
         a.text(i, hi[i] + 0.015, f"{vals[i]:.3f}", ha="center", fontsize=8)
     for i in (2, 3):
         a.text(i, 0.04, "not\nscorable", ha="center", va="bottom", fontsize=7.5, color=MUTED)
@@ -146,16 +182,24 @@ def fig_ablation():
     b.set_ylim(0, 72)
     b.set_ylabel("Answerable questions refused")
     b.set_title("Refusals (of 60 answerable)", loc="left", fontsize=9)
-    fig.text(0.01, -0.04, "One run per condition. Whiskers: 95% bootstrap interval, 53 to 55 judged answers. "
-             "The evidence check refused every question. Source: final.md section 4.1.", fontsize=7, color=MUTED)
+    fig.text(
+        0.01,
+        -0.04,
+        "One run per condition. Whiskers: 95% bootstrap interval, 53 to 55 judged answers. "
+        "The evidence check refused every question. Source: final.md section 4.1.",
+        fontsize=7,
+        color=MUTED,
+    )
     fig.tight_layout()
     save(fig, "fig-4-4-ablation.svg")
 
 
 # ---- Figure 5: judge against human labels (final.md section 5) ----
 def fig_judge():
-    groups = ["Faithfulness\nA1 (29 sent.)", "Faithfulness\nA2 (26 sent.)", "Faithfulness\nboth (55)",
-              "Relevance\nA1 (11 ans.)", "Relevance\nA2 (11 ans.)", "Relevance\nboth (22)"]
+    groups = [
+        "Faithfulness\nA1 (29 sent.)", "Faithfulness\nA2 (26 sent.)", "Faithfulness\nboth (55)",
+        "Relevance\nA1 (11 ans.)", "Relevance\nA2 (11 ans.)", "Relevance\nboth (22)"
+    ]
     s = {
         "Raw agreement": [0.862, 0.846, 0.855, 0.455, 0.909, 0.682],
         "Cohen's kappa": [0.733, 0.720, 0.734, 0.057, 0.810, 0.389],
@@ -167,8 +211,14 @@ def fig_judge():
     ax.set_title("Agreement of the judge with LDN's and FAO's labels", loc="left", fontsize=10)
     ax.legend(loc="upper right", ncol=2, fontsize=8)
     ax.tick_params(axis="x", labelsize=7.5)
-    fig.text(0.01, -0.05, "20% sample, seed 20261031; each answer labelled by one person. Too few ratings "
-             "to trust the relevance bars. Source: final.md section 5.", fontsize=7, color=MUTED)
+    fig.text(
+        0.01,
+        -0.05,
+        "20% sample, seed 20261031; each answer labelled by one person. Too few ratings "
+        "to trust the relevance bars. Source: final.md section 5.",
+        fontsize=7,
+        color=MUTED,
+    )
     save(fig, "fig-4-5-judge-agreement.svg")
 
 
@@ -181,9 +231,9 @@ def fig_latency():
     xs = range(3)
     a.bar([x - 0.19 for x in xs], p50, 0.34, color=BLUE, label="p50", zorder=3)
     a.bar([x + 0.19 for x in xs], p95, 0.34, color=ORANGE, label="p95", zorder=3)
-    for x, v in zip(xs, p50):
+    for x, v in zip(xs, p50, strict=False):
         a.text(x - 0.19, v + 0.12, f"{v:.1f}", ha="center", fontsize=7.5)
-    for x, v in zip(xs, p95):
+    for x, v in zip(xs, p95, strict=False):
         a.text(x + 0.19, v + 0.12, f"{v:.1f}", ha="center", fontsize=7.5)
     a.set_xticks(list(xs))
     a.set_xticklabels(stages)
@@ -196,10 +246,19 @@ def fig_latency():
     q50, q95 = [89.6, 97.7, 120.4], [131.0, 135.2, 134.6]
     b.plot(chunks, q50, "o-", color=BLUE, lw=2, ms=6, label="p50", zorder=3)
     b.plot(chunks, q95, "o-", color=ORANGE, lw=2, ms=6, label="p95", zorder=3)
-    for x, v in zip(chunks, q50):
-        b.annotate(f"{v:.0f}", (x, v), textcoords="offset points", xytext=(0, -13), ha="center", fontsize=7.5)
-    for x, v in zip(chunks, q95):
-        b.annotate(f"{v:.0f}", (x, v), textcoords="offset points", xytext=(0, 6), ha="center", fontsize=7.5)
+    for x, v in zip(chunks, q50, strict=False):
+        b.annotate(
+            f"{v:.0f}",
+            (x, v),
+            textcoords="offset points",
+            xytext=(0, -13),
+            ha="center",
+            fontsize=7.5,
+        )
+    for x, v in zip(chunks, q95, strict=False):
+        b.annotate(
+            f"{v:.0f}", (x, v), textcoords="offset points", xytext=(0, 6), ha="center", fontsize=7.5
+        )
     b.set_xticks(chunks)
     b.set_xticklabels(["12k\n(10%)", "61k\n(50%)", "122k\n(100%)"])
     b.set_ylim(0, 170)
@@ -208,23 +267,43 @@ def fig_latency():
     b.set_xlabel("Chunks in the index")
     b.set_title("Hybrid retrieval vs index size (S1)", loc="left", fontsize=9)
     b.legend(loc="lower right", fontsize=8)
-    fig.text(0.01, -0.04, "L1: DAT's laptop, one run. S1: FAO's laptop, 100 queries, k = 10, one repetition; the "
-             "two hosts are not comparable. Sources: final.md section 6.", fontsize=7, color=MUTED)
+    fig.text(
+        0.01,
+        -0.04,
+        "L1: DAT's laptop, one run. S1: FAO's laptop, 100 queries, k = 10, one repetition; the "
+        "two hosts are not comparable. Sources: final.md section 6.",
+        fontsize=7,
+        color=MUTED,
+    )
     fig.tight_layout()
     save(fig, "fig-4-6-latency-scaling.svg")
 
 
 # ---- Figure 7: architecture (chapter 3, section 3.1 and 3.2; docs/01-architecture.md) ----
 def box(ax, x, y, w, h, title, sub, fc="#f3f6fb", ec=BLUE):
-    ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.08", fc=fc, ec=ec, lw=1.2))
+    ax.add_patch(
+        FancyBboxPatch(
+            (x, y), w, h, boxstyle="round,pad=0.02,rounding_size=0.08", fc=fc, ec=ec, lw=1.2
+        )
+    )
     ax.text(x + w / 2, y + h * 0.64, title, ha="center", va="center", fontsize=9, weight="bold")
     ax.text(x + w / 2, y + h * 0.28, sub, ha="center", va="center", fontsize=7, color=MUTED)
 
 
 def arrow(ax, x0, y0, x1, y1, text=None, dy=0.1, dx=0.0, ha="center"):
-    ax.annotate("", xy=(x1, y1), xytext=(x0, y0), arrowprops=dict(arrowstyle="-|>", color=INK, lw=1.0))
+    ax.annotate(
+        "", xy=(x1, y1), xytext=(x0, y0), arrowprops=dict(arrowstyle="-|>", color=INK, lw=1.0)
+    )
     if text:
-        ax.text((x0 + x1) / 2 + dx, (y0 + y1) / 2 + dy, text, ha=ha, va="bottom", fontsize=7, color=MUTED)
+        ax.text(
+            (x0 + x1) / 2 + dx,
+            (y0 + y1) / 2 + dy,
+            text,
+            ha=ha,
+            va="bottom",
+            fontsize=7,
+            color=MUTED,
+        )
 
 
 def fig_architecture():
@@ -256,8 +335,14 @@ def fig_architecture():
     ax.text(0.1, 5.65, "Online path (one question)", fontsize=8.5, weight="bold")
     ax.text(0.1, 1.78, "Offline path", fontsize=8.5, weight="bold", color=MUTED)
     ax.text(3.5, 3.4, "Events: sources, token, followups, done", fontsize=7, color=MUTED)
-    ax.text(0.1, -0.2, "Layers and contracts: chapter 3, section 3.1. The LLM is outside the system and is "
-            "reached through an OpenAI-compatible interface (ADR 0001).", fontsize=7, color=MUTED)
+    ax.text(
+        0.1,
+        -0.2,
+        "Layers and contracts: chapter 3, section 3.1. The LLM is outside the system and is "
+        "reached through an OpenAI-compatible interface (ADR 0001).",
+        fontsize=7,
+        color=MUTED,
+    )
     save(fig, "fig-3-1-architecture.svg")
 
 
