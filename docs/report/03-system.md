@@ -8,8 +8,14 @@ This chapter describes the system as it was evaluated:
 - tag `v0.6-rc`;
 - the configuration frozen in `evaluation/SNAPSHOT.md` on 2026-10-30.
 
-Scheduled ingestion (ADR 0011) was added after the freeze and is described in section 3.7 as an
-addition.
+Four additions came after the freeze and are described in section 3.7:
+- scheduled ingestion (ADR 0011), built but not deployed in v1.0;
+- search plans for paper-finding questions (#186);
+- the full text of one paper read on demand (ADR 0012);
+- the public demo on a Hugging Face Space (section 3.6).
+
+None of them changes the evaluated numbers. The frozen index is not written, and no golden item
+triggers a search plan, except `gs-u02`, which falls back to the default search.
 
 ## 3.1 Architecture
 
@@ -173,11 +179,24 @@ n = 30):
 
 The LLM endpoint is configured through environment variables listed in `.env.example`; keys never
 enter the repository. CI (GitHub Actions) runs `ruff` and `pytest` on every pull request.
+
+**Public demo (added 2026-11-02, `docs/runbooks/hosting.md`).**
+- One Hugging Face Docker Space (`cpu-basic`, 2 vCPU, 16 GB RAM) runs nginx, the backend and
+  Qdrant in one container.
+- At every start it downloads the index (a Qdrant snapshot and the BM25 directory) from a private
+  dataset repository.
+- The LLM is a hosted OpenAI-compatible API. Only `LLM_BASE_URL`, `LLM_MODEL` and `LLM_API_KEY`
+  change (ADR 0001).
+- nginx limits `/chat` per visitor and in total, to stay inside the provider's token quota.
+- After CI passes on `main`, a GitHub Action uploads the code to the Space.
+
+The hosted model is not `llama3.2:3b`, so the numbers in chapter 4 belong to the evaluated setup
+on the laptop, not to the hosted demo.
 TODO(W8-D2-DAT-1): the clean-clone check, which follows only the README on a fresh machine.
 
 ## 3.7 Additions after the freeze
 
-**Scheduled ingestion (ADR 0011).**
+**Scheduled ingestion (ADR 0011): built, not deployed in v1.0.**
 - An `ingest` service runs the incremental pipeline of ADR 0008 every 2 hours into a separate
   collection, `scitech_chunks_live`.
 - After a run that loaded new records, it rebuilds the BM25 index and switches it atomically. A
@@ -187,8 +206,38 @@ TODO(W8-D2-DAT-1): the clean-clone check, which follows only the README on a fre
 - Freshness is bounded by arXiv's daily announcement batch, so the system is "near real time",
   not real time.
 
-TODO(W8-D6-DAT-1): soak-test result, or the fallback to the manual command if the soak check
-could not run before the presentation.
+Status. The code is in two pull requests: the scheduled run (#152) and the BM25 reload with the
+`ingest` service (#178). On 2026-11-03 the soak test (at least 12 runs without a failure or an
+overlap) was postponed until after the presentation. It needs about a day of an awake host and
+adds nothing to the evaluated system. The two pull requests therefore stay unmerged for v1.0, and
+v1.0 keeps the manual incremental command of ADR 0008. The Space serves a static copy of the
+index. The plan for the soak test is in chapter 6.
+
+**Search plans for paper-finding questions (#186).**
+- `scitech_agent.intent.plan_search` reads the question with fixed patterns, without an extra
+  LLM call:
+  - an arXiv id filters retrieval to that paper;
+  - a year with a temporal word, or "latest", filters on the publication date;
+  - a request to find or list papers retrieves 10 hits instead of 5.
+- When a plan is active, the prompt shows each source's arXiv id and date, and a list format is
+  added (`prompts/answer_papers.md`).
+- An empty filtered search falls back to the default search. Questions without a plan get the
+  frozen search and prompts unchanged.
+- The flag `AGENT_SEARCH_MODES` switches it off, and the plan is recorded in the trace.
+
+**Full text on demand (ADR 0012).**
+- When a question names a paper by arXiv id, the agent downloads that paper's HTML rendering
+  (arxiv.org, then ar5iv), with at least 3 s between requests.
+- It splits the page into passages of at most 180 words and ranks them against the question. The
+  answer sees the abstract plus the top 6 passages, each labelled with its section.
+- Nothing is written to disk. When the page cannot be read, the answer uses the abstract only and
+  says so.
+- A visible warning is shown when a full-text answer cites nothing or contains numbers that its
+  cited sources do not.
+- The quality of this mode is not measured: no golden item names an arXiv id. On 2026-11-03 the
+  Space passed the full-text question of a manual trap test (`docs/report/demo-script.md`,
+  question 3.1).
+- The flag is `AGENT_FULLTEXT`.
 
 ## 3.8 Design decisions and known limits
 
@@ -207,10 +256,21 @@ manual UI session on 2026-10-30. That session was a single conversation of 12 tu
 illustration, not a measurement.
 
 - **Abstracts only.** Questions about details that only the full text contains get answers that
-  repeat the abstract, or answers with unsupported claims.
+  repeat the abstract, or answers with unsupported claims. Since ADR 0012 this is lifted for a
+  question that names its paper by arXiv id, but not for topic questions, which still search
+  abstracts only.
 - **No working relevance gate.** With the score threshold at 0 and the self-check off, the agent
   answers even when the 5 retrieved passages are unrelated. A refusal then depends on the 3B model
-  following the prompt.
+  following the prompt. Seen in A2 (`evaluation/reports/answer-errors-w7.md`):
+  - 3 of the 20 analysed cases were answered although no relevant document was among the sources
+    (§4.3);
+  - the unanswerable `gs-u05` was answered;
+  - 5 of 60 answerable items were refused (§4.2):
+    - one true over-refusal (`gs-008`);
+    - two retrieval misses (`gs-012`, `gs-021`);
+    - two follow-up turns whose cause is open (`gs-018`, `gs-024`).
+
+  The self-check that was meant to be this gate refused 60 of 60 answerable items (A3, A4; §5).
 - **Refusal detection is a phrase match.** An uncited answer counts as a refusal when it matches
   one of the refusal phrasings in `agent/src/scitech_agent/evidence.py`. Two phrasings were added
   on 2026-10-30 (#167); the stored Week 7 answers were rechecked and none changed. The wider
@@ -219,9 +279,14 @@ illustration, not a measurement.
   each refusal count used is known.
 - **The citation check is formal, not semantic.** It verifies that `[n]` points to an existing
   source, not that the source supports the claim. Faithfulness (RQ2) measures the semantic part.
+  It also does not require a marker on every sentence. Missing citations are the largest cause in
+  the error analysis: 12 of 20 cases. In A2, 64 of the 85 unsupported sentences have no `[n]`,
+  while 67 of 88 cited sentences are supported (§2 and §4.1).
 - **Out-of-scope questions** are not detected before retrieval. Examples are questions about
   products, links, or research ideas.
-- **Paper links are not in the prompt.** The sources panel shows the arXiv link, but the model
-  does not see it, so it cannot answer "give me the link".
+- **Paper links are not in the prompt** of the frozen system. The sources panel shows the arXiv
+  link, but the model does not see it, so it cannot answer "give me the link". Since #186, a
+  question with an active search plan shows the model each source's arXiv id and date.
 
-TODO(W7-D4-DAT-1): link each limit to the error-analysis categories and counts in chapter 4.
+The counts above come from one run per condition, with causes assigned by a fixed rule
+(`answer-errors-w7.md` §6). They show where each limit occurs, not how large its effect is.
