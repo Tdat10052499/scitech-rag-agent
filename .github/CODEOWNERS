@@ -5,6 +5,7 @@
 /agent/                @Tdat10052499 @F4ol4n
 /backend/              @Tdat10052499 @Yui-Mika
 /frontend/             @Yui-Mika @Tdat10052499
+/landing/              @Yui-Mika @Tdat10052499
 /evaluation/           @Yui-Mika @F4ol4n
 
 # Shared files affect several modules: all members are notified.
