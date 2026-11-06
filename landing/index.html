@@ -284,6 +284,12 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .grounded::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 70% at 70% 50%,rgba(25,28,25,.85),transparent 70%)}
 .grounded>*{z-index:1}
 .panel--dark .h2{color:var(--dk-ink)}
+@media (hover:hover){.grounded{cursor:crosshair}}
+.field-hint{position:absolute;left:clamp(22px,4vw,56px);bottom:22px;margin:0;display:flex;align-items:center;gap:10px;font-size:10.5px;color:var(--dk-ink-2);pointer-events:none;transition:opacity .6s var(--ease-out)}
+.field-hint i{width:6px;height:6px;border-radius:50%;background:var(--dk-accent);animation:pulse 1.6s ease infinite}
+.field-hint.is-used{opacity:.35}
+.field-hint .fh-touch{display:none}
+@media (hover:none){.field-hint .fh-mouse{display:none}.field-hint .fh-touch{display:inline}}
 
 /* ---------- intro ---------- */
 .intro p{font-size:17px;color:var(--ink-2);max-width:52ch}
@@ -544,6 +550,7 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
   <!-- ================= GROUNDED (dark) ================= -->
   <section class="panel panel--dark grounded" id="grounded">
     <canvas id="field" aria-hidden="true"></canvas>
+    <p class="field-hint mono" id="fieldHint" aria-hidden="true"><i></i><span class="fh-mouse">Move to search the corpus · click to retrieve</span><span class="fh-touch">Tap to search the corpus</span></p>
     <div class="split2">
       <div>
         <p class="label" style="margin-bottom:22px">Why it exists</p>
@@ -1014,51 +1021,151 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
   });
   hit(document.getElementById('cdemo'), '1');
 
-  /* ---------- evidence field (canvas) ---------- */
-  const cv = document.getElementById('field'), ctx = cv.getContext('2d');
-  let W = 0, H = 0, pts = [], picked = [], glow = 0, glowTarget = 0, raf = null, onScreen = false;
+  /* ---------- evidence field (canvas): a query searches the corpus ----------
+     Each dot is a paper. The bright point is a question; the dashed ring is its search lens.
+     It wanders through the empty space (never under the text), stops, sends a retrieval pulse and
+     links the five best passages [1]-[5]; evidence particles travel back to the question.
+     Mouse: the question follows the cursor; click sends a pulse. Touch: tap to move it there. */
+  const sec = document.getElementById('grounded'), cv = document.getElementById('field'), ctx = cv.getContext('2d');
+  const hint = document.getElementById('fieldHint');
+  const K = 5;
+  let R = 210, W = 0, H = 0, pts = [], blocks = [], raf = null, onScreen = false, lastT = 0;
+  const q = { x: 0, y: 0, tx: 0, ty: 0 };
+  let mode = 'auto', dwell = 0, lastPick = { x: -999, y: -999 }, touchTimer = null;
+  let picks = [], fading = [], pulseT = -1;
+
+  const ease = t => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
+  function rectIn(el, pad) {
+    const a = el.getBoundingClientRect(), c = cv.getBoundingClientRect();
+    return { l: a.left - c.left - pad, t: a.top - c.top - pad, r: a.right - c.left + pad, b: a.bottom - c.top + pad };
+  }
+  const inBlock = (x, y) => blocks.some(b => x > b.l && x < b.r && y > b.t && y < b.b);
+  function freeSpot() {
+    for (let i = 0; i < 80; i++) {
+      const x = 70 + Math.random() * (W - 140), y = 70 + Math.random() * (H - 140);
+      if (!inBlock(x, y)) return { x, y };
+    }
+    return { x: W * .5, y: H - 60 };
+  }
   function build() {
     const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
     W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    R = W < 600 ? 140 : 210;
+    blocks = [...sec.querySelectorAll('.split2 > *')].map(el => rectIn(el, 26));
     const step = W < 600 ? 22 : 26; pts = [];
     for (let y = step / 2; y < H; y += step) for (let x = step / 2; x < W; x += step) {
-      pts.push({ x: x + (Math.random() - .5) * 8, y: y + (Math.random() - .5) * 8, p: Math.random() * Math.PI * 2 });
+      const px = x + (Math.random() - .5) * 8, py = y + (Math.random() - .5) * 8;
+      pts.push({ x: px, y: py, p: Math.random() * 6.283, rel: Math.random(), dim: inBlock(px, py) });
     }
-    const qx = W * .28, qy = H * .62;
-    picked = pts.map((p, i) => ({ i, d: Math.hypot(p.x - qx, p.y - qy) + Math.random() * 120 }))
-      .filter(o => o.d > 70).sort((a, b) => a.d - b.d).slice(0, 5).map(o => o.i);
+    const s = freeSpot(); q.x = q.tx = s.x; q.y = q.ty = s.y;
+    picks = []; fading = []; lastPick = { x: -999, y: -999 }; dwell = 0;
   }
-  function draw(t) {
+  // Top-K passages: inside the lens, ranked by a fixed per-paper relevance, then distance; papers under the text are skipped.
+  function choose(now) {
+    const scored = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i]; if (p.dim || p.x < 48 || p.x > W - 48 || p.y < 24 || p.y > H - 24) continue; // labels stay inside the panel
+      const d = Math.hypot(p.x - q.x, p.y - q.y);
+      if (d > R * .28 && d < R * .95) scored.push({ i, s: (1 - p.rel) * .75 + (d / R) * .25 }); // relevance first, then distance
+    }
+    scored.sort((a, b) => a.s - b.s);
+    const next = []; // keep the five apart, so every link and label stays readable
+    for (const o of scored) {
+      if (next.length === K) break;
+      const p = pts[o.i];
+      if (next.every(j => Math.hypot(pts[j].x - p.x, pts[j].y - p.y) > R * .38)) next.push(o.i);
+    }
+    const old = new Map(picks.map(p => [p.i, p]));
+    fading = fading.concat(picks.filter(p => !next.includes(p.i)).map(p => ({ ...p, out: now })));
+    picks = next.map((i, rank) => old.has(i) ? { ...old.get(i), rank } : { i, rank, t0: reduce ? -1e9 : now + rank * 70 });
+    lastPick = { x: q.x, y: q.y };
+  }
+  function link(pk, now, time, mul) {
+    const p = pts[pk.i], g = ease((now - pk.t0) / 420) * mul;
+    if (g <= 0.01) return;
+    const ex = q.x + (p.x - q.x) * g, ey = q.y + (p.y - q.y) * g;
+    const grad = ctx.createLinearGradient(q.x, q.y, p.x, p.y);
+    grad.addColorStop(0, `rgba(166,195,173,${.06 * mul})`); grad.addColorStop(1, `rgba(166,195,173,${.6 * mul})`);
+    ctx.strokeStyle = grad; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(ex, ey); ctx.stroke();
+    if (mul === 1 && g > .98 && !reduce) { // evidence travelling back to the question
+      const u = (time * .55 + pk.rank * .2) % 1, mx = p.x + (q.x - p.x) * u, my = p.y + (q.y - p.y) * u;
+      ctx.fillStyle = `rgba(214,229,218,${.95 * Math.sin(u * Math.PI)})`; ctx.beginPath(); ctx.arc(mx, my, 1.7, 0, 6.283); ctx.fill();
+    }
+    const dist = Math.hypot(p.x - q.x, p.y - q.y) / R;
+    const bump = pulseT > 0 ? Math.max(0, 1 - Math.abs((now - pulseT) / 900 - dist) * 5) : 0; // the pulse reaching this dot
+    ctx.fillStyle = `rgba(166,195,173,${g})`; ctx.beginPath(); ctx.arc(p.x, p.y, 2.8 + bump * 2.2, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = `rgba(166,195,173,${.32 * g})`; ctx.beginPath(); ctx.arc(p.x, p.y, 6 + bump * 5, 0, 6.283); ctx.stroke();
+    // label pill on the far side of the dot, so it never covers the link
+    const lab = `[${pk.rank + 1}]`, ang = Math.atan2(p.y - q.y, p.x - q.x);
+    const lx = p.x + Math.cos(ang) * 15, ly = p.y + Math.sin(ang) * 15, w = ctx.measureText(lab).width + 9;
+    const x0 = Math.cos(ang) >= 0 ? lx : lx - w;
+    ctx.fillStyle = `rgba(20,23,20,${.9 * g})`; ctx.fillRect(x0, ly - 8, w, 16);
+    ctx.strokeStyle = `rgba(166,195,173,${.45 * g})`; ctx.strokeRect(x0 + .5, ly - 7.5, w - 1, 15);
+    ctx.fillStyle = `rgba(214,229,218,${g})`; ctx.fillText(lab, x0 + 4.5, ly + .5);
+  }
+  function draw(now) {
+    const dt = lastT ? Math.min(64, now - lastT) : 16.7; lastT = now;
+    if (mode === 'auto' && !reduce) { // wander: travel, stop, pulse, link, move on
+      if (Math.hypot(q.tx - q.x, q.ty - q.y) < 5) {
+        if (!dwell) { dwell = now; pulseT = now; choose(now); }
+        else if (now - dwell > 3200) { const s = freeSpot(); q.tx = s.x; q.ty = s.y; dwell = 0; }
+      }
+    }
+    const k = (mode === 'pointer' ? .14 : .022) * (dt / 16.7);
+    q.x += (q.tx - q.x) * Math.min(k, 1); q.y += (q.ty - q.y) * Math.min(k, 1);
+    if (Math.hypot(q.x - lastPick.x, q.y - lastPick.y) > 26) choose(now);
+
+    const time = now / 1000;
     ctx.clearRect(0, 0, W, H);
-    glow += (glowTarget - glow) * .04;
-    const qx = W * .28, qy = H * .62, time = t / 1000;
-    for (let k = 0; k < pts.length; k++) {
-      const p = pts[k], a = .16 + .1 * Math.sin(time * .8 + p.p);
-      ctx.fillStyle = `rgba(173,181,171,${a})`; ctx.fillRect(p.x, p.y, 1.6, 1.6);
+    for (const p of pts) { // papers; the lens brightens the ones it covers
+      const d = Math.hypot(p.x - q.x, p.y - q.y), lens = d < R ? 1 - d / R : 0;
+      const a = (p.dim ? .06 : .13 + .06 * Math.sin(time * .8 + p.p)) + (p.dim ? 0 : lens * .38);
+      const s = 1.6 + lens * 1.1;
+      ctx.fillStyle = `rgba(173,181,171,${a})`; ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
     }
-    if (glow > .01) {
-      ctx.lineWidth = 1;
-      picked.forEach((idx, j) => {
-        const p = pts[idx], g = Math.max(0, Math.min(1, glow * 5 - j * .6));
-        ctx.strokeStyle = `rgba(166,195,173,${.45 * g})`;
-        ctx.beginPath(); ctx.moveTo(qx, qy); ctx.lineTo(qx + (p.x - qx) * g, qy + (p.y - qy) * g); ctx.stroke();
-        ctx.fillStyle = `rgba(166,195,173,${g})`; ctx.beginPath(); ctx.arc(p.x, p.y, 3.2, 0, 7); ctx.fill();
-        ctx.font = '500 10px "JetBrains Mono", monospace'; ctx.fillText(`[${j + 1}]`, p.x + 7, p.y - 6);
-      });
-      const pr = 5 + Math.sin(time * 3) * 1.2;
-      ctx.fillStyle = `rgba(240,241,234,${glow})`; ctx.beginPath(); ctx.arc(qx, qy, pr, 0, 7); ctx.fill();
-      ctx.strokeStyle = `rgba(166,195,173,${.35 * glow})`; ctx.beginPath(); ctx.arc(qx, qy, pr + 10 + (time * 12 % 20), 0, 7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(166,195,173,.13)'; ctx.lineWidth = 1; ctx.setLineDash([2, 6]); // search lens
+    ctx.beginPath(); ctx.arc(q.x, q.y, R, time * .05, time * .05 + 6.283); ctx.stroke(); ctx.setLineDash([]);
+    if (pulseT > 0) { // retrieval pulse
+      const t = (now - pulseT) / 900;
+      if (t < 1) { ctx.strokeStyle = `rgba(166,195,173,${.5 * (1 - t)})`; ctx.beginPath(); ctx.arc(q.x, q.y, 10 + ease(t) * R, 0, 6.283); ctx.stroke(); }
     }
+    ctx.font = '500 10px "JetBrains Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle';
+    fading = fading.filter(pk => now - pk.out < 280);
+    fading.forEach(pk => link(pk, now, time, 1 - (now - pk.out) / 280));
+    picks.forEach(pk => link(pk, now, time, 1));
+    ctx.fillStyle = 'rgba(240,241,234,.10)'; ctx.beginPath(); ctx.arc(q.x, q.y, 15 + Math.sin(time * 2.4) * 2, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#f0f1ea'; ctx.beginPath(); ctx.arc(q.x, q.y, 4.5, 0, 6.283); ctx.fill();
     if (onScreen && !reduce) raf = requestAnimationFrame(draw);
   }
+  const toLocal = e => { const c = cv.getBoundingClientRect(); return { x: e.clientX - c.left, y: e.clientY - c.top }; };
+  const used = () => hint && hint.classList.add('is-used');
+  sec.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    const p = toLocal(e); mode = 'pointer'; q.tx = p.x; q.ty = p.y; dwell = 0; used();
+    if (reduce) { q.x = p.x; q.y = p.y; draw(performance.now()); }
+  });
+  sec.addEventListener('pointerleave', e => {
+    if (e.pointerType === 'touch') return;
+    mode = 'auto'; dwell = 0; const s = freeSpot(); q.tx = s.x; q.ty = s.y;
+  });
+  sec.addEventListener('pointerdown', e => {
+    const p = toLocal(e), now = performance.now(); used();
+    q.tx = p.x; q.ty = p.y;
+    if (e.pointerType === 'touch') {
+      mode = 'pointer'; clearTimeout(touchTimer);
+      touchTimer = setTimeout(() => { mode = 'auto'; dwell = 0; }, 5000);
+    }
+    if (reduce) { q.x = p.x; q.y = p.y; choose(now); draw(now); return; }
+    pulseT = now + 120; // pulse once the question has arrived
+  });
   build();
-  new ResizeObserver(() => { build(); if (reduce || !onScreen) draw(0); }).observe(cv);
+  new ResizeObserver(() => { build(); if (reduce || !onScreen) draw(performance.now()); }).observe(cv);
   new IntersectionObserver(es => es.forEach(e => {
     onScreen = e.isIntersecting;
-    if (onScreen) { glowTarget = 1; if (reduce) { glow = 1; draw(0); } else { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); } }
-    else cancelAnimationFrame(raf);
-  }), { threshold: .3 }).observe(cv);
-  if (reduce) { glow = 1; draw(0); }
+    if (onScreen && !reduce) { cancelAnimationFrame(raf); lastT = 0; raf = requestAnimationFrame(draw); }
+    else if (!onScreen) cancelAnimationFrame(raf);
+  }), { threshold: .15 }).observe(cv);
+  if (reduce) { choose(performance.now()); draw(performance.now()); }
 
   addEventListener('load', () => window.ScrollTrigger && ScrollTrigger.refresh());
 })();
