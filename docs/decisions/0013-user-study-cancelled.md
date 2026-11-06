@@ -1,13 +1,13 @@
 # 0013. Cancel the user study (RQ3 is not evaluated)
 
-- Status: accepted (2026-11-03; recorded by FAO the day the team was notified that the user study is not needed; DAT and LDN review this record in its PR)
+- Status: accepted (2026-11-03; decided by DAT, recorded by FAO in #193, which DAT approved and merged the same day)
 - Date: 2026-11-03
-- Deciders: FAO (recorded), DAT, LDN
+- Deciders: DAT (decided), FAO (recorded), LDN
 
 ## Context
 The user study (U1) was planned for the night of 2026-11-03, 22:30 to about 01:30, with 4 confirmed participants (`evaluation/RUNS.md` §5, `evaluation/user_study/PROTOCOL.md`). It was the only evidence for RQ3, the usefulness of the follow-up suggestions (`evaluation/PLAN.md` §2). ADR 0010 had already reduced it to 5-6 participants and descriptive statistics.
 
-On 2026-11-03, before the first session, the team was notified that the user study is not needed for the project.
+On 2026-11-03, before the first session, DAT told the team that the user study is not needed for the project.
 
 ## Options considered
 1. Run the four sessions anyway (n = 4, below the planned 5).
