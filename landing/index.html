@@ -123,14 +123,20 @@ p{margin:0}
   position:fixed;z-index:50;top:env(safe-area-inset-top,0px);left:0;right:0;
   padding:14px var(--gut-r) 0 var(--gut);
   pointer-events:none;
+  transition:padding .6s var(--ease-io);
 }
 .nav__bar{
   pointer-events:auto;max-width:1320px;margin:0 auto;
   display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:12px 4px;border-radius:var(--r-md);border:1px solid transparent;
-  transition:padding .6s var(--ease-io),background-color .4s var(--ease-out),border-color .4s var(--ease-out),box-shadow .4s var(--ease-out);
+  transition:padding .6s var(--ease-io),max-width .6s var(--ease-io),background-color .4s var(--ease-out),border-color .4s var(--ease-out),box-shadow .4s var(--ease-out);
 }
-.nav.is-scrolled .nav__bar{background:var(--panel);border-color:var(--line);padding:8px 8px 8px 14px;box-shadow:var(--shadow)}
+/* scrolled: the bar grows 6px past the cards on each side, so it reads as a layer above them, not a squeezed strip */
+.nav.is-scrolled{padding-left:calc(var(--gut) - 6px);padding-right:calc(var(--gut-r) - 6px)}
+.nav.is-scrolled .nav__bar{max-width:1332px;background:color-mix(in srgb,var(--panel) 86%,transparent);border-color:var(--line);padding:8px 8px 8px 14px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+/* Scrolled: a soft band of page colour behind the floating bar, so content fades out above and around it instead of showing through the gap */
+.nav::before{content:"";position:absolute;left:0;right:0;top:calc(-1 * env(safe-area-inset-top,0px));height:calc(44px + env(safe-area-inset-top,0px));background:linear-gradient(to bottom,var(--page) 0%,var(--page) 55%,transparent 100%);opacity:0;transition:opacity .45s var(--ease-out);pointer-events:none;z-index:-1}
+.nav.is-scrolled::before{opacity:1}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
 .brand svg{width:28px;height:28px;flex:none;color:var(--accent)}
 .brand__name small{font:400 10px/1 var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2);margin-left:8px;vertical-align:3px}
