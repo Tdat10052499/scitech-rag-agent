@@ -123,14 +123,20 @@ p{margin:0}
   position:fixed;z-index:50;top:env(safe-area-inset-top,0px);left:0;right:0;
   padding:14px var(--gut-r) 0 var(--gut);
   pointer-events:none;
+  transition:padding .6s var(--ease-io);
 }
 .nav__bar{
   pointer-events:auto;max-width:1320px;margin:0 auto;
   display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:12px 4px;border-radius:var(--r-md);border:1px solid transparent;
-  transition:padding .6s var(--ease-io),background-color .4s var(--ease-out),border-color .4s var(--ease-out),box-shadow .4s var(--ease-out);
+  transition:padding .6s var(--ease-io),max-width .6s var(--ease-io),background-color .4s var(--ease-out),border-color .4s var(--ease-out),box-shadow .4s var(--ease-out);
 }
-.nav.is-scrolled .nav__bar{background:var(--panel);border-color:var(--line);padding:8px 8px 8px 14px;box-shadow:var(--shadow)}
+/* scrolled: the bar grows 6px past the cards on each side, so it reads as a layer above them, not a squeezed strip */
+.nav.is-scrolled{padding-left:calc(var(--gut) - 6px);padding-right:calc(var(--gut-r) - 6px)}
+.nav.is-scrolled .nav__bar{max-width:1332px;background:color-mix(in srgb,var(--panel) 86%,transparent);border-color:var(--line);padding:8px 8px 8px 14px;box-shadow:var(--shadow);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+/* Scrolled: a soft band of page colour behind the floating bar, so content fades out above and around it instead of showing through the gap */
+.nav::before{content:"";position:absolute;left:0;right:0;top:calc(-1 * env(safe-area-inset-top,0px));height:calc(44px + env(safe-area-inset-top,0px));background:linear-gradient(to bottom,var(--page) 0%,var(--page) 55%,transparent 100%);opacity:0;transition:opacity .45s var(--ease-out);pointer-events:none;z-index:-1}
+.nav.is-scrolled::before{opacity:1}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
 .brand svg{width:28px;height:28px;flex:none;color:var(--accent)}
 .brand__name small{font:400 10px/1 var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2);margin-left:8px;vertical-align:3px}
@@ -144,6 +150,8 @@ p{margin:0}
 .nav .btn{padding:10px 12px;font-size:12px}
 .nav .btn-row{align-items:center;flex-wrap:nowrap}
 @media (max-width:520px){.brand__name small{display:none}}
+.btn{white-space:nowrap}
+@media (max-width:400px){.nav__bar{gap:8px}.nav .btn-row{gap:6px}.theme button{width:26px;height:26px}.nav .btn{padding:9px 10px;font-size:11px}.brand__name{font-size:20px}}
 .theme{display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:6px;background:var(--panel-2)}
 .theme button{width:30px;height:30px;display:grid;place-items:center;border:none;border-radius:4px;background:transparent;color:var(--ink-2);cursor:pointer;transition:background-color .25s ease,color .25s ease}
 .theme button:hover{color:var(--ink)}
@@ -229,7 +237,7 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .mock__top .dots{display:flex;gap:5px}.mock__top .dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
 .mock__top .mono{font-size:11px;color:var(--ink-2)}
 .mock__body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,260px);min-height:380px}
-@media (max-width:700px){.mock__body{grid-template-columns:1fr}.mock__src{border-left:none!important;border-top:1px solid var(--line)}}
+@media (max-width:700px){.mock__body{grid-template-columns:1fr}.mock__src{border-left:none!important;border-top:1px solid var(--line)}.mock[data-stage="ask"] .src{display:none}.mock__body{min-height:0}.mock__chat{min-height:300px}}
 .mock__chat{padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .mock__src{border-left:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px;background:var(--panel);min-width:0}
 .mock__src .mono{font-size:10.5px;color:var(--ink-2);display:flex;justify-content:space-between}
@@ -284,6 +292,12 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .grounded::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 70% at 70% 50%,rgba(25,28,25,.85),transparent 70%)}
 .grounded>*{z-index:1}
 .panel--dark .h2{color:var(--dk-ink)}
+@media (hover:hover){.grounded{cursor:crosshair}}
+.field-hint{position:absolute;left:clamp(22px,4vw,56px);bottom:22px;margin:0;display:flex;align-items:center;gap:10px;font-size:10.5px;color:var(--dk-ink-2);pointer-events:none;transition:opacity .6s var(--ease-out)}
+.field-hint i{width:6px;height:6px;border-radius:50%;background:var(--dk-accent);animation:pulse 1.6s ease infinite}
+.field-hint.is-used{opacity:.35}
+.field-hint .fh-touch{display:none}
+@media (hover:none){.field-hint .fh-mouse{display:none}.field-hint .fh-touch{display:inline}}
 
 /* ---------- intro ---------- */
 .intro p{font-size:17px;color:var(--ink-2);max-width:52ch}
@@ -308,7 +322,7 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 
 /* pipeline */
 .pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:stretch}
-@media (max-width:760px){.pipe{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.pipe{grid-template-columns:1fr 1fr}.pill{position:relative;top:auto;right:auto;display:flex;width:max-content;max-width:100%;margin:0 0 16px}}
 .pipe__step{position:relative;border:1px solid var(--line);border-radius:8px;padding:14px 12px;display:flex;flex-direction:column;gap:8px;background:var(--panel-2)}
 .pipe__step:last-child{border-color:var(--accent);background:var(--accent-soft)}
 .pipe__k{font:400 10px/1.3 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
@@ -350,9 +364,16 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .play__head{display:flex;flex-direction:column;gap:22px;align-items:flex-start}
 .play .btn--accent{background:var(--dk-accent);border-color:var(--dk-accent);color:#18251c}
 .play .btn--accent:hover{background:#b9d2bf;border-color:#b9d2bf}
-.app-shot{perspective:1400px}
+.app-shot{position:relative}
+/* genie: while it opens, the app is drawn as thin horizontal strips (copies of it), each scaled on its own, so the window
+   pours out of the middle of the section's bottom edge, narrow at the base and widening upward, then straightens */
+.genie{position:absolute;left:0;top:0;width:100%;pointer-events:none;z-index:2}
+.genie .app{position:absolute;left:0;top:0;width:100%;will-change:transform;box-shadow:none}
+.app-shot.is-genie>.app{visibility:hidden}
+.app-shot.is-genie .genie{display:block}
+.genie{display:none}
 .app{transform-origin:50% 0;border:1px solid var(--dk-line);border-radius:12px;background:var(--dk-2);display:grid;grid-template-columns:200px minmax(0,1fr) 240px;min-height:360px;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.35)}
-@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.app__side,.app__src{display:none}}
+@media (max-width:900px){.app{grid-template-columns:minmax(0,1fr)}.app .app__side,.app .app__src{display:none}} /* .app scope: these rules sit above the base .app__side/.app__src rules */
 .app__side{border-right:1px solid var(--dk-line);padding:16px;display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:var(--dk-ink-2)}
 .app__side .brandline{display:flex;align-items:center;gap:8px;color:var(--dk-ink);font:400 16px/1 var(--f-display)}
 .app__side .brandline svg{width:20px;height:20px;color:#a6c3ad}
@@ -376,6 +397,9 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .flow h3{text-align:center;font:400 clamp(15px,1.6vw,20px)/1 var(--f-mono);text-transform:uppercase;text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:1px}
 .flow h3 small{display:block;text-decoration:none;font-size:11px;color:var(--ink-2);margin-top:10px;letter-spacing:.06em}
 .flow__svg{overflow-x:auto}
+.flow svg.flow__v{display:none;min-width:0;max-width:340px;margin:0 auto}
+.flow svg.flow__v .node text{font-size:15px;letter-spacing:.03em}
+@media (max-width:640px){.flow svg.flow__h{display:none}.flow svg.flow__v{display:block}}
 .flow svg{display:block;width:100%;min-width:620px;height:auto}
 .flow .path{fill:none;stroke:var(--line-strong);stroke-width:1.2}
 .flow .node rect{fill:var(--panel);stroke:var(--line-strong);stroke-width:1}
@@ -384,6 +408,16 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .flow .dot{fill:var(--accent)}
 .flow .dot-bad{fill:var(--line-strong)}
 .flow .qmark{font:400 22px var(--f-display);fill:var(--ink-2);text-anchor:middle}
+/* the travelling dot disappears into each step, which lights up while the dot is inside */
+.flow circle{transition:opacity .18s var(--ease-out)}
+.flow circle.is-hidden{opacity:0}
+.flow .node rect{transition:fill .35s var(--ease-out),stroke .35s var(--ease-out),filter .35s var(--ease-out)}
+.flow .node text{transition:fill .35s var(--ease-out)}
+/* every step lights up the same way: solid sage, light text, a soft sage glow */
+.flow .node.is-on rect{fill:var(--accent);stroke:var(--accent);filter:drop-shadow(0 4px 10px color-mix(in srgb,var(--accent) 45%,transparent))}
+.flow .node.is-on text{fill:var(--on-accent)}
+.flow--plain .node.is-on rect{fill:var(--ink-2);stroke:var(--ink-2);filter:drop-shadow(0 4px 10px color-mix(in srgb,var(--ink-2) 35%,transparent))} /* no evidence: the same light-up in neutral grey */
+.flow--plain .node.is-on text{fill:var(--panel)}
 
 /* ---------- evaluation ---------- */
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;margin-top:clamp(28px,4vw,48px)}
@@ -393,6 +427,7 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .stat__k{font:400 11px/1.4 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
 .charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:12px}
 @media (max-width:860px){.charts{grid-template-columns:1fr}}
+@media (max-width:520px){.ci{gap:20px}.ci__row{grid-template-columns:92px minmax(0,1fr)}.ci__axis{margin-left:104px}.chart{padding:16px}}
 .chart{border:1px solid var(--line);border-radius:var(--r-md);padding:20px;background-color:var(--panel-2);display:flex;flex-direction:column;gap:16px;min-width:0}
 .chart__h{display:flex;justify-content:space-between;gap:10px;font:400 11px/1.3 var(--f-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
 .chart__h b{color:var(--ink);font-weight:500}
@@ -444,6 +479,8 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
 .foot>div{background:var(--panel);border-radius:var(--r-md);padding:16px 18px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 20px;font:400 12px/1.4 var(--f-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2)}
 .foot a{color:var(--ink);text-underline-offset:4px}
 .foot a:hover{color:var(--accent)}
+
+@media (hover:none){.cite[data-src]{position:relative}.cite[data-src]::after{content:"";position:absolute;inset:-10px -6px}.member .gh,.foot a{padding:10px 0;margin:-10px 0}}
 
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
@@ -544,6 +581,7 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
   <!-- ================= GROUNDED (dark) ================= -->
   <section class="panel panel--dark grounded" id="grounded">
     <canvas id="field" aria-hidden="true"></canvas>
+    <p class="field-hint mono" id="fieldHint" aria-hidden="true"><i></i><span class="fh-mouse">Move to search the corpus · click to retrieve</span><span class="fh-touch">Tap to search the corpus</span></p>
     <div class="split2">
       <div>
         <p class="label" style="margin-bottom:22px">Why it exists</p>
@@ -709,23 +747,31 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
       <p class="muted" data-reveal style="font-size:17px;max-width:52ch">A plain chatbot goes straight from your question to its memory. ASAP adds a retrieval step in between, so every answer can be traced back to a paper.</p>
     </div>
     <div class="flows">
-      <div class="flow grid-bg" data-reveal>
+      <div class="flow flow--plain grid-bg" data-reveal>
         <h3>Plain chatbot<small>No sources</small></h3>
         <div class="flow__svg">
-          <svg viewBox="0 0 1000 200" role="img" aria-label="Question, then answer from memory, then an unverifiable answer, looping back">
+          <svg class="flow__h" viewBox="0 0 1000 200" data-dur="7" role="img" aria-label="Question, then answer from memory, then an unverifiable answer, looping back">
             <path id="p1" class="path" d="M250 50 H750 A50 50 0 0 1 750 150 H250 A50 50 0 0 1 250 50 Z"/>
             <g class="node" transform="translate(250 50)"><rect x="-70" y="-15" width="140" height="30" rx="6"/><text>Question</text></g>
             <g class="node" transform="translate(750 50)"><rect x="-100" y="-15" width="200" height="30" rx="6"/><text>Answer from memory</text></g>
             <g class="node" transform="translate(500 150)"><rect x="-80" y="-15" width="160" height="30" rx="6"/><text>Trust it?</text></g>
             <text class="qmark" x="500" y="112">?</text>
-            <circle r="6" class="dot-bad"><animateMotion dur="7s" repeatCount="indefinite"><mpath href="#p1"/></animateMotion></circle>
+            <circle r="6" class="dot-bad" cx="250" cy="50"></circle>
+          </svg>
+          <svg class="flow__v" viewBox="0 0 320 285" data-dur="7" aria-hidden="true">
+            <path class="path" d="M135 40 V225 Q135 260 170 260 H250 Q280 260 280 230 V70 Q280 40 250 40 Z"/>
+            <g class="node" transform="translate(135 55)"><rect x="-70" y="-17" width="140" height="34" rx="6"/><text>Question</text></g>
+            <g class="node" transform="translate(135 140)"><rect x="-100" y="-17" width="200" height="34" rx="6"/><text>Answer from memory</text></g>
+            <g class="node" transform="translate(135 225)"><rect x="-80" y="-17" width="160" height="34" rx="6"/><text>Trust it?</text></g>
+            <text class="qmark" x="301" y="160">?</text>
+            <circle r="6" class="dot-bad" cx="135" cy="40"></circle>
           </svg>
         </div>
       </div>
       <div class="flow grid-bg" data-reveal>
         <h3>ASAP RAG Agent<small>Evidence first</small></h3>
         <div class="flow__svg">
-          <svg viewBox="0 0 1000 200" role="img" aria-label="Question, rewrite query, retrieve top 5, answer with citations, suggest follow-ups, looping back to the next question">
+          <svg class="flow__h" viewBox="0 0 1000 200" data-dur="9" role="img" aria-label="Question, rewrite query, retrieve top 5, answer with citations, suggest follow-ups, looping back to the next question">
             <path id="p2" class="path" d="M150 50 H850 A50 50 0 0 1 850 150 H150 A50 50 0 0 1 150 50 Z"/>
             <g class="node" transform="translate(150 50)"><rect x="-65" y="-15" width="130" height="30" rx="6"/><text>Question</text></g>
             <g class="node" transform="translate(400 50)"><rect x="-80" y="-15" width="160" height="30" rx="6"/><text>Rewrite query</text></g>
@@ -733,7 +779,17 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
             <g class="node end" transform="translate(850 150)"><rect x="-95" y="-15" width="190" height="30" rx="6"/><text>Answer with [n]</text></g>
             <g class="node" transform="translate(500 150)"><rect x="-90" y="-15" width="180" height="30" rx="6"/><text>Check sources</text></g>
             <g class="node" transform="translate(180 150)"><rect x="-90" y="-15" width="180" height="30" rx="6"/><text>Follow-ups</text></g>
-            <circle r="6" class="dot"><animateMotion dur="9s" repeatCount="indefinite"><mpath href="#p2"/></animateMotion></circle>
+            <circle r="6" class="dot" cx="150" cy="50"></circle>
+          </svg>
+          <svg class="flow__v" viewBox="0 0 320 470" data-dur="9" aria-hidden="true">
+            <path class="path" d="M135 40 V410 Q135 445 170 445 H250 Q280 445 280 415 V70 Q280 40 250 40 Z"/>
+            <g class="node" transform="translate(135 55)"><rect x="-75" y="-17" width="150" height="34" rx="6"/><text>Question</text></g>
+            <g class="node" transform="translate(135 125)"><rect x="-85" y="-17" width="170" height="34" rx="6"/><text>Rewrite query</text></g>
+            <g class="node" transform="translate(135 195)"><rect x="-95" y="-17" width="190" height="34" rx="6"/><text>Retrieve top 5</text></g>
+            <g class="node end" transform="translate(135 265)"><rect x="-95" y="-17" width="190" height="34" rx="6"/><text>Answer with [n]</text></g>
+            <g class="node" transform="translate(135 335)"><rect x="-90" y="-17" width="180" height="34" rx="6"/><text>Check sources</text></g>
+            <g class="node" transform="translate(135 405)"><rect x="-80" y="-17" width="160" height="34" rx="6"/><text>Follow-ups</text></g>
+            <circle r="6" class="dot" cx="135" cy="40"></circle>
           </svg>
         </div>
       </div>
@@ -953,9 +1009,52 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
       gsap.from('.ci__range', { scaleX: 0, duration: 1, ease: EASE_IO, stagger: .1 });
       gsap.from('.ci__dot, .ci__val', { opacity: 0, scale: .4, duration: .5, delay: .7, stagger: .05 });
     }});
-    /* app tilt */
-    gsap.fromTo('#appShot', { rotateX: 16, y: 40 }, { rotateX: 0, y: 0, ease: 'none',
-      scrollTrigger: { trigger: '#appShot', start: 'top bottom', end: 'top 30%', scrub: true } });
+    /* app genie: scroll down and the window pours out of the bottom edge of the section, scroll up and it goes back in */
+    (() => {
+      const app = document.getElementById('appShot'), shot = app.parentElement, sec = document.getElementById('demo');
+      const N = 56, LAG = .5, MINW = .05;
+      const genie = document.createElement('div'); genie.className = 'genie'; genie.setAttribute('aria-hidden', 'true');
+      const strips = [];
+      for (let i = 0; i < N; i++) {
+        const c = app.cloneNode(true); c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+        genie.appendChild(c); strips.push(c);
+      }
+      shot.appendChild(genie);
+      let H = 0, OY = 0, last = -1;
+      const clamp = v => Math.min(1, Math.max(0, v));
+      const outC = t => 1 - Math.pow(1 - t, 3), inOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      const q = (s, p) => clamp((p - s * LAG) / (1 - LAG));            // top of the window leads, the base follows
+      const Wd = (s, p) => MINW + (1 - MINW) * inOut(q(s, p));
+      const Y = (s, p) => OY + (s * H - OY) * outC(q(s, p));            // where row s of the window is now
+      function measure() {
+        const a = app.getBoundingClientRect(), b = sec.getBoundingClientRect();
+        H = a.height; OY = b.bottom - a.top + 2;                          // the origin: the section's bottom edge
+        strips.forEach((c, i) => { c.style.transformOrigin = `50% ${H * i / N}px`; });
+        last = -1;
+      }
+      function render(p) {
+        if (p === last) return; last = p;
+        if (p >= 1) { shot.classList.remove('is-genie'); return; }
+        shot.classList.add('is-genie');
+        genie.style.opacity = clamp(p * 6);
+        for (let i = 0; i < N; i++) {
+          const s0 = i / N, s1 = (i + 1) / N, t = s0 * H, b = s1 * H + 1;   // 1px overlap hides seams
+          const y0 = Y(s0, p), y1 = Y(s1, p);
+          const sx = Wd(s0, p), r = Wd(s1, p) / sx;                       // narrow near the lamp, wide once it is out
+          const sy = Math.max(.001, (y1 - y0) / ((s1 - s0) * H));
+          // each strip is a trapezoid whose bottom matches the next strip's top, so the sides curve smoothly
+          strips[i].style.clipPath = `polygon(0% ${t}px,100% ${t}px,${50 + 50 * r}% ${b}px,${50 - 50 * r}% ${b}px)`;
+          strips[i].style.transform = `translate3d(0,${y0 - t}px,0) scale(${sx},${sy})`;
+        }
+      }
+      // starts with the section's bottom edge just under the screen, ends with the whole window in view
+      const pos = v => () => { const b = sec.getBoundingClientRect(), a = app.getBoundingClientRect(), vh = innerHeight;
+        const vEnd = Math.min(vh * .94, vh * .1 + (b.bottom - a.top));
+        return b.bottom + scrollY - (v === 'end' ? vEnd : vEnd + vh * .45); };
+      const st = ScrollTrigger.create({ trigger: sec, start: pos('start'), end: pos('end'), scrub: true,
+        onRefresh: self => { measure(); render(self.progress); }, onUpdate: self => render(self.progress) });
+      measure(); render(st.progress);
+    })();
   } else {
     document.querySelectorAll('[data-count]').forEach(countUp);
   }
@@ -1014,51 +1113,187 @@ main{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:12px;
   });
   hit(document.getElementById('cdemo'), '1');
 
-  /* ---------- evidence field (canvas) ---------- */
-  const cv = document.getElementById('field'), ctx = cv.getContext('2d');
-  let W = 0, H = 0, pts = [], picked = [], glow = 0, glowTarget = 0, raf = null, onScreen = false;
+  /* ---------- evidence field (canvas): a query searches the corpus ----------
+     Each dot is a paper. The bright point is a question; the dashed ring is its search lens.
+     It wanders through the empty space (never under the text), stops, sends a retrieval pulse and
+     links the five best passages [1]-[5]; evidence particles travel back to the question.
+     Mouse: the question follows the cursor; click sends a pulse. Touch: tap to move it there. */
+  const sec = document.getElementById('grounded'), cv = document.getElementById('field'), ctx = cv.getContext('2d');
+  const hint = document.getElementById('fieldHint');
+  const K = 5;
+  let R = 210, W = 0, H = 0, pts = [], blocks = [], raf = null, onScreen = false, lastT = 0;
+  const q = { x: 0, y: 0, tx: 0, ty: 0 };
+  let mode = 'auto', dwell = 0, lastPick = { x: -999, y: -999 }, touchTimer = null;
+  let picks = [], fading = [], pulseT = -1;
+
+  const ease = t => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
+  function rectIn(el, pad) {
+    const a = el.getBoundingClientRect(), c = cv.getBoundingClientRect();
+    return { l: a.left - c.left - pad, t: a.top - c.top - pad, r: a.right - c.left + pad, b: a.bottom - c.top + pad };
+  }
+  const inBlock = (x, y) => blocks.some(b => x > b.l && x < b.r && y > b.t && y < b.b);
+  function freeSpot() {
+    for (let i = 0; i < 80; i++) {
+      const x = 70 + Math.random() * (W - 140), y = 70 + Math.random() * (H - 140);
+      if (!inBlock(x, y)) return { x, y };
+    }
+    return { x: W * .5, y: H - 60 };
+  }
   function build() {
     const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
     W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    R = W < 600 ? 140 : 210;
+    blocks = [...sec.querySelectorAll('.split2 > *')].map(el => rectIn(el, 26));
     const step = W < 600 ? 22 : 26; pts = [];
     for (let y = step / 2; y < H; y += step) for (let x = step / 2; x < W; x += step) {
-      pts.push({ x: x + (Math.random() - .5) * 8, y: y + (Math.random() - .5) * 8, p: Math.random() * Math.PI * 2 });
+      const px = x + (Math.random() - .5) * 8, py = y + (Math.random() - .5) * 8;
+      pts.push({ x: px, y: py, p: Math.random() * 6.283, rel: Math.random(), dim: inBlock(px, py) });
     }
-    const qx = W * .28, qy = H * .62;
-    picked = pts.map((p, i) => ({ i, d: Math.hypot(p.x - qx, p.y - qy) + Math.random() * 120 }))
-      .filter(o => o.d > 70).sort((a, b) => a.d - b.d).slice(0, 5).map(o => o.i);
+    const s = freeSpot(); q.x = q.tx = s.x; q.y = q.ty = s.y;
+    picks = []; fading = []; lastPick = { x: -999, y: -999 }; dwell = 0;
   }
-  function draw(t) {
+  // Top-K passages: inside the lens, ranked by a fixed per-paper relevance, then distance; papers under the text are skipped.
+  function choose(now) {
+    const scored = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i]; if (p.dim || p.x < 48 || p.x > W - 48 || p.y < 24 || p.y > H - 24) continue; // labels stay inside the panel
+      const d = Math.hypot(p.x - q.x, p.y - q.y);
+      if (d > R * .28 && d < R * .95) scored.push({ i, s: (1 - p.rel) * .75 + (d / R) * .25 }); // relevance first, then distance
+    }
+    scored.sort((a, b) => a.s - b.s);
+    const next = []; // keep the five apart, so every link and label stays readable
+    for (const o of scored) {
+      if (next.length === K) break;
+      const p = pts[o.i];
+      if (next.every(j => Math.hypot(pts[j].x - p.x, pts[j].y - p.y) > R * .38)) next.push(o.i);
+    }
+    const old = new Map(picks.map(p => [p.i, p]));
+    fading = fading.concat(picks.filter(p => !next.includes(p.i)).map(p => ({ ...p, out: now })));
+    picks = next.map((i, rank) => old.has(i) ? { ...old.get(i), rank } : { i, rank, t0: reduce ? -1e9 : now + rank * 70 });
+    lastPick = { x: q.x, y: q.y };
+  }
+  function link(pk, now, time, mul) {
+    const p = pts[pk.i], g = ease((now - pk.t0) / 420) * mul;
+    if (g <= 0.01) return;
+    const ex = q.x + (p.x - q.x) * g, ey = q.y + (p.y - q.y) * g;
+    const grad = ctx.createLinearGradient(q.x, q.y, p.x, p.y);
+    grad.addColorStop(0, `rgba(166,195,173,${.06 * mul})`); grad.addColorStop(1, `rgba(166,195,173,${.6 * mul})`);
+    ctx.strokeStyle = grad; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(ex, ey); ctx.stroke();
+    if (mul === 1 && g > .98 && !reduce) { // evidence travelling back to the question
+      const u = (time * .55 + pk.rank * .2) % 1, mx = p.x + (q.x - p.x) * u, my = p.y + (q.y - p.y) * u;
+      ctx.fillStyle = `rgba(214,229,218,${.95 * Math.sin(u * Math.PI)})`; ctx.beginPath(); ctx.arc(mx, my, 1.7, 0, 6.283); ctx.fill();
+    }
+    const dist = Math.hypot(p.x - q.x, p.y - q.y) / R;
+    const bump = pulseT > 0 ? Math.max(0, 1 - Math.abs((now - pulseT) / 900 - dist) * 5) : 0; // the pulse reaching this dot
+    ctx.fillStyle = `rgba(166,195,173,${g})`; ctx.beginPath(); ctx.arc(p.x, p.y, 2.8 + bump * 2.2, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = `rgba(166,195,173,${.32 * g})`; ctx.beginPath(); ctx.arc(p.x, p.y, 6 + bump * 5, 0, 6.283); ctx.stroke();
+    // label pill on the far side of the dot, so it never covers the link
+    const lab = `[${pk.rank + 1}]`, ang = Math.atan2(p.y - q.y, p.x - q.x);
+    const lx = p.x + Math.cos(ang) * 15, ly = p.y + Math.sin(ang) * 15, w = ctx.measureText(lab).width + 9;
+    const x0 = Math.cos(ang) >= 0 ? lx : lx - w;
+    ctx.fillStyle = `rgba(20,23,20,${.9 * g})`; ctx.fillRect(x0, ly - 8, w, 16);
+    ctx.strokeStyle = `rgba(166,195,173,${.45 * g})`; ctx.strokeRect(x0 + .5, ly - 7.5, w - 1, 15);
+    ctx.fillStyle = `rgba(214,229,218,${g})`; ctx.fillText(lab, x0 + 4.5, ly + .5);
+  }
+  function draw(now) {
+    const dt = lastT ? Math.min(64, now - lastT) : 16.7; lastT = now;
+    if (mode === 'auto' && !reduce) { // wander: travel, stop, pulse, link, move on
+      if (Math.hypot(q.tx - q.x, q.ty - q.y) < 5) {
+        if (!dwell) { dwell = now; pulseT = now; choose(now); }
+        else if (now - dwell > 3200) { const s = freeSpot(); q.tx = s.x; q.ty = s.y; dwell = 0; }
+      }
+    }
+    const k = (mode === 'pointer' ? .14 : .022) * (dt / 16.7);
+    q.x += (q.tx - q.x) * Math.min(k, 1); q.y += (q.ty - q.y) * Math.min(k, 1);
+    if (Math.hypot(q.x - lastPick.x, q.y - lastPick.y) > 26) choose(now);
+
+    const time = now / 1000;
     ctx.clearRect(0, 0, W, H);
-    glow += (glowTarget - glow) * .04;
-    const qx = W * .28, qy = H * .62, time = t / 1000;
-    for (let k = 0; k < pts.length; k++) {
-      const p = pts[k], a = .16 + .1 * Math.sin(time * .8 + p.p);
-      ctx.fillStyle = `rgba(173,181,171,${a})`; ctx.fillRect(p.x, p.y, 1.6, 1.6);
+    for (const p of pts) { // papers; the lens brightens the ones it covers
+      const d = Math.hypot(p.x - q.x, p.y - q.y), lens = d < R ? 1 - d / R : 0;
+      const a = (p.dim ? .06 : .13 + .06 * Math.sin(time * .8 + p.p)) + (p.dim ? 0 : lens * .38);
+      const s = 1.6 + lens * 1.1;
+      ctx.fillStyle = `rgba(173,181,171,${a})`; ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
     }
-    if (glow > .01) {
-      ctx.lineWidth = 1;
-      picked.forEach((idx, j) => {
-        const p = pts[idx], g = Math.max(0, Math.min(1, glow * 5 - j * .6));
-        ctx.strokeStyle = `rgba(166,195,173,${.45 * g})`;
-        ctx.beginPath(); ctx.moveTo(qx, qy); ctx.lineTo(qx + (p.x - qx) * g, qy + (p.y - qy) * g); ctx.stroke();
-        ctx.fillStyle = `rgba(166,195,173,${g})`; ctx.beginPath(); ctx.arc(p.x, p.y, 3.2, 0, 7); ctx.fill();
-        ctx.font = '500 10px "JetBrains Mono", monospace'; ctx.fillText(`[${j + 1}]`, p.x + 7, p.y - 6);
-      });
-      const pr = 5 + Math.sin(time * 3) * 1.2;
-      ctx.fillStyle = `rgba(240,241,234,${glow})`; ctx.beginPath(); ctx.arc(qx, qy, pr, 0, 7); ctx.fill();
-      ctx.strokeStyle = `rgba(166,195,173,${.35 * glow})`; ctx.beginPath(); ctx.arc(qx, qy, pr + 10 + (time * 12 % 20), 0, 7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(166,195,173,.13)'; ctx.lineWidth = 1; ctx.setLineDash([2, 6]); // search lens
+    ctx.beginPath(); ctx.arc(q.x, q.y, R, time * .05, time * .05 + 6.283); ctx.stroke(); ctx.setLineDash([]);
+    if (pulseT > 0) { // retrieval pulse
+      const t = (now - pulseT) / 900;
+      if (t < 1) { ctx.strokeStyle = `rgba(166,195,173,${.5 * (1 - t)})`; ctx.beginPath(); ctx.arc(q.x, q.y, 10 + ease(t) * R, 0, 6.283); ctx.stroke(); }
     }
+    ctx.font = '500 10px "JetBrains Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle';
+    fading = fading.filter(pk => now - pk.out < 280);
+    fading.forEach(pk => link(pk, now, time, 1 - (now - pk.out) / 280));
+    picks.forEach(pk => link(pk, now, time, 1));
+    ctx.fillStyle = 'rgba(240,241,234,.10)'; ctx.beginPath(); ctx.arc(q.x, q.y, 15 + Math.sin(time * 2.4) * 2, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#f0f1ea'; ctx.beginPath(); ctx.arc(q.x, q.y, 4.5, 0, 6.283); ctx.fill();
     if (onScreen && !reduce) raf = requestAnimationFrame(draw);
   }
+  const toLocal = e => { const c = cv.getBoundingClientRect(); return { x: e.clientX - c.left, y: e.clientY - c.top }; };
+  const used = () => hint && hint.classList.add('is-used');
+  sec.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    const p = toLocal(e); mode = 'pointer'; q.tx = p.x; q.ty = p.y; dwell = 0; used();
+    if (reduce) { q.x = p.x; q.y = p.y; draw(performance.now()); }
+  });
+  sec.addEventListener('pointerleave', e => {
+    if (e.pointerType === 'touch') return;
+    mode = 'auto'; dwell = 0; const s = freeSpot(); q.tx = s.x; q.ty = s.y;
+  });
+  sec.addEventListener('pointerdown', e => {
+    const p = toLocal(e), now = performance.now(); used();
+    q.tx = p.x; q.ty = p.y;
+    if (e.pointerType === 'touch') {
+      mode = 'pointer'; clearTimeout(touchTimer);
+      touchTimer = setTimeout(() => { mode = 'auto'; dwell = 0; }, 5000);
+    }
+    if (reduce) { q.x = p.x; q.y = p.y; choose(now); draw(now); return; }
+    pulseT = now + 120; // pulse once the question has arrived
+  });
   build();
-  new ResizeObserver(() => { build(); if (reduce || !onScreen) draw(0); }).observe(cv);
+  new ResizeObserver(() => { build(); if (reduce || !onScreen) draw(performance.now()); }).observe(cv);
   new IntersectionObserver(es => es.forEach(e => {
     onScreen = e.isIntersecting;
-    if (onScreen) { glowTarget = 1; if (reduce) { glow = 1; draw(0); } else { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); } }
-    else cancelAnimationFrame(raf);
-  }), { threshold: .3 }).observe(cv);
-  if (reduce) { glow = 1; draw(0); }
+    if (onScreen && !reduce) { cancelAnimationFrame(raf); lastT = 0; raf = requestAnimationFrame(draw); }
+    else if (!onScreen) cancelAnimationFrame(raf);
+  }), { threshold: .15 }).observe(cv);
+  if (reduce) { choose(performance.now()); draw(performance.now()); }
+
+  /* ---------- workflow loops: the dot travels the loop; at each step it disappears into the box, which lights up ---------- */
+  document.querySelectorAll('.flow svg').forEach(svg => {
+    const path = svg.querySelector('.path'), dot = svg.querySelector('circle');
+    if (!path || !dot) return;
+    const dur = parseFloat(svg.dataset.dur || '8') * 1000;
+    if (reduce) { dot.classList.add('is-hidden'); return; }
+    let len = 0, boxes = null;
+    function measure() { // on first view: a loop hidden by the phone/desktop switch is measured only once it shows
+      len = path.getTotalLength();
+      boxes = [...svg.querySelectorAll('.node')].map(n => {
+        const r = n.querySelector('rect'), m = n.transform.baseVal.consolidate().matrix;
+        const x = m.e + +r.getAttribute('x'), y = m.f + +r.getAttribute('y');
+        return { n, l: x - 3, t: y - 3, r: x + +r.getAttribute('width') + 3, b: y + +r.getAttribute('height') + 3 };
+      });
+    }
+    let start = null, paused = 0, raf = 0, current = null;
+    function tick(t) {
+      if (start === null) start = t - paused;
+      const u = ((t - start) % dur) / dur, pt = path.getPointAtLength(u * len);
+      dot.setAttribute('cx', pt.x); dot.setAttribute('cy', pt.y);
+      const hit = boxes.find(b => pt.x > b.l && pt.x < b.r && pt.y > b.t && pt.y < b.b) || null;
+      if (hit !== current) {
+        if (current) current.n.classList.remove('is-on');
+        if (hit) hit.n.classList.add('is-on');
+        dot.classList.toggle('is-hidden', !!hit);
+        current = hit;
+      }
+      paused = t - start;
+      raf = requestAnimationFrame(tick);
+    }
+    new IntersectionObserver(es => es.forEach(e => {
+      cancelAnimationFrame(raf);
+      if (e.isIntersecting) { if (!boxes) measure(); start = null; raf = requestAnimationFrame(tick); } // resume where it stopped
+    })).observe(svg);
+  });
 
   addEventListener('load', () => window.ScrollTrigger && ScrollTrigger.refresh());
 })();
