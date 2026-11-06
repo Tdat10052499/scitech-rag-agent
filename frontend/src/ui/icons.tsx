@@ -110,6 +110,18 @@ export const SearchMinusIcon = (p: IconProps) => (
   </Icon>
 );
 
+/** ASAP logo mark (two leaves, a ring and a diamond), drawn on a 48px grid. Colour = currentColor. */
+export const AsapLogo = ({ size = 18, ...rest }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false" {...rest}>
+    <g stroke="currentColor" strokeWidth={2.8} strokeLinejoin="round">
+      <path d="M24 3.5C37 12 37 36 24 44.5C11 36 11 12 24 3.5Z" />
+      <path d="M3.5 24C12 11 36 11 44.5 24C36 37 12 37 3.5 24Z" />
+      <circle cx={25} cy={24.5} r={9.6} />
+    </g>
+    <rect x={20.8} y={20.8} width={6.4} height={6.4} rx={1.5} transform="rotate(45 24 24)" fill="currentColor" />
+  </svg>
+);
+
 export const BookIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M3 5.5A1.5 1.5 0 0 1 4.5 4H9a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5h-5A1.5 1.5 0 0 1 3 16z" />
