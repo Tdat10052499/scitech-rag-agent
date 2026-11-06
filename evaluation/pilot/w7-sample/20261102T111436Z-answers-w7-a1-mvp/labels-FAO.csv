@@ -1,0 +1,12 @@
+﻿answer_id,sentence_no,sentence,cited_n,cited_chunk_ids,label,reason,partial_note,annotator
+gs-002,1,The sources do not contain enough evidence to answer this question.,,,not checkable,,,FAO
+gs-002,2,"While retrieval augmentation can improve the performance of language models, the sources suggest that the decision to adopt RAG (retrieval-augmented generation) depends on the specific task, the quality of the retrieved documents, and the model's ability to leverage the retrieved content.",,,not supported,no citation,,FAO
+gs-002,3,"In some cases, providing more retrieved documents may lead to performance degradation, as seen in the study by [4], which found that document order and the model's interaction with retrieved documents can impact results.",4,2505.21870#0,supported,,,FAO
+gs-033,1,"The claims in the MultiFC fact-checking dataset come from 26 fact-checking websites in English, paired with textual sources and rich metadata, and labelled for veracity by human expert journalists.",,,not supported,no citation,,FAO
+gs-033,2,"The best-performing model achieves a Macro F1 of 49.2%, showing that this is a challenging testbed for claim veracity prediction [1].",1,1909.03242#0,supported,,,FAO
+gs-034,1,"Contrastive pruning consistently yields significant improvements, especially in extremely high sparsity scenarios.",,,not supported,no citation,,FAO
+gs-034,2,"With only 3% model parameters reserved (i.e., 97% sparsity), CAP successfully achieves 99.2% and 96.3% of the original BERT performance in QQP and MNLI tasks.",,,not supported,no citation,,FAO
+gs-044,1,"Existing detectors assume that tools that detect ChatGPT-written text can be fooled easily, as they are vulnerable to distributional gaps between human-written and AI-written text [1].",1,2606.13610#0,not supported,"does not mention ""distributional gaps""",,FAO
+gs-044,2,"In fact, studies have shown that a single polluted page can yield fooled rates of up to 27% [1], and that the full top-3 replacement can raise this rate to 73.8% [1].",1,2606.13610#0,supported,,,FAO
+gs-044,3,This suggests that tools that detect ChatGPT-written text can be easily fooled by polluted or manipulated text.,,,not supported,no citation,,FAO
+gs-050,1,"In one comparison across nine language models, putting distractor options into the prompt substantially improved the alignment between the models' stated confidence and their correctness, with relative accuracy improvements up to 460% [1].",1,2502.11028#0,not supported,"""mitigate miscalibration"" is stronger than the cite",,FAO
