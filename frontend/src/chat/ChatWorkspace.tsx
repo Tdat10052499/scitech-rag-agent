@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import type { AssistantMessage as AssistantTurn } from "../types";
 import {
   AssistantMessage,
-  BackendStatus,
   ConversationHeader,
   EmptyConversationState,
   LiveStatus,
@@ -20,7 +19,6 @@ import {
 import type { ActiveCitation, ThemePreference } from "../ui";
 import { BREAKPOINTS, prefersReducedMotion } from "../ui/useMediaQuery";
 import { feedbackKey } from "../feedback";
-import { healthLabel } from "../health";
 import { lastAnswer, liveStatus } from "./chatState";
 import type { ChatController } from "./chatState";
 
@@ -145,7 +143,6 @@ export function ChatWorkspace({ chat, initialTheme }: Props) {
           sourcesCount={panelTurn?.sources.length}
           onNewConversation={newConversation}
           newConversationDisabled={messages.length === 0}
-          actions={chat.health && <BackendStatus state={chat.health.kind} label={healthLabel(chat.health)} />}
         />
       }
       composer={<MessageComposer value={draft} onChange={setDraft} onSubmit={(t) => (chat.send(t), setDraft(""))} state={phase} textareaRef={textarea} />}

@@ -142,9 +142,7 @@
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-md);
-  background: var(--color-accent);
-  color: var(--color-text-on-accent);
+  color: var(--color-accent); /* ASAP logo: sage line mark, no tile */
 }
 
 .ui-sidebar__name {
