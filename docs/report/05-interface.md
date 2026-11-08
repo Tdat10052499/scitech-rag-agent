@@ -11,9 +11,25 @@ shows the evidence, the answer and the follow-up questions as the backend stream
 the cited passages one click away. It was designed so that a reader can check an answer against its
 sources, and so that a failure and a refusal are never mistaken for an answer.
 
-TODO(W8-D2-LDN-1): figure of the screen (answer with citations, sources panel, follow-ups) and of
-the two non-answer states. The earlier recordings in `docs/demo/v0.4-mvp/` show the first version;
-the product name and the header changed after them.
+![Figure 5.1: the chat screen with an answer, numbered citations, the sources panel and follow-up questions](figures/fig-5-1-answer.png)
+
+Figure 5.1. The chat screen after one question: the answer with numbered citations, the sources panel
+with the second source highlighted, and the suggested follow-up questions.
+
+![Figure 5.2: the "not enough evidence" state, cropped](figures/fig-5-2-insufficient.png)
+
+Figure 5.2. The "not enough evidence" state (cropped): a warning callout, not an error (5.5).
+
+![Figure 5.3: the error state with a "Try again" button, cropped](figures/fig-5-3-error.png)
+
+Figure 5.3. The error state (cropped), with the "Try again" button (5.5).
+
+All three screens come from the showcase page (`npm run showcase`, 5.7), which renders the same
+`ChatWorkspace` component with illustrative data and a simulated stream, and no backend. The paper
+titles and identifiers are real; the answer texts are written by hand and the source excerpts are
+paraphrases. The figures show the layout, not the output of the agent, and the error text in
+Figure 5.3 is simulated. The earlier recordings in `docs/demo/v0.4-mvp/` show the first version; the
+product name and the header changed after them.
 
 ## 5.1 Technology
 
