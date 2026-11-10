@@ -31,7 +31,9 @@ written contract.
 | Data | Ingestion, cleaning, chunking, embeddings, loading | `pipelines/` (chapter 2) | `docs/contracts/chunk.schema.json` |
 | Evaluation | Golden set, metrics, runners, reports | `evaluation/` (chapter 4) | — |
 
-TODO(W8-D2-LDN-1): architecture figure (layers and request flow) in `docs/report/figures/`.
+![Figure 3.1: the six layers and the request flow of one question](figures/fig-3-1-architecture.svg)
+
+*Figure 3.1. The six layers of the system and the path of one question through them.*
 
 The LLM sits outside the system. It is reached through an OpenAI-compatible HTTP interface
 (ADR 0001), so the server, the model and the vendor are configuration (`LLM_BASE_URL`,
@@ -192,7 +194,20 @@ enter the repository. CI (GitHub Actions) runs `ruff` and `pytest` on every pull
 
 The hosted model is not `llama3.2:3b`, so the numbers in chapter 4 belong to the evaluated setup
 on the laptop, not to the hosted demo.
-TODO(W8-D2-DAT-1): the clean-clone check, which follows only the README on a fresh machine.
+**Clean-clone check (W8-D2-DAT-1).** Two fresh clones were set up following only the README:
+- **2026-10-30, Windows** (DAT's laptop, Python 3.15, native Qdrant, no Docker). The app answered
+  after 8 README gaps were bridged, among them `.env` not being read and the embedding requirements
+  not being installed. These gaps were fixed in the README in #166.
+- **2026-11-10, Linux** (a cloud container, Python 3.13, `main` at `b3c0af2`).
+  - `make setup` took 94 s.
+  - `make lint` passed.
+  - `make test` gave 856 passed and 16 skipped.
+  - `make run` served `GET /health` with `{"status":"ok"}`, and reported that the agent is off
+    without `LLM_BASE_URL` and `LLM_MODEL`.
+  - Docker was not available, so `make up`, a `--limit` index and real questions were not part of
+    this check.
+
+The full stack with the real index is what the W7 runs and the hosted Space use.
 
 ## 3.7 Additions after the freeze
 

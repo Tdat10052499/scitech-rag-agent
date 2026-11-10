@@ -1,6 +1,6 @@
 # 0011. Scheduled incremental ingestion every 2 hours on a separate serving index
 
-- Status: accepted (2026-10-30, FAO's review on #149)
+- Status: accepted (2026-10-30, FAO's review on #149). **Not deployed in `v1.0`** (2026-11-03, DAT): the soak test (W8-D6-DAT-1, at least 12 runs) was postponed until after the presentation, so #152 and #178 stay unmerged and `v1.0` keeps the manual `incremental-run` of ADR 0008. The plan for the soak is in report chapter 6.
 - Date: 2026-10-30
 - Deciders: DAT (author), FAO (pipelines owner, reviewer), LDN (evaluation impact)
 
@@ -42,7 +42,7 @@ Which index:
 Replaces ADR 0008 point 6 once accepted; points 1 to 5 of ADR 0008 stay.
 
 ## Consequences
-- The demo and `v1.0` show a corpus that grows automatically; the report states that freshness is bounded by arXiv's daily announcement, not by the 2-hour interval ("near real time").
+- Once deployed (after `v1.0`, see Status), the corpus grows automatically; `v1.0` and the demo serve the static frozen index. In both cases the report states that freshness is bounded by arXiv's daily announcement, not by the 2-hour interval ("near real time").
 - Evaluation numbers keep referring to the frozen `scitech_chunks` and `data/index/bm25` (`evaluation/SNAPSHOT.md`); the live index is never evaluated.
 - Cost per run: one or two OAI-PMH requests; on a day with new records about 300 papers embedded on CPU (about 2 min, ADR 0008 point 3) plus a BM25 rebuild (36.7 s on FAO's laptop, `pipelines/reports/index_profile.md`); otherwise a few seconds.
 - The `ingest` image carries PySpark (about 480 MB, ADR 0005) and a CPU build of sentence-transformers: a large image; build time and size are recorded in the runbook.
