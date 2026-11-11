@@ -52,7 +52,9 @@ def test_demo_mode_uses_the_offline_agent() -> None:
 
 
 def test_real_mode_streams_from_the_configured_agent(monkeypatch: pytest.MonkeyPatch) -> None:
-    llm = FakeLLM(["LongRAG beats long-context LLMs [1].", '["What is RAG?"]'], default="[]")
+    rag = {"question": "What is RAG?", "type": "abstract", "source": 1,
+           "quote": "outperforms long-context LLMs on multi-hop"}
+    llm = FakeLLM(["LongRAG beats long-context LLMs [1].", json.dumps([rag])], default="[]")
     built: list[Agent] = []
 
     def build() -> Agent:

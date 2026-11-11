@@ -56,7 +56,11 @@ from scitech_agent.evidence import (
     parse_verdict,
     self_check_messages,
 )
-from scitech_agent.followups import followups_user_message, parse_followups
+from scitech_agent.followups import (
+    followups_user_message,
+    opens_with_refusal,
+    parse_followups,
+)
 from scitech_agent.fulltext import FullTextReader, FullTextUnavailable
 from scitech_agent.intent import SearchPlan, plan_search
 from scitech_agent.llm import LLMClient, LLMError, Message, split_fragments
@@ -129,7 +133,7 @@ class AgentConfig:
     answer_history_turns: int = 3  # latest turns shown to the answer prompt
     temperature: float = 0.0
     answer_max_tokens: int = 512
-    followups_max_tokens: int = 192
+    followups_max_tokens: int = 400  # up to 4 objects with a question and a quote each
     rewrite: bool = False  # AGENT_REWRITE: standalone search query for follow-up messages
     rewrite_history_turns: int = 3  # latest turns shown to the rewrite prompt
     rewrite_max_tokens: int = 96
@@ -375,9 +379,10 @@ class Agent:
             if note:
                 for fragment in split_fragments("\n\n" + note):
                     yield TokenEvent(fragment)
-        # Follow-ups grounded in sources that did not answer would point to more of the same.
+        # Follow-ups grounded in sources that did not answer would point to more of the same,
+        # also when the refusal cites the sources it checked (Space test, 2026-11-11).
         questions: list[str] = []
-        if not refused:
+        if not refused and not opens_with_refusal(answer):
             with trace.step("followups"):
                 questions = self.followups(message, answer, evidence, history, budget)
         if questions:
@@ -631,7 +636,8 @@ class Agent:
             logger.warning("follow-ups skipped: %s (%s)", exc, exc.code)
             return []
         asked = [turn.question for turn in history] + [question]
-        return parse_followups(text, limit, asked)
+        fulltext = self.config.fulltext and self.fulltext is not None
+        return parse_followups(text, limit, asked, evidence=evidence, fulltext=fulltext)
 
     # --- Sessions -------------------------------------------------------------------------------
 

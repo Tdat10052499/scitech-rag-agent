@@ -67,6 +67,12 @@ DEMO_FOLLOWUPS = [
     "How does a Transformer differ from an RNN?",
     "Which models are based on the Transformer?",
 ]
+# (source, quote) of each follow-up: the agent keeps only quoted questions (`followups.py`).
+DEMO_FOLLOWUP_QUOTES = [
+    (1, "The dominant sequence transduction models"),
+    (1, "based on complex recurrent or convolutional neural networks"),
+    (2, "a new language representation model called BERT"),
+]
 
 LLM_FAILURES: dict[str, type[LLMError]] = {
     "llm_unavailable": LLMUnavailableError,
@@ -98,7 +104,13 @@ class DemoLLM:
         temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: int = DEFAULT_MAX_TOKENS,
     ) -> str:
-        return json.dumps(DEMO_FOLLOWUPS)
+        pairs = zip(DEMO_FOLLOWUPS, DEMO_FOLLOWUP_QUOTES, strict=True)
+        return json.dumps(
+            [
+                {"question": question, "type": "abstract", "source": source, "quote": quote}
+                for question, (source, quote) in pairs
+            ]
+        )
 
     def stream_chat(
         self,
