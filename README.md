@@ -1,4 +1,10 @@
-# scitech-rag-agent
+<p align="center">
+  <img src="frontend/public/favicon.svg" alt="ASAP logo" width="96">
+</p>
+
+# ASAP RAG Agent
+
+**ASAP** (Automated Scientific Aggregation Platform): ask research, get evidence. The repository keeps its original name, `scitech-rag-agent`.
 
 [![CI](https://github.com/Tdat10052499/scitech-rag-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Tdat10052499/scitech-rag-agent/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -6,9 +12,15 @@
 
 An interactive web app where an AI agent answers science and technology questions using retrieval over a large-scale corpus, and suggests relevant follow-up questions. The corpus is scoped to **large language models and NLP** research (arXiv `cs.CL`; see the [project brief](docs/00-project-brief.md)).
 
-> Status (2026-11-02): course project, feature freeze since 2026-10-30 (tag `v0.6-rc`); the final evaluation runs are done (Week 7). Work runs 2026-10-13 to 2026-11-06 (release `v1.0`); the product is presented on 2026-11-10. Plan: [docs/04-roadmap.md](docs/04-roadmap.md) and [docs/plan/](docs/plan/README.md).
+> Status (2026-11-11): course project; release [`v1.0`](https://github.com/Tdat10052499/scitech-rag-agent/releases/tag/v1.0) published on 2026-11-10 (feature freeze since 2026-10-30, final evaluation in Week 7). Slides: see [Presentation](#presentation). Plan: [docs/04-roadmap.md](docs/04-roadmap.md) and [docs/plan/](docs/plan/README.md).
 
 **Live demo:** https://teichi-scitech-rag-agent.hf.space (Hugging Face Space, deployed from `main`). The public copy uses a hosted LLM (`qwen/qwen3.8-27b` on Groq) and a free API quota, so it accepts about 2 questions per minute in total and 3 per visitor; the evaluation numbers below are for `llama3.2:3b` on a laptop GPU and do not describe the Space. Details: [docs/runbooks/hosting.md](docs/runbooks/hosting.md).
+
+**Landing page:** https://tdat10052499.github.io/scitech-rag-agent/
+
+## Presentation
+- **Slides** (PowerPoint, 21 slides, version of 2026-11-11): [ASAP RAG Agent product presentation](https://github.com/user-attachments/files/34689408/SciTech.RAG.Agent.product.presentation.DAT.filled.pptx), shared in [#201](https://github.com/Tdat10052499/scitech-rag-agent/pull/201#issuecomment-6796922871).
+- **Demo script:** [docs/report/demo-script.md](docs/report/demo-script.md).
 
 ## What it does
 1. The user asks a question about LLM/NLP research.
