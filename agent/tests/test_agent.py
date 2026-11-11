@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from scitech_agent.agent import (
@@ -52,7 +54,16 @@ CHUNKS = [
     ),
 ]
 ANSWER = "The Transformer relies on attention [1]. BERT pre-trains its encoder [2]."
-FOLLOWUPS = "1. What is self-attention?\n- How is BERT fine-tuned?\n\nWhat is self-attention?\n"
+FOLLOWUPS = json.dumps(  # the second "What is self-attention?" is a duplicate
+    [
+        {"question": q, "type": "abstract", "source": n, "quote": quote}
+        for q, n, quote in [
+            ("What is self-attention?", 1, "uses attention without recurrence"),
+            ("How is BERT fine-tuned?", 2, "Pre-training of deep bidirectional"),
+            ("What is self-attention?", 1, "uses attention without recurrence"),
+        ]
+    ]
+)
 
 
 def make_agent(llm: FakeLLM | None = None, **config) -> tuple[Agent, InMemoryRetriever, FakeLLM]:

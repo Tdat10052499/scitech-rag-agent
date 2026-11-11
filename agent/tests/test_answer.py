@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from scitech_agent.agent import Agent, AgentConfig, Turn
@@ -173,7 +175,9 @@ def test_manual_check_writes_markdown(monkeypatch, tmp_path, capsys) -> None:
         '{"id": "gs-002", "question": "Other?", "type": "factual", "relevant_doc_ids": []}\n',
         encoding="utf-8",
     )
-    fake = DescribedFakeLLM(["Attention [1][9].", '["Why attention?"]'])
+    why = {"question": "Why attention?", "type": "abstract", "source": 1,
+           "quote": "The Transformer uses attention"}
+    fake = DescribedFakeLLM(["Attention [1][9].", json.dumps([why])])
     monkeypatch.setattr(llm_module.OpenAICompatibleLLM, "from_env", staticmethod(lambda: fake))
     monkeypatch.setattr(hybrid, "retriever_from_env", lambda: InMemoryRetriever(CHUNKS))
     out = tmp_path / "run.md"

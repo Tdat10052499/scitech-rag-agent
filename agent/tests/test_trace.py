@@ -42,7 +42,16 @@ CHUNKS = [
 QUESTION = "How many parameters does the OLMoE language model use?"
 RAW = "OLMoE uses 1B active parameters out of 7B [1, 2] [9]."
 SHOWN = "OLMoE uses 1B active parameters out of 7B [1][2]."
-FOLLOWUPS = '["How was OLMoE pretrained?"]'
+FOLLOWUPS = json.dumps(
+    [
+        {
+            "question": "How was OLMoE pretrained?",
+            "type": "abstract",
+            "source": 1,
+            "quote": "A mixture-of-experts language model",
+        }
+    ]
+)
 REFUSAL = "The sources do not contain enough evidence to answer this question."
 
 FIELDS = {

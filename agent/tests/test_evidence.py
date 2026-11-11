@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from scitech_agent.agent import Agent, AgentConfig, Turn, load_prompt
@@ -43,7 +45,16 @@ QUESTION = "How many parameters does the OLMoE language model use?"
 CITED = "OLMoE uses 1B active parameters out of 7B [1]."
 UNCITED = "OLMoE uses 1 billion parameters per token and was trained on 5 trillion tokens."
 REFUSAL = "The sources do not contain enough evidence to answer this question."
-FOLLOWUPS = '["How was OLMoE pretrained?"]'
+FOLLOWUPS = json.dumps(
+    [
+        {
+            "question": "How was OLMoE pretrained?",
+            "type": "abstract",
+            "source": 1,
+            "quote": "A mixture-of-experts language model",
+        }
+    ]
+)
 
 
 class Clock:
