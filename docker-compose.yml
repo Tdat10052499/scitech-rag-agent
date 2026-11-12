@@ -46,6 +46,28 @@ services:
       backend:
         condition: service_healthy
 
+  # Scheduled ingestion (ADR 0011, W7-D6-FAO-1 image, W7-D7-DAT-1 service): `incremental-run` every
+  # INGEST_EVERY_HOURS hours into INGEST_COLLECTION, with the live BM25 index rebuilt into
+  # BM25_LIVE_DIR. Off by default: only `INGEST_ENABLED=1 make up` (compose profile `ingest`)
+  # starts it. Never the frozen evaluation collection: `incremental-run` refuses it. One-time
+  # setup of the live index first: `docker compose run --rm ingest setup-live.sh` (data runbook).
+  ingest:
+    profiles: ["ingest"]
+    build:
+      context: .
+      dockerfile: docker/ingest/Dockerfile
+    env_file: .env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      DATA_DIR: /app/data           # INGEST_* and BM25_LIVE_DIR come from .env (data runbook)
+    volumes:
+      - ./data:/app/data            # watermark, live BM25 index, data/logs/incremental.log
+      - hf_cache:/root/.cache/huggingface
+    restart: unless-stopped
+    depends_on:
+      qdrant:
+        condition: service_healthy
+
 volumes:
   qdrant_data:
   hf_cache:

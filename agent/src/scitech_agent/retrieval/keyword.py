@@ -18,6 +18,9 @@ pair precomputed, so a query adds a few postings lists and sorts the non-zero sc
   (the chunk fields a `ScoredChunk` needs, in index order) and `_bm25_manifest.json` (parameters,
   counts, source chunks, build seconds and peak memory).
 - Memory: the whole index lives in RAM once loaded (postings, vocabulary and the chunk texts).
+- Reload (W7-D7-DAT-1, ADR 0011): with `BM25_RELOAD_SECONDS` > 0, `ReloadingKeywordRetriever`
+  checks the manifest at most that often and switches to an index rebuilt at the same path; a
+  reload holds two indexes in RAM for a moment. 0 or empty (the default) loads the index once.
 
 Build and check from the repository root (needs the chunks of `chunk`):
     PYTHONPATH=agent/src python -m scitech_agent.retrieval.keyword build \
@@ -30,13 +33,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import sys
+import threading
 import time
 import tracemalloc
 from array import array
 from collections import Counter
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from itertools import islice
@@ -47,6 +52,8 @@ from typing import Any
 import numpy as np
 
 from scitech_agent.retrieval import Filters, ScoredChunk, compile_filters
+
+logger = logging.getLogger(__name__)
 
 CHUNK_FILE = "chunks.parquet"  # input name, as written by `chunk` (pipelines)
 CHUNK_MANIFEST = "_chunk_manifest.json"
@@ -351,6 +358,110 @@ class KeywordRetriever:
 
     def search(self, query: str, k: int, filters: Filters | None = None) -> list[ScoredChunk]:
         return self.index.search(query, k, filters)
+
+
+class ReloadingKeywordRetriever:
+    """`KeywordRetriever` that follows a BM25 index rebuilt in place (W7-D7-DAT-1, ADR 0011).
+
+    The scheduled ingestion switches a new index in at `path` with two renames
+    (`scitech_pipelines.bm25_live.switch_dir`). At most every `reload_seconds`, a search reads the
+    small manifest file; when its content changed, that search loads the new index and swaps the
+    whole retriever object under a lock. A search already running keeps the object it started
+    with, so it finishes on the old index. A manifest that is missing or unreadable, or an index
+    that fails to load, is logged and the old index is kept; the next check tries again. Only one
+    search loads at a time: the others go on with the old index meanwhile.
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        reload_seconds: float,
+        *,
+        clock: Callable[[], float] = time.monotonic,
+        loader: Callable[[Path], BM25Index] = BM25Index.load,
+    ) -> None:
+        if reload_seconds <= 0:
+            raise ValueError(f"reload_seconds must be positive, got {reload_seconds}")
+        self.path = Path(path)
+        self.reload_seconds = reload_seconds
+        self._clock = clock
+        self._loader = loader
+        self._lock = threading.Lock()
+        signature = self._signature()
+        self._current = KeywordRetriever(loader(self.path))  # a broken index fails the build
+        self._signature_loaded = signature
+        self._checked_at = clock()
+
+    @property
+    def index(self) -> BM25Index:
+        return self._current.index
+
+    def _signature(self) -> bytes:
+        return (self.path / MANIFEST).read_bytes()
+
+    def maybe_reload(self) -> bool:
+        """Reload when the check interval has passed and the manifest changed. Return whether
+        a new index was switched in."""
+        now = self._clock()
+        if now - self._checked_at < self.reload_seconds:
+            return False
+        if not self._lock.acquire(blocking=False):
+            return False  # another search is checking or loading
+        try:
+            self._checked_at = now
+            try:
+                signature = self._signature()
+            except OSError as exc:
+                logger.warning(
+                    "bm25 reload: cannot read %s (%s); keeping the old index",
+                    self.path / MANIFEST,
+                    exc,
+                )
+                return False
+            if signature == self._signature_loaded:
+                return False
+            try:
+                fresh = KeywordRetriever(self._loader(self.path))
+            except Exception as exc:  # half-written or broken index: keep serving the old one
+                logger.error(
+                    "bm25 reload: new index at %s failed to load (%s); keeping the old index",
+                    self.path,
+                    exc,
+                )
+                return False
+            self._current = fresh
+            self._signature_loaded = signature
+            logger.info(
+                "bm25 reload: switched to the index at %s (%d chunks)", self.path, len(fresh.index)
+            )
+            return True
+        finally:
+            self._lock.release()
+
+    def search(self, query: str, k: int, filters: Filters | None = None) -> list[ScoredChunk]:
+        self.maybe_reload()
+        current = self._current  # one object for the whole search
+        return current.search(query, k, filters)
+
+
+def bm25_reload_seconds(env: Mapping[str, str]) -> float:
+    """`BM25_RELOAD_SECONDS` (empty or 0: off)."""
+    raw = (env.get("BM25_RELOAD_SECONDS") or "").strip()
+    value = float(raw) if raw else 0.0
+    if value < 0:
+        raise ValueError(f"BM25_RELOAD_SECONDS must be >= 0, got {raw}")
+    return value
+
+
+def keyword_retriever(
+    path: Path, env: Mapping[str, str]
+) -> KeywordRetriever | ReloadingKeywordRetriever:
+    """The BM25 retriever of `path`: loaded once when `BM25_RELOAD_SECONDS` is 0 (the frozen
+    behaviour), otherwise following rebuilds of the index."""
+    seconds = bm25_reload_seconds(env)
+    if seconds == 0:
+        return KeywordRetriever.load(path)
+    return ReloadingKeywordRetriever(path, seconds)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
