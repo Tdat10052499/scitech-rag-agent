@@ -19,7 +19,7 @@ An interactive web app where an AI agent answers science and technology question
 **Landing page:** https://tdat10052499.github.io/scitech-rag-agent/
 
 ## Presentation
-- **Slides** (PowerPoint, 21 slides, version of 2026-11-11): [ASAP RAG Agent product presentation](https://github.com/user-attachments/files/34689408/SciTech.RAG.Agent.product.presentation.DAT.filled.pptx), shared in [#201](https://github.com/Tdat10052499/scitech-rag-agent/pull/201#issuecomment-6796922871).
+- **Slides** (Canva, 21 slides, presented on 2026-11-12): [ASAP RAG Agent presentation](https://canva.link/4u2e458k3o2msy8). A PDF copy and notes for the team are in [#212](https://github.com/Tdat10052499/scitech-rag-agent/pull/212#issuecomment-6811737826); the earlier PowerPoint version is in [#201](https://github.com/Tdat10052499/scitech-rag-agent/pull/201#issuecomment-6796922871).
 - **Demo script:** [docs/report/demo-script.md](docs/report/demo-script.md).
 
 ## What it does
