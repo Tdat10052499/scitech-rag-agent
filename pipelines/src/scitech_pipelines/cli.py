@@ -374,7 +374,7 @@ def add_incremental_run_arguments(parser: argparse.ArgumentParser) -> None:
         "--collection",
         default=None,
         help="Qdrant collection (default: env QDRANT_COLLECTION, else scitech_chunks). Never "
-        "the frozen evaluation collection (ADR 0008).",
+        "the frozen evaluation collection: refused, see --frozen-collection (ADR 0011).",
     )
     parser.add_argument(
         "--model",
@@ -398,6 +398,26 @@ def add_incremental_run_arguments(parser: argparse.ArgumentParser) -> None:
         "--category",
         default=DEFAULT_CATEGORY,
         help="Keep records whose categories contain this one (ADR 0003).",
+    )
+    parser.add_argument(
+        "--until",
+        choices=("yesterday", "today"),
+        default="yesterday",
+        help="Last day fetched, UTC (default yesterday; scheduled runs: today, ADR 0011).",
+    )
+    parser.add_argument(
+        "--rebuild-bm25",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help="After a load, rebuild the BM25 index of the collection into DIR and switch it in "
+        "(the live index, e.g. data/index/bm25-live; ADR 0011).",
+    )
+    parser.add_argument(
+        "--frozen-collection",
+        default=os.environ.get("FROZEN_COLLECTION") or "scitech_chunks",
+        help="Collection this command refuses (env FROZEN_COLLECTION; empty or unset: "
+        'scitech_chunks). --frozen-collection "" turns the check off.',
     )
 
 
@@ -652,35 +672,45 @@ def run_incremental_run(args: argparse.Namespace) -> int:
     from dataclasses import replace
 
     from scitech_agent.store import QdrantStore, StoreConfig
+    from scitech_pipelines.bm25_live import rebuild_bm25
     from scitech_pipelines.embed import SentenceTransformerEncoder, check_model_name
     from scitech_pipelines.incremental_run import (
         QdrantReplaceStore,
         check_index_model,
+        check_not_frozen,
         default_steps,
         run_incremental,
+        run_lock,
     )
 
     model = check_model_name(args.model)  # fail now, not after the fetch and the clean
     config = StoreConfig.from_env()  # QDRANT_URL, QDRANT_COLLECTION
     if args.collection:
         config = replace(config, collection=args.collection)
-    check_index_model(Path(args.data_dir), config.collection, model)
-    encoder = SentenceTransformerEncoder(model, device=args.device)
-    with QdrantStore(config) as qdrant, QdrantReplaceStore(qdrant) as store:
-        steps = default_steps(
-            store,
-            encoder,
-            set_spec=args.set_spec,
-            category=args.category,
-            passage_prefix=args.passage_prefix,
-        )
-        run_incremental(
-            Path(args.data_dir),
-            steps,
-            start=args.start,
-            set_spec=args.set_spec,
-            category=args.category,
-        )
+    data_dir = Path(args.data_dir)
+    check_index_model(data_dir, config.collection, model)
+    check_not_frozen(config.collection, args.frozen_collection)
+    with run_lock(data_dir):
+        encoder = SentenceTransformerEncoder(model, device=args.device)
+        with QdrantStore(config) as qdrant, QdrantReplaceStore(qdrant) as store:
+            steps = default_steps(
+                store,
+                encoder,
+                set_spec=args.set_spec,
+                category=args.category,
+                passage_prefix=args.passage_prefix,
+            )
+            bm25 = args.rebuild_bm25
+            run_incremental(
+                data_dir,
+                steps,
+                start=args.start,
+                set_spec=args.set_spec,
+                category=args.category,
+                until_today=args.until == "today",
+                skip_unchanged=True,
+                after_load=(lambda: rebuild_bm25(store, bm25)) if bm25 else None,
+            )
     return 0
 
 
