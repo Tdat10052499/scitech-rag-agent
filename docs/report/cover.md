@@ -11,7 +11,7 @@ Final project report, version v1.0
 | **Full names** | DAT: Hồ Du Tuấn Đạt; FAO: Nguyễn Minh Chính; LDN: Dương Ngọc Linh Đan |
 | **Repository** | https://github.com/Tdat10052499/scitech-rag-agent |
 | **Release** | v1.0 |
-| **Date** |  <!-- submission date: to be added by LDN --> |
+| **Date** | 16 November 2026 |
 
 Report chapters: 1 Introduction, 2 Data, 3 System, 4 Evaluation, 5 Interface, 6 Conclusion;
 Appendix A–F; References.

@@ -1,11 +1,5 @@
 # 4. Evaluation
 
-<!-- Draft (W8-D1-LDN-1, 2026-11-06). Page budget 6 (00-outline.md). Every number comes from
-`evaluation/reports/final.md` (#196) and the run files it names; the section of `final.md` is
-given where a table is shortened. Drafted with AI assistance (Claude); LDN is responsible for the
-final text. The error analysis section summarises DAT's and FAO's reports and is for DAT to
-check (W7-D4-DAT-1). -->
-
 This chapter reports the evaluation of the system frozen in `evaluation/SNAPSHOT.md` (tag
 `v0.6-rc`), in the order of the research questions of chapter 1:
 
@@ -83,7 +77,7 @@ On the same 60 questions, hybrid against dense is +0.050 at recall@5 (interval
 one whose interval excludes 0. Hybrid against BM25 is 0.000 at recall@5 and +0.017 at recall@10,
 and every interval includes 0.
 
-![Figure 4.1: retrieval on 60 questions](figures/fig-4-1-retrieval.svg)
+![Figure 4.1: retrieval on 60 questions](figures/fig-4-1-retrieval.png)
 
 *Figure 4.1. Recall and MRR of the three retrievers (R1 to R3), with 95% intervals.*
 
@@ -91,7 +85,7 @@ By question type (hybrid recall@5, n in brackets): factual 0.85 (13), explanator
 comparison 0.50 (8), multi-hop 0.32 (11), follow-up 0.09 (11). The cells are small, so the
 differences between types are descriptive.
 
-![Figure 4.2: recall@5 by question type](figures/fig-4-2-retrieval-by-type.svg)
+![Figure 4.2: recall@5 by question type](figures/fig-4-2-retrieval-by-type.png)
 
 *Figure 4.2. Recall@5 by question type.*
 
@@ -101,7 +95,7 @@ retrievers is the same on both halves (hybrid and BM25 close, dense lowest), but
 60-item average depends on which half is taken. The plan says to report both halves, and they are
 reported here. The reason for the difference is not established.
 
-![Figure 4.3: development against test items](figures/fig-4-3-dev-test.svg)
+![Figure 4.3: development against test items](figures/fig-4-3-dev-test.png)
 
 *Figure 4.3. Recall@5 on the development and the test items.*
 
@@ -133,7 +127,7 @@ adds the evidence check, and A4 has both.
 | Cited-document recall [95% CI] | 0.398 [0.27, 0.53] | 0.427 [0.30, 0.55] | - | - |
 | Relevance (1 to 3), judge, mean [95% CI] | 2.31 [2.11, 2.52] | 2.44 [2.24, 2.62] | - | - |
 
-![Figure 4.4: faithfulness and refusals of A1 to A4](figures/fig-4-4-ablation.svg)
+![Figure 4.4: faithfulness and refusals of A1 to A4](figures/fig-4-4-ablation.png)
 
 *Figure 4.4. Macro faithfulness and over-refusals of the four agent conditions.*
 
@@ -202,7 +196,7 @@ On the same 11 answers per run, the judge's macro faithfulness was higher than t
 - With one annotator per sentence, there is no human-human agreement. Differences between the two
   annotators' rows cannot be told apart from differences between the two halves of the sample.
 
-![Figure 4.5: judge against human labels](figures/fig-4-5-judge-agreement.svg)
+![Figure 4.5: judge against human labels](figures/fig-4-5-judge-agreement.png)
 
 *Figure 4.5. Agreement of the judge with the human labels.*
 
@@ -231,7 +225,7 @@ the answer is on screen. With `localhost` instead of `127.0.0.1` on Windows, 6 o
 took about 2 s, so all later runs use `127.0.0.1`. L1 ran before the final runs and was not
 repeated; the one change since then (a regex) does not touch the timed steps.
 
-![Figure 4.6: latency and index scaling](figures/fig-4-6-latency-scaling.svg)
+![Figure 4.6: latency and index scaling](figures/fig-4-6-latency-scaling.png)
 
 *Figure 4.6. Time per question (L1) and hybrid retrieval latency against index size (S1).*
 

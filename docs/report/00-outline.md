@@ -9,7 +9,7 @@ proposals.
 
 ## 1. Format
 
-- One Markdown file per chapter in `docs/report/`, exported to one PDF (W8-D4-LDN-1).
+- One Markdown file per chapter in `docs/report/`, exported to one PDF with `bash docs/report/build_pdf.sh` (pandoc and xelatex; W8-D4-LDN-1).
 - Figures and the scripts that made them go in `docs/report/figures/` (W8-D2-LDN-1).
 - Writing style:
   - English;

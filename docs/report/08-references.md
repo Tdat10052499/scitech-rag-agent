@@ -1,9 +1,6 @@
 # References
 
-Status: draft by LDN (W8-D4-LDN-1), 2026-11-16. Drafted with AI assistance (Claude); LDN is responsible
-for the final text. The list holds only works that the report relies on; numbers in square brackets
-in chapters 1 to 4 point here. Details of each entry were taken from the publisher or arXiv record;
-please check them once more before the final PDF.
+Numbers in square brackets in chapters 1 to 4 point to this list. It holds only works that the report relies on.
 
 [1] P. Lewis, E. Perez, A. Piktus, F. Petroni, V. Karpukhin, N. Goyal, H. Küttler, M. Lewis, W. Yih,
 T. Rocktäschel, S. Riedel, D. Kiela. *Retrieval-Augmented Generation for Knowledge-Intensive NLP
@@ -13,17 +10,17 @@ Tasks.* Advances in Neural Information Processing Systems 33 (NeurIPS 2020). arX
 Individual Rank Learning Methods.* Proceedings of SIGIR 2009, pp. 758–759.
 
 [3] S. Robertson, H. Zaragoza. *The Probabilistic Relevance Framework: BM25 and Beyond.* Foundations
-and Trends in Information Retrieval 3(4), 2009, pp. 333–389.
+and Trends in Information Retrieval 4(1–2), 2009, pp. 1–174.
 
 [4] S. Xiao, Z. Liu, P. Zhang, N. Muennighoff, D. Lian, J.-Y. Nie. *C-Pack: Packed Resources For
-General Chinese Embeddings* (the BGE embedding models). SIGIR 2024. arXiv:2309.07597. Model used:
+General Chinese Embeddings* (the BGE embedding models). 2023. arXiv:2309.07597. Model used:
 `BAAI/bge-small-en-v1.5`, Hugging Face.
 
 [5] Y. A. Malkov, D. A. Yashunin. *Efficient and Robust Approximate Nearest Neighbor Search Using
 Hierarchical Navigable Small World Graphs.* IEEE Transactions on Pattern Analysis and Machine
 Intelligence 42(4), 2020, pp. 824–836.
 
-[6] M. Zaharia et al. *Apache Spark: A Unified Engine for Big Data Processing.* Communications of the
+[6] M. Zaharia, R. S. Xin, P. Wendell et al. *Apache Spark: A Unified Engine for Big Data Processing.* Communications of the
 ACM 59(11), 2016, pp. 56–65.
 
 [7] M. Raasveldt, H. Mühleisen. *DuckDB: an Embeddable Analytical Database.* Proceedings of SIGMOD

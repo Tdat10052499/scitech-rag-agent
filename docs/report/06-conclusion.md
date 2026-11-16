@@ -1,11 +1,5 @@
 # 6. Conclusion
 
-<!-- Draft (W8-D2-FAO-1, written early on D13, updated on D16 with the Week 7 latency and
-ablation runs and ADR 0011, on D18 with the W7 runs R1-R3 and A1-A4 of #179 and the two error
-analyses, #179 and #180, and on D19 with the judge check of `final.md` §5, #196). The RQ1 and RQ2 numbers below come from the run files of #179; when
-`final.md` (W7-D5-LDN-1) is merged, the citations move to it. RQ3 is not evaluated: the user study was cancelled on 2026-11-03,
-ADR 0013. -->
-
 ## 6.1 Results by research question
 
 **RQ1 (retrieval): does hybrid retrieval beat dense-only and BM25-only?**

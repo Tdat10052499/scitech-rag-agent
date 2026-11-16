@@ -1,8 +1,5 @@
 # 1. Introduction
 
-<!-- Draft (W8-D1-DAT-1, written early on D16, 2026-10-30). Page budget 2 (00-outline.md).
-Sources: docs/00-project-brief.md, evaluation/PLAN.md, ADR 0010. TODOs name the task that fills them. -->
-
 ## 1.1 Problem
 
 Researchers and students who start on a topic in large language models (LLMs) and natural

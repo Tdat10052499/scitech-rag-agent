@@ -1,9 +1,5 @@
 # 3. System
 
-<!-- Draft (W8-D1-DAT-1, written early on D16, 2026-10-30). Page budget 5 (00-outline.md).
-Describes the frozen configuration of evaluation/SNAPSHOT.md (tag v0.6-rc). Sources: docs/01-architecture.md,
-docs/contracts/, agent/, ADRs. TODOs name the task that fills them. -->
-
 This chapter describes the system as it was evaluated:
 
 - tag `v0.6-rc`;
@@ -33,7 +29,7 @@ written contract.
 | Data | Ingestion, cleaning, chunking, embeddings, loading | `pipelines/` (chapter 2) | `docs/contracts/chunk.schema.json` |
 | Evaluation | Golden set, metrics, runners, reports | `evaluation/` (chapter 4) | — |
 
-![Figure 3.1: the six layers and the request flow of one question](figures/fig-3-1-architecture.svg)
+![Figure 3.1: the six layers and the request flow of one question](figures/fig-3-1-architecture.png)
 
 *Figure 3.1. The six layers of the system and the path of one question through them.*
 

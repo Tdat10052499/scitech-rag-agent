@@ -1,9 +1,5 @@
 # 2. Data
 
-<!-- W7-D4-FAO-1 and W8-D1-FAO-1: final numbers as of Gate W7 (2026-11-03), tightened to the
-5-page budget of docs/report/00-outline.md. Every number cites the file or run it comes from.
-Open items are marked TODO with the task that fills them. -->
-
 This chapter describes the corpus behind the agent: its sources and licences, its size, the
 pipeline that indexes it, the processing engine, how new papers are added, and how the index
 behaves as the corpus grows.
@@ -173,9 +169,7 @@ the same 100 queries at k = 10 on FAO's laptop (Qdrant 1.19.2 in Docker, exact s
 | 50% | 61,067 | 51.3 | 9.8 | 84.3 / 92.8 | 4.8 / 9.2 | 97.7 / 135.2 |
 | 100% | 121,926 | 135.2 | 36.7 | 93.4 / 101.0 | 8.1 / 15.5 | 120.4 / 134.6 |
 
-![Query latency by corpus size](../../pipelines/reports/scaling-latency.svg)
-
-<!-- Charts: pipelines/scripts/scaling_charts.py (#121). -->
+![Figure 2.2: query latency by corpus size](figures/fig-2-2-scaling-latency.png)
 
 - **BM25 grows with the corpus:** p50 1.2, 4.8 and 8.1 ms, in step with the chunk count.
 - **Dense latency is mostly fixed costs:** query embedding on the CPU (p50 38 to 63 ms) and the

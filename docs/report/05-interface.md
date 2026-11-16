@@ -1,11 +1,5 @@
 # 5. Interface
 
-<!-- Draft (W8-D1-LDN-1, 2026-11-06). Page budget 2 (00-outline.md). Sources: `frontend/` on `main`
-at `c56cf1d`, `frontend/docs/design-system/`, `docs/contracts/api.openapi.yaml` (0.3.0), ADR 0004,
-`docs/demo/v0.4-mvp/`. Drafted with AI assistance (Claude); LDN is responsible for the final text.
-The interface was checked by hand and with unit tests of its logic. No user rated it (chapter 4,
-4.6), so this chapter describes the design and does not report a result. -->
-
 The interface is a single-page chat application in `frontend/`. It sends a question to the backend,
 shows the evidence, the answer and the follow-up questions as the backend streams them, and keeps
 the cited passages one click away. It was designed so that a reader can check an answer against its
@@ -117,6 +111,13 @@ The interface separates three outcomes that look alike in a plain chat window:
 A click on a suggested question sends it at once as the next question of the same conversation.
 The suggestions stay with the latest answer that has some, and are disabled while another answer is
 being written.
+
+*Added after the evaluation freeze (#211, 2026-11-11; the interface code did not change).* The
+agent now keeps a suggestion only when it can quote, word for word, a passage of one of the cited
+sources that answers it (chapter 3, 3.4). So a reader may see fewer than four suggestions, or none.
+When the answer to a suggestion needs the full text of a paper (ADR 0012), the suggestion ends
+with "(arXiv:<id>)" and is shown with that text, so the question names the paper. This change
+was not part of the evaluated system and no result in this report depends on it.
 
 Under a finished answer, two thumbs ask "Was this answer useful?". A choice is shown as pressed and
 can be changed. Both the thumbs and the clicks on suggestions are sent to `POST /feedback`, which

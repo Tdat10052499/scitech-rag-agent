@@ -1,8 +1,10 @@
 # Report figures
 
 `make_figures.py` draws every figure of the report. Run `python docs/report/figures/make_figures.py`
-(needs matplotlib). The SVG files are written next to the script and are committed, so the chapters
-render without running it; run the script again after any change to the numbers in it.
+(needs matplotlib). The script writes each figure twice, as SVG (vector) and as PNG (200 dpi),
+next to itself. Both are committed. The chapters link the PNG, because LaTeX, which makes the PDF,
+cannot draw SVG. Run the script again after any change to the numbers in it. `fig-2-2-scaling-latency.png`
+is a PNG copy of `pipelines/reports/scaling-latency.svg` (drawn by `pipelines/scripts/scaling_charts.py`).
 
 Figure 2.1 is not drawn by the script. It is a Mermaid diagram (`fig-2-1-pipeline.mmd`) rendered
 with `mmdc -i fig-2-1-pipeline.mmd -o fig-2-1-pipeline.svg -b white` (add `-s 3` and a `.png`
