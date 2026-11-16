@@ -21,6 +21,7 @@ keep exploring.
 ## 1.2 Goals and success criteria
 
 The project brief (`docs/00-project-brief.md`) sets four success criteria:
+
 1. A working web demo that answers questions with cited sources and shows follow-up suggestions.
 2. A reproducible pipeline from open data to an indexed corpus.
 3. A written evaluation with stated sample sizes, methods and limitations.
@@ -35,6 +36,7 @@ supported by the passages they cite (chapter 4).
 ## 1.3 Scope
 
 In scope:
+
 - **Domain.** LLM/NLP research: every arXiv record whose categories contain `cs.CL`, all years,
   **titles and abstracts only** (ADR 0003). Wikipedia background articles were cut from the
   index on 2026-10-17.
@@ -50,6 +52,7 @@ In scope:
   was cancelled on 2026-11-03 (ADR 0013).
 
 Out of scope:
+
 - training or fine-tuning a model;
 - indexing full-text PDFs (a single paper's HTML full text can be read on demand, section 3.7);
 - user accounts and production-grade scaling;

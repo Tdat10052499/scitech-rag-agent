@@ -47,6 +47,7 @@ by hand to follow the contract rather than generated from it.
 ## 5.2 The screen
 
 The screen has three parts (`src/chat/ChatWorkspace.tsx`):
+
 - **Sidebar.** The product name (ASAP), "New conversation", two short facts (the corpus, and that
   answers use only retrieved passages) and the theme switch (system, light, dark).
 - **Conversation.** A reading column of at most 760 px. Questions and answers sit on the page, not
@@ -63,6 +64,7 @@ half-written question (`src/ui/composerKeys.ts`).
 
 The backend answers `POST /chat` with a stream of events (chapter 3, 3.2), and the screen shows
 each event as it arrives (`src/chat/useChat.ts`, `src/api.ts`):
+
 1. **Searching.** After the request is sent, the answer shows "Searching the corpus...".
 2. **Sources.** The `sources` event comes first. The panel fills with the retrieved passages and the
    answer header shows the number of sources, while the answer is still being written.
@@ -96,6 +98,7 @@ and the interface cannot flag a sentence that lacks one.
 ## 5.5 Refusals and failures
 
 The interface separates three outcomes that look alike in a plain chat window:
+
 - **An answer.** Text with citations.
 - **Not enough evidence.** The request worked, but the agent refused to answer. A warning callout
   says so, states that the assistant does not answer from its own knowledge, and gives three
@@ -130,6 +133,7 @@ JetBrains Mono for code), and the components in `frontend/src/ui/`. A showcase p
 of 5.5 can be inspected without making them happen.
 
 Accessibility measures in the code:
+
 - a test fails if a colour pair used by a component falls below the WCAG AA contrast ratio in the
   light or the dark theme (`src/ui/contrast.test.ts`);
 - the live status line announces searching, answering and errors to screen readers;

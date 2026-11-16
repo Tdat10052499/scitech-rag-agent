@@ -69,6 +69,5 @@ The dates come from `docs/plan/` and ADR 0010. The presentation is on Tuesday 20
 | Sat 11-07 to Mon 11-09 (D23–D24) | Slides, rehearsal, dry run | all |
 | Tue 11-10 (D25) | Presentation | all |
 
-One decision is still open for chapter 4: the ablations ran on `split: dev` (32 items;
-`ablations-v1.md`), while the draft `RUNS.md` (#160) plans `split: all`. The team decides in #160
-whether to rerun them on all items (about 15 minutes on DAT's laptop) or report them on dev.
+The ablations of chapter 4 ran on all 65 items (W7 runs A1 to A4, `evaluation/RUNS.md`); the earlier
+dev-only run (`ablations-v1.md`) is kept as a comparison.

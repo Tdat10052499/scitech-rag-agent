@@ -73,6 +73,7 @@ Times: `docs/runbooks/data-pipeline.md` (measured times), data profile §3, ADR 
 (#68).
 
 Design choices:
+
 - **Counts must chain:** 121,860 documents → 121,926 chunks → 121,926 vectors → 121,926 points.
   A step fails if its output does not match; the load needs exactly one point per chunk.
 - **Resumable:** `embed` and `load` write in parts and resume at the first missing part. A change
@@ -205,6 +206,7 @@ Every evaluation run uses one index, recorded in `evaluation/SNAPSHOT.md` (W6-D4
 Every evaluation run records this id, so runs on different indexes cannot be compared by mistake.
 Incremental loads never write to the collection: the live test ran on a copy, and the schedule
 refuses it (ADR 0011). Checks against the file:
+
 - 2026-10-27, FAO's laptop: same id, 121,926 points, all 57 relevant documents of the golden set
   present;
 - 2026-10-30, after the feature freeze: 121,926 points on both serving machines, FAO's laptop (#146)

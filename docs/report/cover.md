@@ -6,12 +6,12 @@ Final project report, version v1.0
 
 | | |
 |---|---|
-| **Course** | <!-- TODO(W8-D4-LDN-1): course name and code, to confirm with the team --> |
+| **Course** | Big Data Analytics (class code 261_72ITDS40303_02) |
 | **Team** | DAT (`Tdat10052499`), FAO (`F4ol4n`), Dương Ngọc Linh Đan, LDN (`Yui-Mika`) |
-| **Full names** | <!-- TODO(W8-D4-LDN-1): full names of DAT and FAO --> |
+| **Full names** | DAT: Hồ Du Tuấn Đạt; FAO: Nguyễn Minh Chính; LDN: Dương Ngọc Linh Đan |
 | **Repository** | https://github.com/Tdat10052499/scitech-rag-agent |
 | **Release** | v1.0 |
-| **Date** | <!-- TODO(W8-D4-LDN-1): submission date --> |
+| **Date** |  <!-- submission date: to be added by LDN --> |
 
 Report chapters: 1 Introduction, 2 Data, 3 System, 4 Evaluation, 5 Interface, 6 Conclusion;
 Appendix A–F; References.

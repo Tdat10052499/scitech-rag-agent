@@ -8,6 +8,7 @@ check (W7-D4-DAT-1). -->
 
 This chapter reports the evaluation of the system frozen in `evaluation/SNAPSHOT.md` (tag
 `v0.6-rc`), in the order of the research questions of chapter 1:
+
 - RQ1: retrieval (4.3);
 - RQ2: query rewriting and the evidence check (4.4), with the check of the judge against people
   (4.5);
@@ -24,6 +25,7 @@ wrong. "Faithful" means supported by the cited passages, not true. The full tabl
 
 **System under test.** All final runs use the frozen stack on one host (DAT's laptop, RTX 5060
 Laptop 8 GB, Ollama 0.40.13):
+
 - corpus: arXiv `cs.CL` titles and abstracts, Kaggle snapshot version 307, 121,860 documents,
   121,926 chunks (chapter 2);
 - retrieval: hybrid (dense + BM25, reciprocal rank fusion) with the top 5 chunks as evidence
@@ -104,6 +106,7 @@ reported here. The reason for the difference is not established.
 *Figure 4.3. Recall@5 on the development and the test items.*
 
 **Interpretation.**
+
 - The expectation that hybrid is at least as good as the better single retriever holds: it ties
   BM25. The expectation that BM25 is competitive only on exact technical terms is too weak,
   because BM25 matches hybrid on this set. The questions were written from abstracts, which can
@@ -149,12 +152,14 @@ scored.
 
 **Where faithfulness is lost** (A2; `evaluation/reports/answer-errors-w7.md`; causes assigned by
 rule from the run fields, no case re-read by a person):
+
 - 64 of the 85 sentences labelled not supported (75%) carry no citation marker.
 - Sentences that cite a chunk are supported 67 times out of 88 (0.76).
 - Of the 20 worst answers, 12 are "missing citations" (a relevant paper was among the sources in
   all 12), 5 are over-refusals and 3 are retrieval misses.
 
 **Interpretation.**
+
 - The direction of the rewriting result is the one expected, but one run per condition, and a gain
   that rests on 8 and 9 answers, do not support a claim of an effect.
 - The evidence check as built, with `llama3.2:3b`, answers NO whatever the sources. The runs cannot
@@ -188,6 +193,7 @@ On the same 11 answers per run, the judge's macro faithfulness was higher than t
 (A1 0.500 against 0.394, A2 0.583 against 0.523).
 
 **Interpretation.**
+
 - The faithfulness judge agrees with the annotators on about 85% of sentences. The faithfulness
   numbers of 4.4 may be a little optimistic. With 11 answers per run, the difference is within
   noise.

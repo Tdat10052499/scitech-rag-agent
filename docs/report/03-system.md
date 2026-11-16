@@ -5,10 +5,12 @@ Describes the frozen configuration of evaluation/SNAPSHOT.md (tag v0.6-rc). Sour
 docs/contracts/, agent/, ADRs. TODOs name the task that fills them. -->
 
 This chapter describes the system as it was evaluated:
+
 - tag `v0.6-rc`;
 - the configuration frozen in `evaluation/SNAPSHOT.md` on 2026-10-30.
 
 Four additions came after the freeze and are described in section 3.7:
+
 - scheduled ingestion (ADR 0011), built but not deployed in v1.0;
 - search plans for paper-finding questions (#186);
 - the full text of one paper read on demand (ADR 0012);
@@ -43,6 +45,7 @@ The LLM sits outside the system. It is reached through an OpenAI-compatible HTTP
 
 One question is one `POST /chat` request with a `session_id` and a `message`. The backend answers
 with a Server-Sent Events stream, in this order (`api.openapi.yaml`, version 0.3.0):
+
 1. `sources`: the evidence passages, at most once, and always first when present;
 2. `token`: the answer, fragment by fragment;
 3. `followups`: up to 4 suggested questions;
@@ -60,12 +63,14 @@ clicks on follow-ups. `GET /health` reports whether the backend is up.
 ## 3.3 Retrieval
 
 The index is described in chapter 2. In short:
+
 - one chunk per arXiv abstract in almost all cases (title and abstract, at most 320 words);
 - 121,926 chunks;
 - embedded with `BAAI/bge-small-en-v1.5` [4] (384 dimensions, cosine; ADR 0007);
 - stored in Qdrant [15] with exact search, plus a BM25 index [3] built from the same chunks.
 
 **Hybrid retrieval with reciprocal rank fusion (RRF)** [2].
+
 - The query is searched twice:
   - with the dense model (top 50, with the query instruction of ADR 0007);
   - with BM25 (top 50).
@@ -76,6 +81,7 @@ The index is described in chapter 2. In short:
 
 **Why hybrid, k = 5.** The rule of ADR 0009 was fixed before the measurement: keep hybrid unless a
 single retriever beats it by at least 2 questions at recall@5. Neither did:
+
 - BM25 was +0.5 questions;
 - dense was −1.5 questions (30 dev items).
 
@@ -130,9 +136,12 @@ can be switched on or off for the ablations of RQ2.
 5. **Follow-up suggestions** (`agent/prompts/followups.md`). After a non-refused answer, one LLM
    call proposes up to 4 short questions. Each must be answerable from the same sources and must
    stand on its own (named method or topic, no "it"). The suggestions are filtered to at most
-   20 words.
+   20 words. *Added after the evaluation freeze (#211, 2026-11-11, not part of the evaluated
+   system):* the model must also give, for each question, a quote that is found word for word in
+   one of the sources, and a question without such a quote is dropped.
 
 **Limits per request.**
+
 - At most 4 LLM calls (rewrite, self-check, answer, follow-ups).
 - A time budget checked between steps (`AGENT_TIMEOUT_S`).
 - Optional steps are skipped when the budget runs out. The answer step is never skipped; the
@@ -140,6 +149,7 @@ can be switched on or off for the ablations of RQ2.
 - The agent keeps the last 10 turns of each session in memory. Sessions are not persisted.
 
 **Traces.** Every request writes one trace record with:
+
 - the query;
 - the retrieved chunks and scores;
 - the evidence decision;
@@ -158,6 +168,7 @@ code path.
 | Faithfulness judge | `qwen2.5:7b` [12], temperature 0 | Same Ollama as the generator. A different model from the generator, as `evaluation/PLAN.md` §5 requires (here also a different model family) | #142, `evaluation/SNAPSHOT.md` |
 
 **Model choice (ADR 0006).**
+
 - Three open-weights models were compared on 10 questions, by two raters, with a rule fixed
   before the run.
 - Answer quality was a tie within the 0.2 margin.
@@ -168,6 +179,7 @@ code path.
 
 Latency of the frozen system on the evaluation laptop (`docs/runbooks/performance.md`, run B,
 n = 30):
+
 - first token: p50 0.42 s, p95 2.6 s;
 - complete answer: p50 1.3 s;
 - including the follow-up suggestions: p50 4.3 s, p95 6.0 s.
@@ -175,6 +187,7 @@ n = 30):
 ## 3.6 Deployment
 
 `make up` starts the whole stack with Docker Compose:
+
 - Qdrant 1.19.2 with the index volume;
 - the backend;
 - the frontend, served by nginx, which also proxies the API.
@@ -183,6 +196,7 @@ The LLM endpoint is configured through environment variables listed in `.env.exa
 enter the repository. CI (GitHub Actions) runs `ruff` and `pytest` on every pull request.
 
 **Public demo (added 2026-11-02, `docs/runbooks/hosting.md`).**
+
 - One Hugging Face Docker Space (`cpu-basic`, 2 vCPU, 16 GB RAM) runs nginx, the backend and
   Qdrant in one container.
 - At every start it downloads the index (a Qdrant snapshot and the BM25 directory) from a private
@@ -195,6 +209,7 @@ enter the repository. CI (GitHub Actions) runs `ruff` and `pytest` on every pull
 The hosted model is not `llama3.2:3b`, so the numbers in chapter 4 belong to the evaluated setup
 on the laptop, not to the hosted demo.
 **Clean-clone check (W8-D2-DAT-1).** Two fresh clones were set up following only the README:
+
 - **2026-10-30, Windows** (DAT's laptop, Python 3.15, native Qdrant, no Docker). The app answered
   after 8 README gaps were bridged, among them `.env` not being read and the embedding requirements
   not being installed. These gaps were fixed in the README in #166.
@@ -212,6 +227,7 @@ The full stack with the real index is what the W7 runs and the hosted Space use.
 ## 3.7 Additions after the freeze
 
 **Scheduled ingestion (ADR 0011): built, not deployed in v1.0.**
+
 - An `ingest` service runs the incremental pipeline of ADR 0008 every 2 hours into a separate
   collection, `scitech_chunks_live`.
 - After a run that loaded new records, it rebuilds the BM25 index and switches it atomically. A
@@ -229,6 +245,7 @@ v1.0 keeps the manual incremental command of ADR 0008. The Space serves a static
 index. The plan for the soak test is in chapter 6.
 
 **Search plans for paper-finding questions (#186).**
+
 - `scitech_agent.intent.plan_search` reads the question with fixed patterns, without an extra
   LLM call:
   - an arXiv id filters retrieval to that paper;
@@ -241,6 +258,7 @@ index. The plan for the soak test is in chapter 6.
 - The flag `AGENT_SEARCH_MODES` switches it off, and the plan is recorded in the trace.
 
 **Full text on demand (ADR 0012).**
+
 - When a question names a paper by arXiv id, the agent downloads that paper's HTML rendering
   (arxiv.org, then ar5iv), with at least 3 s between requests.
 - It splits the page into passages of at most 180 words and ranks them against the question. The

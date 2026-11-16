@@ -45,6 +45,7 @@ measurably better. The final runs R1 to R3 used all 60 answerable items with the
 **RQ2 (agent steps): do query rewriting and the evidence check improve faithfulness?**
 Not measurably. The final runs A1 to A4 used all 65 items on the Week 7 host (`evaluation/RUNS.md`
 §7, #179; `evaluation/reports/answer-errors-w7.md`):
+
 - **Rewriting.** Macro faithfulness was 0.491 [0.39, 0.59] for the MVP (A1) and 0.527 [0.43, 0.62]
   with rewriting (A2). The intervals overlap almost completely. Rewriting changes only the 11
   follow-up turns, and on those it found the relevant paper more often (above).
@@ -73,6 +74,7 @@ still shows them (chapter 5); measuring them is future work (6.3).
 
 **Efficiency (not a research question).** The data side is measured in chapter 2.6 and
 `pipelines/reports/scaling.md`:
+
 - **Vector search:** inside Qdrant, exact search took 2.0, 8.0 and 14.4 ms p50 at 10%, 50% and
   100% of the corpus. HNSW stayed at 1.6 to 2.6 ms.
 - **Whole retrieval:** under 135 ms at p95 at every size.
@@ -87,6 +89,7 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
 ## 6.2 Limitations
 
 **Data scope.**
+
 - **Abstracts only:** the corpus is the titles and abstracts of 121,860 arXiv `cs.CL` papers
   (Kaggle snapshot version 307, 2026-10-10). Full texts are not indexed, because their licences
   differ per paper (chapter 2.1), so the evaluated system answers only what an abstract states.
@@ -103,6 +106,7 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
   announces once a day. The evaluated index is the frozen copy, which stops at 2026-10-10.
 
 **Small samples.**
+
 - **Golden set:** 65 items (60 answerable: 30 dev and 30 test; 5 unanswerable; #168). One
   question is 1.7 points of recall over the 60 answerable items, and the intervals of most
   comparisons overlap. The relevant papers of an item are the ones it was written from, not
@@ -114,12 +118,14 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
   several users at once was not measured.
 
 **Model size.**
+
 - **Generator:** `llama3.2:3b` (ADR 0006). It was chosen on speed, because at n = 10 its answers
   could not be told apart from those of `qwen2.5:3b` and `qwen2.5:7b`. The 7B model had no
   ungrounded answer in that run, so a larger model may follow the evidence better. The
   faithfulness numbers belong to this model.
 
 **Judge bias.**
+
 - **Judge:** faithfulness is judged by an LLM that is not the generator (`evaluation/PLAN.md` §5).
   It is checked by hand on a sample only, so its errors can remain in the rest. On that sample
   it matched people on 85% of sentences (kappa 0.73) but scored faithfulness higher than they
@@ -127,6 +133,7 @@ At this corpus size retrieval is not the bottleneck of a chat turn: the LLM is.
 
 **Features cut by ADR 0010.** The plan was written for 40 working days and the project had 22,
 so the cut list was applied at the start instead of at the first delay (ADR 0010):
+
 - **Kafka streaming:** arXiv announces new papers in one daily batch, so a stream would add
   infrastructure without fresher data. New papers come in by a scheduled batch with a watermark
   instead (ADR 0008; the 2-hour schedule of ADR 0011 is built but not deployed in v1.0).
@@ -143,6 +150,7 @@ so the cut list was applied at the start instead of at the first delay (ADR 0010
   them on.
 
 **Engineering limits found on the way.**
+
 - **Self-check with a 3B model:** the LLM evidence check answered NO to every question (#163), so
   the agent relies on retrieval and the answer prompt alone to refuse. Whether the model, the
   prompt or the 8-token reply limit causes it was not established.
