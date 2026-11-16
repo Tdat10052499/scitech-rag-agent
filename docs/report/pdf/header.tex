@@ -1,0 +1,27 @@
+\usepackage{fvextra}
+\usepackage{xurl}
+\usepackage{etoolbox}
+\AtBeginEnvironment{longtable}{\footnotesize}
+\setlength{\emergencystretch}{3em}
+\usepackage{float}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\usepackage{tikz}
+% Fonts of the cover page: a Times-like font if one is installed, else the main font.
+\IfFontExistsTF{Times New Roman}{\newfontfamily\coverfont{Times New Roman}}{%
+\IfFontExistsTF{Liberation Serif}{\newfontfamily\coverfont{Liberation Serif}}{%
+\IfFontExistsTF{TeX Gyre Termes}{\newfontfamily\coverfont{TeX Gyre Termes}}{\let\coverfont\relax}}}
+% Body font: Times New Roman, else the metric-compatible Liberation Serif, else TeX Gyre Termes.
+% (build_pdf.sh passes MAINFONT only when the variable is set, and that overrides this.)
+\IfFontExistsTF{Times New Roman}{\setmainfont{Times New Roman}}{%
+\IfFontExistsTF{Liberation Serif}{\setmainfont{Liberation Serif}}{\setmainfont{TeX Gyre Termes}}}
+% Line spacing 1.5 in the running text.
+\usepackage{setspace}
+\setstretch{1.43} % equals "1.5 lines" in Word for 12 pt Times New Roman (\onehalfspacing is a little tighter)
+\setcounter{tocdepth}{3}
+% Lists are a little tighter than the running text (single spacing 1.15).
+\AtBeginEnvironment{itemize}{\setstretch{1.15}}
+\AtBeginEnvironment{enumerate}{\setstretch{1.15}}

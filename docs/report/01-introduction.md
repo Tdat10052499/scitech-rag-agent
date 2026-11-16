@@ -1,15 +1,12 @@
 # 1. Introduction
 
-<!-- Draft (W8-D1-DAT-1, written early on D16, 2026-10-30). Page budget 2 (00-outline.md).
-Sources: docs/00-project-brief.md, evaluation/PLAN.md, ADR 0010. TODOs name the task that fills them. -->
-
 ## 1.1 Problem
 
 Researchers and students who start on a topic in large language models (LLMs) and natural
 language processing (NLP) face a fast-growing literature. The arXiv category `cs.CL` alone holds
 121,860 records, cross-lists included, on the snapshot of 2026-10-10. New records arrive at about
 460 per week in 2025 (ADR 0003) and about 730 per week in the live test of October 2026 (1,782 new
-papers over 17 datestamp days; `pipelines/reports/incremental_test.md`, #124). Keyword search returns lists of papers, but the reader still has to open them
+papers over 17 datestamp days). Keyword search returns lists of papers, but the reader still has to open them
 to answer a question. A general-purpose chatbot answers fluently, but it does not show where an
 answer comes from, and it may state things that no paper says.
 
@@ -20,13 +17,14 @@ keep exploring.
 
 ## 1.2 Goals and success criteria
 
-The project brief (`docs/00-project-brief.md`) sets four success criteria:
+The project brief sets four success criteria:
+
 1. A working web demo that answers questions with cited sources and shows follow-up suggestions.
 2. A reproducible pipeline from open data to an indexed corpus.
 3. A written evaluation with stated sample sizes, methods and limitations.
 4. Code, documentation and project history that let an outsider rebuild and understand the system.
 
-The approach is retrieval-augmented generation (RAG), not training on the corpus
+The approach is retrieval-augmented generation (RAG) [1], not training on the corpus
 (ADR 0002). The corpus is indexed once, and new papers can be added without retraining. Every
 answer can point to its evidence. RAG reduces hallucination but does not remove it, so the agent
 also checks whether the evidence is sufficient, and the evaluation measures how often answers are
@@ -35,6 +33,7 @@ supported by the passages they cite (chapter 4).
 ## 1.3 Scope
 
 In scope:
+
 - **Domain.** LLM/NLP research: every arXiv record whose categories contain `cs.CL`, all years,
   **titles and abstracts only** (ADR 0003). Wikipedia background articles were cut from the
   index on 2026-10-17.
@@ -50,6 +49,7 @@ In scope:
   was cancelled on 2026-11-03 (ADR 0013).
 
 Out of scope:
+
 - training or fine-tuning a model;
 - indexing full-text PDFs (a single paper's HTML full text can be read on demand, section 3.7);
 - user accounts and production-grade scaling;
@@ -63,7 +63,7 @@ evaluation: a question that names a paper by arXiv id can read that paper's full
 
 ## 1.4 Research questions
 
-Three questions were fixed before the runs (`evaluation/PLAN.md` §2). The evaluation answers
+Three questions were fixed in the evaluation plan before the runs. The evaluation answers
 RQ1 and RQ2; RQ3 was dropped when the user study was cancelled (ADR 0013).
 
 - **RQ1 (retrieval).** Does hybrid retrieval (dense + BM25, reciprocal rank fusion) give higher
@@ -78,7 +78,7 @@ RQ1 and RQ2; RQ3 was dropped when the user study was cancelled (ADR 0013).
   study is future work (chapter 6).
 
 Answer latency and the behaviour of the index as the corpus grows are measured too
-(`docs/runbooks/performance.md`, `pipelines/reports/scaling.md`). They are reported as properties
+(section 2.6 and chapter 4). They are reported as properties
 of the system on the stated hardware, not as research questions.
 
 ## 1.5 How the project was run
@@ -89,21 +89,22 @@ of the system on the stated hardware, not as research questions.
   - LDN owned the frontend and the evaluation.
 - **Contracts first.** The modules talk only through written contracts:
   - the chunk schema;
-  - the HTTP API (`docs/contracts/api.openapi.yaml`);
+  - the HTTP API (an OpenAPI description);
   - the LLM client interface.
 
   So each member could build and test against the others' contracts before the real
   implementations existed.
-- **Decisions.** Every design decision is recorded as an ADR in `docs/decisions/`, with the options
-  considered and, where possible, a decision rule fixed before the measurement that applies it.
+- **Decisions.** Every design decision is recorded as an architecture decision record (ADR), with
+  the options considered and, where possible, a decision rule fixed before the measurement that
+  applies it. The report cites them as "ADR 0003" and so on; Appendix B lists all thirteen.
 - **Schedule.** The project ran from 2026-10-13 to the presentation on 2026-11-10. The original plan of 8
   weeks was compressed into 22 working days in 8 phases. Five features were cut early to protect the evaluation and the
   report: Kafka, the reranker, UI extras, query decomposition, and a larger user study
   (ADR 0010). The user study was then cancelled entirely on 2026-11-03 (ADR 0013).
 - **Quality rules.** Every change went through a pull request with CI (lint and tests). Evaluation
   runs and contract changes needed a review by a second member.
-- **AI coding tools.** Team members used AI coding assistants. The repository rules for them are in
-  `AGENTS.md`. Authors stayed responsible for every change they merged.
+- **AI coding tools.** Team members used AI coding assistants under written rules for the project (Appendix D).
+  Authors stayed responsible for every change they merged.
 
 ## 1.6 Structure of the report
 

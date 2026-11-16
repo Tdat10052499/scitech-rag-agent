@@ -9,7 +9,7 @@ proposals.
 
 ## 1. Format
 
-- One Markdown file per chapter in `docs/report/`, exported to one PDF (W8-D4-LDN-1).
+- One Markdown file per chapter in `docs/report/`, exported to one PDF with `bash docs/report/build_pdf.sh` (pandoc and xelatex; W8-D4-LDN-1).
 - Figures and the scripts that made them go in `docs/report/figures/` (W8-D2-LDN-1).
 - Writing style:
   - English;
@@ -30,7 +30,9 @@ proposals.
 | `05-interface.md` | 5. Interface: chat, citations, sources panel, follow-ups, refusal state, feedback | LDN | W8-D1-LDN-1 | 2 | `frontend/`, `docs/demo/`, ADR 0004 | Merged (#202, figures #205) |
 | `06-conclusion.md` | 6. Conclusion: results by research question, limitations, future work | FAO | W8-D2-FAO-1 | 2 | chapters 2–5 | Merged (#131) |
 | `demo-script.md` | Demo script (not a chapter) | DAT | W8-D3-DAT-1 | — | — | Merged (#184, #189) |
-| `07-appendix.md` | A. How to run (link to README); B. ADR index; C. Golden-set format; D. Team and AI-tool use | DAT | W8-D5-DAT-1 | — | `README.md`, `docs/decisions/` | Merged (#184, #193) |
+| `07-appendix.md` | A. How to run (link to README); B. ADR index; C. Golden-set format; D. Team and AI-tool use; E. Prompts; F. Run configurations | DAT (A–D), LDN (E–F) | W8-D5-DAT-1, W8-D4-LDN-1 | — | `README.md`, `docs/decisions/`, `agent/prompts/`, `evaluation/prompts/`, `evaluation/configs/` | A–D merged (#184, #193); E–F in the report-assembly PR |
+| `cover.md` | Cover page | LDN | W8-D4-LDN-1 | 1 | — | Report-assembly PR; names, course and date to confirm |
+| `08-references.md` | References (numbered, cited in chapters 1 to 4) | LDN | W8-D4-LDN-1 | 1 | — | Report-assembly PR |
 
 ### What each chapter must contain
 
@@ -54,7 +56,7 @@ The other chapters rely on these points, so they are fixed here.
 
 ## 3. Schedule
 
-The dates come from `docs/plan/` and ADR 0010. The presentation is on Tuesday 2026-11-10.
+The dates come from `docs/plan/` and ADR 0010. The presentation was planned for Tuesday 2026-11-10 and took place on 2026-11-12 (#212, #213).
 
 | Day | Report work | Owner |
 |---|---|---|
@@ -67,6 +69,5 @@ The dates come from `docs/plan/` and ADR 0010. The presentation is on Tuesday 20
 | Sat 11-07 to Mon 11-09 (D23–D24) | Slides, rehearsal, dry run | all |
 | Tue 11-10 (D25) | Presentation | all |
 
-One decision is still open for chapter 4: the ablations ran on `split: dev` (32 items;
-`ablations-v1.md`), while the draft `RUNS.md` (#160) plans `split: all`. The team decides in #160
-whether to rerun them on all items (about 15 minutes on DAT's laptop) or report them on dev.
+The ablations of chapter 4 ran on all 65 items (W7 runs A1 to A4, `evaluation/RUNS.md`); the earlier
+dev-only run (`ablations-v1.md`) is kept as a comparison.

@@ -39,6 +39,9 @@ def save(fig, name):
     fig.savefig(
         OUT / name, format="svg", facecolor="white", bbox_inches="tight", metadata={"Date": None}
     )
+    # PNG copy for the PDF export (LaTeX cannot draw SVG).
+    fig.savefig(OUT / name.replace(".svg", ".png"), format="png", dpi=200, facecolor="white",
+                bbox_inches="tight")
     plt.close(fig)
     print("wrote", name)
 
