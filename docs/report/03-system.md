@@ -62,10 +62,10 @@ clicks on follow-ups. `GET /health` reports whether the backend is up.
 The index is described in chapter 2. In short:
 - one chunk per arXiv abstract in almost all cases (title and abstract, at most 320 words);
 - 121,926 chunks;
-- embedded with `BAAI/bge-small-en-v1.5` (384 dimensions, cosine; ADR 0007);
-- stored in Qdrant with exact search, plus a BM25 index built from the same chunks.
+- embedded with `BAAI/bge-small-en-v1.5` [4] (384 dimensions, cosine; ADR 0007);
+- stored in Qdrant [15] with exact search, plus a BM25 index [3] built from the same chunks.
 
-**Hybrid retrieval with reciprocal rank fusion (RRF).**
+**Hybrid retrieval with reciprocal rank fusion (RRF)** [2].
 - The query is searched twice:
   - with the dense model (top 50, with the query instruction of ADR 0007);
   - with BM25 (top 50).
@@ -154,8 +154,8 @@ code path.
 
 | Role | Model | Where | Decision |
 |---|---|---|---|
-| Generator | `llama3.2:3b` (Q4_K_M, 3.2B parameters), temperature 0 | Ollama. Development and ADR 0006 runs: Kaggle 2 × T4 behind a tunnel. Evaluation runs: DAT's laptop (RTX 5060 Laptop 8 GB) | ADR 0006 |
-| Faithfulness judge | `qwen2.5:7b`, temperature 0 | Same Ollama as the generator. A different model from the generator, as `evaluation/PLAN.md` §5 requires (here also a different model family) | #142, `evaluation/SNAPSHOT.md` |
+| Generator | `llama3.2:3b` [8] (Q4_K_M, 3.2B parameters), temperature 0 | Ollama. Development and ADR 0006 runs: Kaggle 2 × T4 behind a tunnel. Evaluation runs: DAT's laptop (RTX 5060 Laptop 8 GB) | ADR 0006 |
+| Faithfulness judge | `qwen2.5:7b` [12], temperature 0 | Same Ollama as the generator. A different model from the generator, as `evaluation/PLAN.md` §5 requires (here also a different model family) | #142, `evaluation/SNAPSHOT.md` |
 
 **Model choice (ADR 0006).**
 - Three open-weights models were compared on 10 questions, by two raters, with a rule fixed

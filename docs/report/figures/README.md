@@ -1,9 +1,13 @@
 # Report figures
 
 `make_figures.py` draws every figure of the report. Run `python docs/report/figures/make_figures.py`
-(needs matplotlib). The SVG files are written next to the script and are not committed in this
-version: run the script before the PDF export (W8-D4-LDN-1) or before reading the chapters in a
-viewer.
+(needs matplotlib). The SVG files are written next to the script and are committed, so the chapters
+render without running it; run the script again after any change to the numbers in it.
+
+Figure 2.1 is not drawn by the script. It is a Mermaid diagram (`fig-2-1-pipeline.mmd`) rendered
+with `mmdc -i fig-2-1-pipeline.mmd -o fig-2-1-pipeline.svg -b white` (add `-s 3` and a `.png`
+output for the PNG that the PDF uses; Mermaid CLI 11, a config with `htmlLabels` off so that the text is
+kept as text). The chapter links the PNG because not every PDF exporter draws SVG.
 
 The numbers are typed into the script from `evaluation/reports/final.md`, with the section named
 next to each figure; change them there and run the script again. No figure uses user ratings: the
@@ -11,6 +15,7 @@ user study was cancelled (ADR 0013).
 
 | File | Chapter | Shows | Source |
 |---|---|---|---|
+| `fig-2-1-pipeline.png` / `.svg` | 2 (2.3) | The data pipeline from the two sources to the two indexes | `docs/report/02-data.md` 2.3, `pipelines/AGENTS.md` |
 | `fig-3-1-architecture.svg` | 3 (3.1) | Layers and the online and offline paths | `docs/report/03-system.md` 3.1 and 3.2 |
 | `fig-4-1-retrieval.svg` | 4 (4.3) | Recall@1/5/10 and MRR of hybrid, dense, BM25 with 95% intervals | `final.md` §3 (R1 to R3) |
 | `fig-4-2-retrieval-by-type.svg` | 4 (4.3) | Recall@5 by question type | `final.md` §3 |

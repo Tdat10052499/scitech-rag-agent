@@ -29,7 +29,7 @@ Laptop 8 GB, Ollama 0.40.13):
 - retrieval: hybrid (dense + BM25, reciprocal rank fusion) with the top 5 chunks as evidence
   (ADR 0009);
 - generator `llama3.2:3b`, temperature 0, 512 answer tokens;
-- judge `qwen2.5:7b`, temperature 0, a different model from the generator.
+- judge `qwen2.5:7b`, temperature 0, a different model from the generator (LLM-as-judge [13]).
 
 The code of the retrieval runs R1 to R3 and the answer runs A1 to A4 is commit `3a2b92d`. Each
 run file records the golden-set hash, the index snapshot id and the models
@@ -50,7 +50,7 @@ half. One writer wrote most of the items from abstracts, and FAO checked part of
 | **Total** | **60** | **30** | **30** |
 
 **Metrics.** Recall@k, MRR, faithfulness, answer relevance, refusal rate and cited-document
-recall are defined in `evaluation/PLAN.md` section 4. Intervals are 95% bootstrap intervals over
+recall are defined in `evaluation/PLAN.md` section 4. Intervals are 95% bootstrap intervals [10] over
 questions (1,000 resamples). Faithfulness is the share of checkable sentences supported by their
 cited chunks. The macro average is taken per answer, the micro average per sentence. Refused
 answers are not scored, and their number is reported next to the refusal rate.
@@ -175,7 +175,7 @@ answers that enter the metrics (seed 20261031): 11 answers each for A1 and A2, s
 between them. Each annotator used the written procedure of `PLAN.md` and did not see the judge
 output. LDN's and FAO's files are in `evaluation/pilot/w7-sample/`.
 
-| | n | Raw agreement | Cohen's kappa |
+| | n | Raw agreement | Cohen's kappa [9] |
 |---|---:|---:|---:|
 | Faithfulness, A1 (sentences) | 29 | 25/29 = 0.862 | 0.733 |
 | Faithfulness, A2 (sentences) | 26 | 22/26 = 0.846 | 0.720 |

@@ -1,0 +1,19 @@
+flowchart TB
+    subgraph S1["Ingest, clean and validate"]
+        direction LR
+        K["Kaggle snapshot<br/>3.2M records, 5.61 GB"] --> D[download]
+        O["arXiv OAI-PMH<br/>cs:cs:CL, every 2 h"] --> F[incremental-run]
+        D --> C["clean<br/>(PySpark, local mode)"]
+        F --> C
+        C --> V["validate<br/>(DuckDB)"]
+    end
+    subgraph S2["Chunk, index and retrieve"]
+        direction LR
+        CH[chunk] --> E["embed<br/>(bge-small, GPU)"]
+        E --> L[load]
+        L --> Q[("Qdrant<br/>dense vectors")]
+        CH --> B[("BM25 index")]
+        Q --> R[hybrid retrieval]
+        B --> R
+    end
+    S1 --> S2

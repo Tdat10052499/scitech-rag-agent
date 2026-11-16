@@ -26,7 +26,7 @@ The project brief (`docs/00-project-brief.md`) sets four success criteria:
 3. A written evaluation with stated sample sizes, methods and limitations.
 4. Code, documentation and project history that let an outsider rebuild and understand the system.
 
-The approach is retrieval-augmented generation (RAG), not training on the corpus
+The approach is retrieval-augmented generation (RAG) [1], not training on the corpus
 (ADR 0002). The corpus is indexed once, and new papers can be added without retraining. Every
 answer can point to its evidence. RAG reduces hallucination but does not remove it, so the agent
 also checks whether the evidence is sufficient, and the evaluation measures how often answers are

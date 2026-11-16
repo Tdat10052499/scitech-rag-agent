@@ -16,7 +16,7 @@ The sub-domain is LLM/NLP research. The corpus is **every arXiv record whose cat
 
 | Source | Role | Access | Licence |
 |---|---|---|---|
-| arXiv metadata | the whole index | bulk: Kaggle snapshot `Cornell-University/arxiv`, version 307 (2026-10-10); daily: OAI-PMH, set `cs:cs:CL` | CC0 1.0 for titles, abstracts and other descriptive metadata |
+| arXiv metadata | the whole index | bulk: Kaggle snapshot `Cornell-University/arxiv`, version 307 (2026-10-10) [11]; daily: OAI-PMH [14], set `cs:cs:CL` | CC0 1.0 for titles, abstracts and other descriptive metadata |
 | Wikipedia (English, NLP categories) | background articles, downloaded but cut from the v1.0 index (ADR 0003 update, #34) | MediaWiki API, 1,186 pages listed, 1,169 with text | CC BY-SA 4.0 |
 | OpenAlex | optional enrichment by DOI; not used in v1.0 | REST API | CC0 1.0 |
 
@@ -51,23 +51,10 @@ option B).
 
 ## 2.3 Pipeline
 
-```mermaid
-flowchart LR
-    K[Kaggle snapshot<br/>3.2M records, 5.61 GB] --> D[download]
-    D --> C["clean<br/>(PySpark, local mode)"]
-    O[arXiv OAI-PMH<br/>cs:cs:CL, every 2 h] --> F[incremental-run]
-    F --> C
-    C --> V["validate<br/>(DuckDB)"]
-    V --> CH[chunk]
-    CH --> E["embed<br/>(bge-small, GPU)"]
-    E --> L[load]
-    L --> Q[(Qdrant<br/>dense vectors)]
-    CH --> B[(BM25 index)]
-    Q --> R[hybrid retrieval]
-    B --> R
-```
-<!-- TODO(W8-D4-LDN-1): mermaid does not render in every PDF exporter; export this diagram as an
-image if the PDF shows the code. -->
+![Figure 2.1: the data pipeline, from the two sources to the two indexes and hybrid retrieval](figures/fig-2-1-pipeline.png)
+
+*Figure 2.1.* The pipeline. The source of the diagram is `figures/fig-2-1-pipeline.mmd` (Mermaid); the
+PNG is used in the PDF and `fig-2-1-pipeline.svg` is the vector copy.
 
 Each step is a re-runnable command of `python -m scitech_pipelines` that reads and writes files
 under `data/` and records its counts in a manifest; `run-all` chains them (`pipelines/AGENTS.md`).
@@ -75,7 +62,7 @@ under `data/` and records its counts in a manifest; `run-all` chains them (`pipe
 | Step | What it does | Time (full corpus) | Where |
 |---|---|---:|---|
 | download | Kaggle zip, extraction, SHA-256 | 150 s | any machine |
-| clean | filter `cs.CL`, normalise fields, drop records without title, abstract or date, de-duplicate by `doc_id`; DuckDB recounts the category and a mismatch fails the run | 82-111 s, peak 2.9 GB | Java 17+ (Kaggle CPU notebook) |
+| clean | filter `cs.CL`, normalise fields, drop records without title, abstract or date, de-duplicate by `doc_id`; DuckDB [7] recounts the category and a mismatch fails the run | 82-111 s, peak 2.9 GB | Java 17+ (Kaggle CPU notebook) |
 | validate | 13 checks: schema, ids, dates, category, licence, count against the clean manifest, golden documents present | under 1 s | any machine |
 | chunk | `title. abstract`, windows of at most 320 words overlapping by 48 | 14.1 s | any machine |
 | embed | sentence-transformers, L2-normalised float32, resumable parts | 14.4 min on a T4 | GPU notebook |
@@ -99,7 +86,7 @@ Design choices:
 
 ## 2.4 Processing engine (ADR 0005)
 
-The brief prefers PySpark if a measurement shows it is workable, because this is a Big Data
+The brief prefers PySpark [6] if a measurement shows it is workable, because this is a Big Data
 course. The same job (read the JSON Lines, keep `cs.CL`, write Parquet, count by year) was timed in
 three engines.
 
@@ -195,7 +182,7 @@ the same 100 queries at k = 10 on FAO's laptop (Qdrant 1.19.2 in Docker, exact s
 - **Vector search alone** (query vectors computed beforehand; `scaling.md` §2.1, #121), p50 inside
   Qdrant: exact search 2.0, 8.0 and 14.4 ms, about 1.1 ms per 10,000 points; HNSW 1.6 to 2.6 ms
   at every size, with 97.9% to 100% of the exact top 10. At a million chunks exact search would
-  take about 110 ms (extrapolated), so HNSW would then be the better choice (#87).
+  take about 110 ms (extrapolated), so HNSW [5] would then be the better choice (#87).
 - **Retrieval is not the bottleneck:** hybrid is at most 135.2 ms at p95 at every size, far below
   the LLM's first token (p50 0.42 s on the Week 7 host; `docs/runbooks/performance.md`, #161).
 
