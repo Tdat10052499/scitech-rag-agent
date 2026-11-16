@@ -1,0 +1,49 @@
+% Cover page of the PDF (build_pdf.sh puts this file at the start of the document).
+% Layout follows the course cover template: double frame with corner ornaments, university name,
+% logo, report and course lines, title, team members, city and year. Edit the macros below.
+\newcommand{\coverTitle}{ASAP RAG Agent}
+\newcommand{\coverSubtitle}{Automated Scientific Aggregation Platform}
+\newcommand{\coverCourse}{BIG DATA ANALYTICS}
+\newcommand{\coverClass}{Class code: 261\_72ITDS40303\_02}
+\newcommand{\coverMemberA}{Hồ Du Tuấn Đạt -- (Student ID)}
+\newcommand{\coverMemberB}{Nguyễn Minh Chính -- (Student ID)}
+\newcommand{\coverMemberC}{Dương Ngọc Linh Đan -- (Student ID)}
+\newcommand{\coverPlace}{Ho Chi Minh City -- 2026}
+\thispagestyle{empty}
+\begingroup
+\coverfont
+\begin{tikzpicture}[remember picture,overlay,shift={(current page.center)}]
+  % frame: thick outer line, thin inner line (left and right), single thick line (top and bottom)
+  \draw[line width=1.1pt] (-8.5,9.31) -- (-8.5,-9.31);
+  \draw[line width=1.1pt] (8.5,9.31) -- (8.5,-9.31);
+  \draw[line width=0.5pt] (-8.28,9.31) -- (-8.28,-9.31);
+  \draw[line width=0.5pt] (8.28,9.31) -- (8.28,-9.31);
+  \draw[line width=1.1pt] (-5.56,12.25) -- (5.56,12.25);
+  \draw[line width=1.1pt] (-5.56,-12.25) -- (5.56,-12.25);
+  % corner ornaments
+  \node[anchor=north west,inner sep=0] at (-8.67,12.42)
+    {\includegraphics[width=3.11cm]{cover/corner.png}};
+  \node[anchor=north east,inner sep=0] at (8.67,12.42)
+    {\scalebox{-1}[1]{\includegraphics[width=3.11cm]{cover/corner.png}}};
+  \node[anchor=south west,inner sep=0] at (-8.67,-12.42)
+    {\scalebox{1}[-1]{\includegraphics[width=3.11cm]{cover/corner.png}}};
+  \node[anchor=south east,inner sep=0] at (8.67,-12.42)
+    {\scalebox{-1}[-1]{\includegraphics[width=3.11cm]{cover/corner.png}}};
+  % text and logo
+  \node[font=\fontsize{14}{16}\selectfont\bfseries] at (0,11.04) {VAN LANG UNIVERSITY};
+  \node[font=\fontsize{14}{16}\selectfont\bfseries] at (0,10.13) {FACULTY OF INFORMATION TECHNOLOGY};
+  \node[inner sep=0] at (0,9.18) {\includegraphics[width=4.5cm]{cover/divider.png}};
+  \node[inner sep=0] at (0,6.57) {\includegraphics[width=3.9cm]{cover/logo.png}};
+  \node[font=\fontsize{12}{14}\selectfont\bfseries] at (0,4.08) {FINAL PROJECT REPORT};
+  \node[font=\fontsize{12}{14}\selectfont] at (0,3.17) {COURSE: \coverCourse};
+  \node[font=\fontsize{10}{12}\selectfont] at (0,2.6) {\coverClass};
+  \node[font=\fontsize{22}{26}\selectfont\bfseries,text=red] at (0,0.35) {\coverTitle};
+  \node[font=\fontsize{13}{15}\selectfont\bfseries,text=red] at (0,-0.55) {\coverSubtitle};
+  \node[anchor=west,font=\fontsize{12}{14}\selectfont\bfseries] at (-3.0,-4.1) {Team Members:};
+  \node[anchor=west,font=\fontsize{12}{14}\selectfont\bfseries] at (-3.0,-5.05) {\coverMemberA};
+  \node[anchor=west,font=\fontsize{12}{14}\selectfont\bfseries] at (-3.0,-5.96) {\coverMemberB};
+  \node[anchor=west,font=\fontsize{12}{14}\selectfont\bfseries] at (-3.0,-6.87) {\coverMemberC};
+  \node[font=\fontsize{12}{14}\selectfont\bfseries] at (0,-11.25) {\coverPlace};
+\end{tikzpicture}
+\endgroup
+\clearpage

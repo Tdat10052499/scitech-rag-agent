@@ -25,10 +25,11 @@ rm -rf "$BUILD"
 mkdir -p "$BUILD"
 cp -r "$HERE/figures" "$BUILD/figures"
 
-# The cover headings are kept out of the table of contents; the contents page follows the cover.
-sed -e 's/^# \(.*\)$/# \1 {.unnumbered .unlisted}/' \
-    -e 's/^## \(.*\)$/## \1 {.unnumbered .unlisted}/' "$HERE/cover.md" > "$BUILD/00-cover.md"
-printf '\n\\clearpage\n\\tableofcontents\n\\clearpage\n' > "$BUILD/00-toc.md"
+# The cover is a LaTeX page (pdf/cover.tex, with its images in pdf/cover/); the contents page follows it.
+mkdir -p "$BUILD/cover"
+cp "$HERE"/pdf/cover/*.png "$BUILD/cover/"
+{ printf '```{=latex}\n'; cat "$HERE/pdf/cover.tex"; printf '\n```\n\n'; } > "$BUILD/00-cover.md"
+printf '\n\\tableofcontents\n\\clearpage\n' > "$BUILD/00-toc.md"
 
 FILES=("$BUILD/00-cover.md" "$BUILD/00-toc.md")
 for f in 01-introduction 02-data 03-system 04-evaluation 05-interface 06-conclusion 07-appendix 08-references; do
