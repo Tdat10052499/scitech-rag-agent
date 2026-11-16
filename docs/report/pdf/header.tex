@@ -21,3 +21,7 @@
 % Line spacing 1.5 in the running text.
 \usepackage{setspace}
 \setstretch{1.43} % equals "1.5 lines" in Word for 12 pt Times New Roman (\onehalfspacing is a little tighter)
+\setcounter{tocdepth}{1}
+% Lists are a little tighter than the running text (single spacing 1.15).
+\AtBeginEnvironment{itemize}{\setstretch{1.15}}
+\AtBeginEnvironment{enumerate}{\setstretch{1.15}}

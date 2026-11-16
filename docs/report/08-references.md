@@ -10,7 +10,7 @@ Tasks.* Advances in Neural Information Processing Systems 33 (NeurIPS 2020). arX
 Individual Rank Learning Methods.* Proceedings of SIGIR 2009, pp. 758–759.
 
 [3] S. Robertson, H. Zaragoza. *The Probabilistic Relevance Framework: BM25 and Beyond.* Foundations
-and Trends in Information Retrieval 4(1–2), 2009, pp. 1–174.
+and Trends in Information Retrieval 3(4), 2009, pp. 333–389. DOI 10.1561/1500000019.
 
 [4] S. Xiao, Z. Liu, P. Zhang, N. Muennighoff, D. Lian, J.-Y. Nie. *C-Pack: Packed Resources For
 General Chinese Embeddings* (the BGE embedding models). 2023. arXiv:2309.07597. Model used:

@@ -254,8 +254,9 @@ The detailed analyses are `evaluation/reports/retrieval-errors-w7.md` (FAO, retr
    **vocabulary mismatch**, where the question uses everyday words and the abstract uses the
    technical term (7), are the two largest causes of retrieval misses. A better ranker does not
    solve either; both need a better query.
-3. **Crowded topics** (7 misses), where other papers rank above the relevant one, and
-   **retriever-dependent misses** (6), found by one single retriever but lost in the fusion.
+3. **Crowded topics** (7 misses), where other papers rank above the relevant one,
+   **retriever-dependent misses** (6), found by one single retriever but lost in the fusion, and
+   **answers that are a side detail** of the relevant paper (2).
 4. **Near misses.** Six of hybrid's 32 misses have the relevant paper at ranks 6 to 10, which never
    reach the answer because only the top 5 chunks are shown.
 5. **Multi-hop and comparison questions** need two papers, so one missing paper counts as a miss.

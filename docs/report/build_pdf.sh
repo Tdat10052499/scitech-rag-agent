@@ -4,7 +4,7 @@
 #   bash docs/report/build_pdf.sh            # writes docs/report/build/ASAP-RAG-Agent-report.pdf
 #
 # Needs: pandoc (3.x) and a TeX Live with xelatex (packages: fontspec, fvextra, xurl, etoolbox,
-# fancyhdr, float, booktabs, longtable, graphicx, hyperref, xcolor). Nothing is installed or
+# fancyhdr, float, setspace, tikz, booktabs, longtable, graphicx, hyperref, xcolor). Nothing is installed or
 # downloaded by this script, and the Markdown files are not changed: it works on a copy in build/.
 #
 # Fonts: Times New Roman 12 pt body with line spacing 1.5 (if the font is missing, Liberation Serif or
@@ -44,8 +44,8 @@ done
     --include-in-header="$HERE/pdf/header.tex" \
     -V fontfamily=fontspec \
     ${MAINFONT:+-V mainfont="$MAINFONT"} -V monofont="$MONOFONT" -V monofontoptions=Scale=0.85 \
-    -V documentclass=article -V classoption=a4paper -V fontsize=12pt \
-    -V geometry:margin=2.2cm -V colorlinks=true -V linkcolor=black -V urlcolor=blue \
+    -V documentclass=article -V classoption=a4paper -V fontsize=10pt \
+    -V geometry:margin=1.8cm -V colorlinks=true -V linkcolor=black -V urlcolor=blue \
     -V title="" \
     --resource-path="$BUILD" \
     -o "$OUT" )

@@ -56,7 +56,7 @@ The other chapters rely on these points, so they are fixed here.
 
 ## 3. Schedule
 
-The dates come from `docs/plan/` and ADR 0010. The presentation is on Tuesday 2026-11-10.
+The dates come from `docs/plan/` and ADR 0010. The presentation was planned for Tuesday 2026-11-10 and took place on 2026-11-12 (#212, #213).
 
 | Day | Report work | Owner |
 |---|---|---|

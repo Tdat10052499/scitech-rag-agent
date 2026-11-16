@@ -5,12 +5,16 @@
 local seen_h1 = false
 
 function Header(h)
-  if h.level == 1 then
-    if seen_h1 then
-      return { pandoc.RawBlock('latex', '\\clearpage'), h }
-    end
-    seen_h1 = true
+  if h.level ~= 1 then return nil end
+  local blocks = {}
+  if seen_h1 then blocks[#blocks + 1] = pandoc.RawBlock('latex', '\\clearpage') end
+  seen_h1 = true
+  -- The appendix and the references are set in single spacing (the chapters use 1.5).
+  if pandoc.utils.stringify(h.content):match('^Appendix') then
+    blocks[#blocks + 1] = pandoc.RawBlock('latex', '\\singlespacing')
   end
+  blocks[#blocks + 1] = h
+  return blocks
 end
 
 function Para(p)

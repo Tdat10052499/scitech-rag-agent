@@ -2,7 +2,7 @@ flowchart TB
     subgraph S1["Ingest, clean and validate"]
         direction LR
         K["Kaggle snapshot<br/>3.2M records, 5.61 GB"] --> D[download]
-        O["arXiv OAI-PMH<br/>cs:cs:CL, every 2 h"] --> F[incremental-run]
+        O["arXiv OAI-PMH<br/>cs:cs:CL, daily batch"] --> F["incremental-run<br/>(manual, ADR 0008)"]
         D --> C["clean<br/>(PySpark, local mode)"]
         F --> C
         C --> V["validate<br/>(DuckDB)"]
