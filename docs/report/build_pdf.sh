@@ -7,14 +7,14 @@
 # fancyhdr, float, booktabs, longtable, graphicx, hyperref, xcolor). Nothing is installed or
 # downloaded by this script, and the Markdown files are not changed: it works on a copy in build/.
 #
-# Fonts: the default serif and mono fonts are DejaVu (they have the Vietnamese letters of the cover).
-# Override them if they are not installed:  MAINFONT="Times New Roman" MONOFONT="Consolas" bash ...
+# Fonts: Times New Roman 12 pt body with line spacing 1.5 (if the font is missing, Liberation Serif or
+# TeX Gyre Termes is used); code in DejaVu Sans Mono. Override: MAINFONT="..." MONOFONT="Consolas" bash ...
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD="$HERE/build"
 OUT="$BUILD/ASAP-RAG-Agent-report.pdf"
-MAINFONT="${MAINFONT:-DejaVu Serif}"
+MAINFONT="${MAINFONT:-}"   # default: Times New Roman, else Liberation Serif (pdf/header.tex)
 MONOFONT="${MONOFONT:-DejaVu Sans Mono}"
 
 for tool in pandoc xelatex; do
@@ -43,8 +43,8 @@ done
     --lua-filter="$HERE/pdf/filter.lua" \
     --include-in-header="$HERE/pdf/header.tex" \
     -V fontfamily=fontspec \
-    -V mainfont="$MAINFONT" -V monofont="$MONOFONT" -V monofontoptions=Scale=0.85 \
-    -V documentclass=article -V classoption=a4paper -V fontsize=10pt \
+    ${MAINFONT:+-V mainfont="$MAINFONT"} -V monofont="$MONOFONT" -V monofontoptions=Scale=0.85 \
+    -V documentclass=article -V classoption=a4paper -V fontsize=12pt \
     -V geometry:margin=2.2cm -V colorlinks=true -V linkcolor=black -V urlcolor=blue \
     -V title="" \
     --resource-path="$BUILD" \

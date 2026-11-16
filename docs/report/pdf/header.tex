@@ -14,3 +14,10 @@
 \IfFontExistsTF{Times New Roman}{\newfontfamily\coverfont{Times New Roman}}{%
 \IfFontExistsTF{Liberation Serif}{\newfontfamily\coverfont{Liberation Serif}}{%
 \IfFontExistsTF{TeX Gyre Termes}{\newfontfamily\coverfont{TeX Gyre Termes}}{\let\coverfont\relax}}}
+% Body font: Times New Roman, else the metric-compatible Liberation Serif, else TeX Gyre Termes.
+% (build_pdf.sh passes MAINFONT only when the variable is set, and that overrides this.)
+\IfFontExistsTF{Times New Roman}{\setmainfont{Times New Roman}}{%
+\IfFontExistsTF{Liberation Serif}{\setmainfont{Liberation Serif}}{\setmainfont{TeX Gyre Termes}}}
+% Line spacing 1.5 in the running text.
+\usepackage{setspace}
+\setstretch{1.43} % equals "1.5 lines" in Word for 12 pt Times New Roman (\onehalfspacing is a little tighter)
