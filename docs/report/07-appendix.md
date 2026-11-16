@@ -2,15 +2,15 @@
 
 ## A. How to run
 
-The full steps are in `README.md`. In short:
+The code, documents and run files are in the project's GitHub repository (named on the cover). This report does not need them to be read. In short, the system is run like this:
 
-- **With Docker:** `make setup`, copy `.env.example` to `.env`, then `make up`. This starts Qdrant, the backend on port 8000 and the frontend on port 8080. The LLM runs outside the stack: Ollama on the same machine, or any OpenAI-compatible endpoint (`docs/runbooks/llm-serving.md`).
-- **Windows without Docker:** README section "Run the real app on Windows without Docker". It covers native Qdrant, Ollama, `.env` loaded into the shell, `PYTHONPATH`, uvicorn and the frontend dev server. This is how the Week 7 runs and the clean-clone check of 2026-10-30 were done.
+- **With Docker:** install the tools and dependencies, copy the settings template to a settings file, then start the stack with Docker Compose. This starts Qdrant, the backend on port 8000 and the frontend on port 8080. The LLM runs outside the stack: Ollama on the same machine, or any OpenAI-compatible endpoint, set by three environment variables (address, model name and key).
+- **Windows without Docker:** native Qdrant and Ollama, the settings loaded into the shell, the backend started with uvicorn and the frontend started with its development server. This is how the Week 7 runs and the clean-clone check of 2026-10-30 were done.
 - **Index:**
-  - The index is not in the repository. Build it from the Kaggle arXiv snapshot with `docs/runbooks/data-pipeline.md`, or load the release data.
-  - The evaluation index is frozen: collection `scitech_chunks`, 121,926 points, id in `evaluation/SNAPSHOT.md`.
-- **Public demo:** a Hugging Face Docker Space with the same code and the frozen index, but a hosted LLM (`qwen/qwen3.8-27b` on Groq). It is deployed from `main` by `.github/workflows/deploy-hf-space.yml` (`docs/runbooks/hosting.md`). The evaluation numbers are for `llama3.2:3b` and do not describe the Space.
-- **Evaluation:** `evaluation/RUNS.md` lists every run, with its config, command and result file.
+  - The index is not kept in the code repository. It is built from the Kaggle arXiv snapshot with the pipeline of chapter 2, or loaded from the release data.
+  - The evaluation index is frozen: collection `scitech_chunks`, 121,926 points, identified by the snapshot id of section 2.7.
+- **Public demo:** a Hugging Face Docker Space with the same code and the frozen index, but a hosted LLM (`qwen/qwen3.8-27b` on Groq). It is deployed automatically after the checks pass on the main branch. The evaluation numbers are for `llama3.2:3b` and do not describe the Space.
+- **Evaluation:** every run is described by a configuration file (Appendix F), and the team keeps a list of all runs with their configuration, command and result file.
 
 ## B. Architecture decisions
 
@@ -30,18 +30,18 @@ The full steps are in `README.md`. In short:
 | 0012 | Read a paper's full text on demand, without indexing it | accepted 2026-11-03 |
 | 0013 | Cancel the user study (RQ3 is not evaluated) | accepted 2026-11-03 |
 
-Each file is `docs/decisions/<number>-<slug>.md`. It has the context, the options, the decision, its consequences, and the measurements behind it.
+Each decision record gives the context, the options, the decision, its consequences and the measurements behind it. The records are kept by the team and are not part of this report.
 
 ## C. Golden set format
 
-The golden set is `evaluation/golden_set/golden.jsonl`, one JSON object per line. The full rules are in `evaluation/golden_set/FORMAT.md`.
+The golden set is one JSON object per line, written by hand from abstracts in the corpus.
 
-- **Size:** 65 items. 60 are answerable (30 dev, 30 test) and 5 are unanswerable (#168).
+- **Size:** 65 items. 60 are answerable (30 dev, 30 test) and 5 are unanswerable.
 - **Fields:** `id`, `question`, `type`, `relevant_doc_ids`, `reference_answer`, `split`, `author` and `notes`.
 - **Follow-up turns:** these also carry `history` (the earlier turns) and `standalone_query` (the question rewritten without the history).
 - **Types:** factual, explanatory, comparison, multi-hop, follow-up and unanswerable.
-- **How items were made:** each item was written from one or more abstracts in the corpus, by the member in its `author` field; `notes` records how it was made. Unanswerable items were checked against the full index (FORMAT rule 7; FAO's search on #168).
-- **Coverage:** all 78 relevant documents are in the frozen index (W7-D1-FAO-1, #156).
+- **How items were made:** each item was written from one or more abstracts in the corpus, by the member in its `author` field; `notes` records how it was made. FAO checked the unanswerable items against the full index.
+- **Coverage:** all 78 relevant documents are in the frozen index.
 
 ## D. Team and use of AI tools
 
@@ -51,22 +51,21 @@ The golden set is `evaluation/golden_set/golden.jsonl`, one JSON object per line
 | FAO | `F4ol4n` | Data pipeline, processing engine, index, incremental and scheduled ingestion, scaling, report chapters 2 and 6 |
 | LDN | `Yui-Mika` | Golden set, evaluation runner and judges, user study, frontend, report chapters 4 and 5 |
 
-**Work method.** The work was planned day by day (`docs/plan/`). Each task had an ID, used in branch names, pull requests and journals (`docs/journal/`). Each member merged their own pull requests after review. Blocking tasks, contract changes and evaluation runs were reviewed by another member (`CONTRIBUTING.md`).
+**Work method.** The work was planned day by day. Each task had an ID, used in branch names, pull requests and work journals. Each member merged their own pull requests after review. Blocking tasks, contract changes and evaluation runs were reviewed by another member.
 
-**AI tools.** All three members used an AI assistant (Claude, through Claude Code) to draft code, documents, reviews and comments. The rules in `CONTRIBUTING.md` and `AGENTS.md` applied to all of it:
+**AI tools.** All three members used an AI assistant (Claude, through Claude Code) to draft code, documents, reviews and comments. The written rules of the project applied to all of it:
 
 - The member is the author.
 - The member reads the whole diff, runs the tests, and can explain every change.
 - Texts drafted with AI say so ("Drafted with AI assistance").
 
-AI was not used as a source of facts about the papers. The answers of the system come from the retrieved passages, and the evaluation numbers come from run files in the repository. The faithfulness and relevance judges are LLMs (`qwen2.5:7b`). Their labels are checked against human labels on a sample (`evaluation/PLAN.md` §5), and the report states the agreement.
+AI was not used as a source of facts about the papers. The answers of the system come from the retrieved passages, and the evaluation numbers come from run files. The faithfulness and relevance judges are LLMs (`qwen2.5:7b`). Their labels are checked against human labels on a sample (evaluation plan), and the report states the agreement.
 
 ## E. Prompts
-The prompts below are copied without change from the repository at commit `47df2f8` (the file named above each block). They are in English, as is the corpus. Prompts that the agent sends are in `agent/prompts/`; the two judge prompts are in `evaluation/prompts/`.
+
+The prompts below are the texts that the system sends to the language model, copied without change. They are in English, as is the corpus. E.1 to E.5 are used by the agent and E.6 and E.7 by the two judges of the evaluation.
 
 ### E.1 Query rewrite (active when `AGENT_REWRITE=on`)
-
-`agent/prompts/rewrite.md`
 
 ~~~~text
 You turn the last message of a conversation into a standalone search query for a corpus of science and technology papers.
@@ -88,8 +87,6 @@ Output only the query, on one line, with no quotes, label or explanation.
 ~~~~
 
 ### E.2 Answer from retrieved passages
-
-`agent/prompts/answer.md`
 
 ~~~~text
 You are a research assistant that answers science and technology questions.
@@ -113,8 +110,6 @@ Rules:
 
 ### E.3 Answer, paper-reading variant (ADR 0012)
 
-`agent/prompts/answer_papers.md`
-
 ~~~~text
 Extra rules for this question (it asks for papers, a period, the latest work or a named paper):
 - A source is either one paper's title and abstract, or, when its title ends with "(full text, section: ...)", a passage from that section of the paper's full text. "arXiv:" is the paper's id and "Published:" the date of its first version. The id and the date are evidence too: use them, and cite the source when you state them.
@@ -130,8 +125,6 @@ Extra rules for this question (it asks for papers, a period, the latest work or 
 ~~~~
 
 ### E.4 Self-check (active when `AGENT_SELF_CHECK=on`)
-
-`agent/prompts/self_check.md`
 
 ~~~~text
 You check whether a question can be answered from a set of sources before an assistant answers it.
@@ -151,9 +144,7 @@ Output only one word: YES, PARTLY or NO.
 
 ### E.5 Follow-up suggestions
 
-This is the version of `main` after #211 (2026-11-11). The version evaluated in the W7 runs is the one of the frozen `v0.6-rc` (`evaluation/SNAPSHOT.md`); it lacks the quote requirement.
-
-`agent/prompts/followups.md`
+This is the version in use after 2026-11-11, with the quote requirement described in section 3.4. The version evaluated in the Week 7 runs lacks that requirement.
 
 ~~~~text
 You suggest follow-up questions for a science and technology question-answering assistant.
@@ -186,8 +177,6 @@ If the sources support no good follow-up question, output [].
 
 ### E.6 Faithfulness judge
 
-`evaluation/prompts/faithfulness-judge.md`
-
 ~~~~text
 You check one sentence of an answer against the source passages it cites.
 
@@ -213,8 +202,6 @@ Reply with JSON only: {"label": "supported" | "not supported" | "not checkable",
 ~~~~
 
 ### E.7 Answer relevance judge
-
-`evaluation/prompts/relevance-judge.md`
 
 ~~~~text
 You rate how well an answer addresses a question. You do not check whether the answer is true.
@@ -244,23 +231,13 @@ Reply with JSON only: {"rating": 1 | 2 | 3, "reason": "<one sentence naming whic
 ~~~~
 
 ## F. Run configurations
-Each evaluation run is described by one YAML file in `evaluation/configs/`, so it can be repeated. The three files below are copied without change at commit `47df2f8`: the final hybrid retrieval run (RQ1), the full-agent answer run (A4, RQ2) and the relevance judge. No URL, key or token appears in them; those come from the environment.
+
+Each evaluation run is described by one configuration file, so that it can be repeated. The three below are the final hybrid retrieval run (RQ1), the full-agent answer run (A4, RQ2) and the relevance judge. They are shown without their comment lines, file-path settings and free-text notes. No address, key or token appears in them; those come from the environment.
 
 ### F.1 Retrieval, hybrid (run R1)
 
-`evaluation/configs/retrieval-final-hybrid.yaml`
-
 ~~~~yaml
-# W7-D1-LDN-1, run R1 (evaluation/RUNS.md): final retrieval run on the frozen system.
-# The three retrieval-final-*.yaml files differ only in name, retriever_type, embedding_model, notes
-# and retriever params; golden file, split, ks and snapshots must stay identical (as retrieval-v1-*).
-# split: all reports dev and test items together; the report also gives the test items alone
-# (evaluation/PLAN.md 3.4), taken from the per-question results by split.
-# Needs: PYTHONPATH with evaluation/src and agent/src; the agent's environment (.env.example):
-#   QDRANT_URL and QDRANT_COLLECTION (dense, hybrid), DATA_DIR or BM25_INDEX_DIR (bm25, hybrid).
-# Run: see evaluation/RUNS.md.
 name: retrieval-final-hybrid
-golden_path: evaluation/golden_set/golden.jsonl
 split: all
 language: en
 query: question
@@ -269,7 +246,6 @@ dataset_snapshot: kaggle-arxiv-v307-cs.CL-2026-10-10
 retriever_type: hybrid
 embedding_model: BAAI/bge-small-en-v1.5
 index_snapshot: scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37
-notes: "hybrid on all answerable English items (dev and test); Qdrant collection scitech_chunks, exact search; BM25 index in data/index/bm25 (chunked_at 2026-10-17T05:19:12)."
 bootstrap:
   resamples: 1000
   seed: 0
@@ -287,76 +263,45 @@ retriever:
 
 ### F.2 Agent ablation A4, full agent
 
-`evaluation/configs/answers-w7-a4-full.yaml`
-
 ~~~~yaml
-# W7-D2-DAT-1 / W7-D2-LDN-1, run A4 (evaluation/RUNS.md): agent ablation, condition "full agent: AGENT_REWRITE=on, AGENT_SELF_CHECK=on".
-# The four answers-w7-*.yaml files differ only in name and notes. The condition itself is set by the
-# two environment variables below, not by this file: set them in the shell before the run, keep the
-# rest of the .env as in evaluation/SNAPSHOT.md section 2, and afterwards check that
-# `generator.agent_config` in the run file shows the same flags (RUNS.md, "After every run").
-# Run (needs agent/src and evaluation/src on PYTHONPATH, the full index, Qdrant, Ollama up, and
-# JUDGE_BASE_URL, JUDGE_API_KEY, JUDGE_MODEL=qwen2.5:7b in the environment):
-#   python -m scitech_eval answers --config evaluation/configs/answers-w7-a4-full.yaml
-# Never write a URL or key here.
 name: answers-w7-a4-full
-golden_path: evaluation/golden_set/golden.jsonl
-split: all           # dev and test items; the report also gives the test items alone (PLAN.md 3.4)
+split: all
 language: en
 dataset_snapshot: kaggle-arxiv-v307-cs.CL-2026-10-10
 index_snapshot: scitech_chunks/bge-small-en-v1.5/chunked-2026-10-17T05:19:12/embedded-2026-10-17T06:40:37
-notes: "W7 ablation A4, full agent: AGENT_REWRITE=on, AGENT_SELF_CHECK=on. Host: DAT's laptop, local Ollama (decision on #156); everything else as evaluation/SNAPSHOT.md."
 bootstrap:
   resamples: 1000
   seed: 0
 agent:
   factory: scitech_agent.factory:agent_from_env
-# What the trace does not record about the generator (evaluation/SNAPSHOT.md section 2).
 generator:
-  digest: a80c4f17acd5     # llama3.2:3b Q4_K_M; W7-D1-DAT-1 re-reads it on the laptop before the first run
-  max_tokens: 512          # answer step (AgentConfig)
+  digest: a80c4f17acd5
+  max_tokens: 512
 judge:
-  prompt_path: evaluation/prompts/faithfulness-judge.md
-  digest: 845dbda0ea48     # qwen2.5:7b Q4_K_M (issue #142)
+  digest: 845dbda0ea48
   temperature: 0
-  max_tokens: 200          # the judge reply is a short JSON object; same value in all four runs
-  # Context window (tokens) the judge really uses: `ollama ps`, column CONTEXT, while qwen2.5:7b is
-  # loaded on the evaluation host. DAT read 4096 on his laptop on 2026-10-30 (#148); same value in
-  # all four files. If the context changes, change it in all four.
+  max_tokens: 200
   context_tokens: 4096
 ~~~~
 
 ### F.3 Relevance judge
 
-`evaluation/configs/relevance-w7.yaml`
-
 ~~~~yaml
-# W7-D2-LDN-1: answer relevance judge (evaluation/PLAN.md 4.2, anchor from #94), run on the stored
-# `.answers.jsonl` of one condition at a time (RUNS.md A1 to A4). It does not call the agent.
-# Run (needs evaluation/src and agent/src on PYTHONPATH, and JUDGE_BASE_URL, JUDGE_API_KEY and
-# JUDGE_MODEL=qwen2.5:7b in the environment; not at the same time as an A run on the laptop):
-#   python -m scitech_eval relevance --config evaluation/configs/relevance-w7.yaml \
-#       --answers evaluation/runs/<ts>-answers-w7-a2-rewrite.answers.jsonl --out-dir evaluation/runs
-# Never write a URL or key here.
 name: relevance-w7
-golden_path: evaluation/golden_set/golden.jsonl
 bootstrap:
   resamples: 1000
   seed: 0
 judge:
-  prompt_path: evaluation/prompts/relevance-judge.md
-  digest: 845dbda0ea48     # qwen2.5:7b Q4_K_M, the same judge model as the faithfulness runs (#142)
+  digest: 845dbda0ea48
   temperature: 0
-  max_tokens: 200          # the reply is a short JSON object
-  context_tokens: 4096     # `ollama ps` on DAT's laptop, 2026-10-30 (#148); change it if that changes
+  max_tokens: 200
+  context_tokens: 4096
 ~~~~
 
 ### F.4 Other configurations
 
-The files below follow the same structure. Their own header comments state how they differ from the files above; `evaluation/RUNS.md` lists every run and its result file.
+The other runs use files of the same structure:
 
-| File | Used for |
-|---|---|
-| `retrieval-final-bm25.yaml`, `retrieval-final-dense.yaml` | The other two retrievers of R1; differ from F.1 in name, `retriever_type`, notes and retriever parameters |
-| `answers-w7-a1-mvp.yaml`, `answers-w7-a2-rewrite.yaml`, `answers-w7-a3-check.yaml` | Ablations A1 to A3; differ from F.2 in name and notes (the condition is set by `AGENT_REWRITE` and `AGENT_SELF_CHECK`) |
-| `retrieval-v1-*.yaml`, `ablation-*.yaml`, `answers-pilot10.yaml`, `toy.yaml` | Earlier runs (v1 retrieval, v1 ablations, the 10-question pilot, a toy test) |
+- the dense-only and BM25-only retrieval runs of R1 differ from F.1 in name, retriever type and retriever parameters;
+- the ablations A1 to A3 differ from F.2 only in name: the condition is set by the two environment variables `AGENT_REWRITE` and `AGENT_SELF_CHECK`, not by the file;
+- earlier runs (first retrieval run, first ablations, the 10-question pilot and a toy test) have their own files, kept by the team.

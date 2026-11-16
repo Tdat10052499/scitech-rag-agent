@@ -48,4 +48,4 @@ Protocol Version 2.0.* 2002 (arXiv uses it for its metadata interface).
 
 [15] Qdrant (vector database), https://qdrant.tech. Ollama (local model serving), https://ollama.com.
 FastAPI, https://fastapi.tiangolo.com. React, https://react.dev. Vite, https://vitejs.dev.
-Versions are those pinned in the module `requirements.txt` files and `frontend/package.json`.
+Their versions are pinned in the project's dependency files.

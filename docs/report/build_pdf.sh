@@ -44,7 +44,7 @@ done
     --include-in-header="$HERE/pdf/header.tex" \
     -V fontfamily=fontspec \
     ${MAINFONT:+-V mainfont="$MAINFONT"} -V monofont="$MONOFONT" -V monofontoptions=Scale=0.85 \
-    -V documentclass=article -V classoption=a4paper -V fontsize=10pt \
+    -V documentclass=article -V classoption=a4paper -V fontsize=11pt \
     -V geometry:margin=1.8cm -V colorlinks=true -V linkcolor=black -V urlcolor=blue \
     -V title="" \
     --resource-path="$BUILD" \
